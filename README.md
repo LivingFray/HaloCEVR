@@ -70,6 +70,11 @@ Also it does not work in Co-op because this version of the game does not have th
 By default tapping your head with your left hand will toggle the flashlight, you can adjust the radius this triggers at and which hand to use in config.txt. Alternatively there is an optional binding you can configure in SteamVR's controller bindings page to toggle it directly.
 ### How do I melee/can melee be bound to a button on my controller?
 By default swinging either controller vertically with enough speed will trigger a melee attack wherever you are looking. If preferred there is a controller binding that is unset by default you can configure instead.
+
+### How do I switch weapons?
+By default, you can switch weapons using a controller binding.
+Alternatively, if enabled in the config.txt file, you can switch weapons using the shoulder weapon holsters. With this setting enabled, first hover your main hand over a shoulder, then press the switch weapon binding to change weapons.
+
 ### Things feel constantly jittery in vehicles
 Halo internally runs a lower tick rate (I believe it is 30fps) and only interpolates the player camera, this makes things feel jittery when driving vehicles. To fix this install [chimera](https://github.com/SnowyMouse/chimera), as they have fixed this issue along with many others. If you still experience intermittent stuttering on vehicles it may be due to the motion smoothing kicking in and locking the frame rate to 45 for a few seconds, you may experience smoother results by disabling it. 
 ### Does this mod support OpenXR?
