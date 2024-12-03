@@ -611,6 +611,7 @@ Matrix4 WeaponHandler::GetDominantHandTransform() const
 	ControllerRole nonDominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Right : ControllerRole::Left;
 
 	Matrix4 controllerTransform = Game::instance.GetVR()->GetControllerTransform(dominant, true);
+	static Vector3 smoothedPosition = controllerTransform * Vector3(0.0f, 0.0f, 0.0f);
 
 	Vector3 poseDirection;
 	bool bHasPoseData = Game::instance.GetVR()->TryGetControllerFacing(dominant, poseDirection);
@@ -642,7 +643,32 @@ Matrix4 WeaponHandler::GetDominantHandTransform() const
 		}
 		*/
 
-		controllerTransform.lookAt(actualControllerPos + toOffHand, upVector);
+		float userInput = 0.0f;
+		short zoom = Helpers::GetInputData().zoomLevel; 
+		
+		if (zoom == -1)
+		{
+			userInput = Game::instance.c_WeaponSmoothingAmountNoZoom->Value(); 
+		}
+		else if (zoom == 0)
+		{
+			userInput = Game::instance.c_WeaponSmoothingAmountOneZoom->Value();
+		}
+		else if (zoom == 1)
+		{
+			userInput = Game::instance.c_WeaponSmoothingAmountTwoZoom->Value();
+		}
+
+		float clampedValue = std::clamp(userInput, 0.0f, 1.0f);
+
+		float maxSmoothing = 20.0f;		//20 is already a bit ridiculous but just incase people need that much smoothing. 
+		float speedRampup = 10.0f;		//This helps control the slowdown curve of the interpolation
+
+		float t = (clampedValue * maxSmoothing) * Game::instance.lastDeltaTime;
+
+		// Apply the smoothing using linear interpolation with the adjusted deltaTime
+		smoothedPosition = Helpers::Lerp(smoothedPosition, actualControllerPos + toOffHand, exp(-t * speedRampup));
+		controllerTransform.lookAt(smoothedPosition, upVector);
 
 		controllerTransform.translate(-actualControllerPos);
 		controllerTransform.rotate(-90.0f, controllerTransform.getUpAxis());
