@@ -588,6 +588,7 @@ void Hooks::H_HandleInputs()
 	HandleInputs.Original();
 
 	Game::instance.UpdateInputs();
+	Game::instance.CalculateSmoothedInput(); 
 }
 
 void __declspec(naked) Hooks::H_UpdatePitchYaw()

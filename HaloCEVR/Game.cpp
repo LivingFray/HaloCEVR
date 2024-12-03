@@ -664,6 +664,20 @@ void Game::UpdateInputs()
 	inputHandler.UpdateInputs(bInVehicle);
 }
 
+void Game::CalculateSmoothedInput()
+{
+	inputHandler.CalculateSmoothedInput(); 
+}
+
+bool Game::GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand)
+{
+	return inputHandler.GetCalculatedHandPositions(controllerTransform, dominantHandPos, offHand);
+}
+
+Vector3 Game::GetSmoothedInput()
+{
+	return inputHandler.smoothedPosition;
+}
 
 void Game::UpdateCamera(float& yaw, float& pitch)
 {
@@ -788,6 +802,9 @@ void Game::SetupConfigs()
 	// Misc settings
 	c_ShowRoomCentre = config.RegisterBool("ShowRoomCentre", "Draw an indicator at your feet to show where the player character is actually positioned", true);
 	c_d3d9Path = config.RegisterString("CustomD3D9Path", "If set first try to load d3d9.dll from the specified path instead of from system32", "");
+	c_WeaponSmoothingAmountNoZoom = config.RegisterFloat("UnzoomedWeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when not zoomed in (0 is disabled, 1 is maximum, recommended around 0-0.2)", 0.0f);
+	c_WeaponSmoothingAmountOneZoom = config.RegisterFloat("Zoom1WeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when zoomed in once, eg zooming on the pistol (0 is disabled, 1 is maximum, recommended around 0.3-0.5)", 0.4f);
+	c_WeaponSmoothingAmountTwoZoom = config.RegisterFloat("Zoom2WeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when zoomed in twice, eg second zoom on sniper (0 is disabled, 1 is maximum, recommended around 0.6-1)", 0.6f);
 
 	config.LoadFromFile("VR/config.txt");
 	config.SaveToFile("VR/config.txt");

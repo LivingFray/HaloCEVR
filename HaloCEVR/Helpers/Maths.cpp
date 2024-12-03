@@ -117,3 +117,9 @@ void Helpers::CombineTransforms(const Transform* transformA, const Transform* tr
 		(transformA->translation).z;
 	outTransform->scale = transformA->scale * transformB->scale;
 }
+
+
+Vector3 Helpers::Lerp(const Vector3& a, const Vector3& b, float t)
+{
+	return a + t * (b - a);
+}

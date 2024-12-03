@@ -391,6 +391,74 @@ void InputHandler::UpdateMouseInfo(MouseInfo* mouseInfo)
 	mouseInfo->buttonState[0] = mouseDownState;
 }
 
+bool InputHandler::GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand)
+{
+	ControllerRole dominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Left : ControllerRole::Right;
+	ControllerRole nonDominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Right : ControllerRole::Left;
+
+	controllerTransform = Game::instance.GetVR()->GetControllerTransform(dominant, true);
+
+	Vector3 poseDirection;
+	bool bHasPoseData = Game::instance.GetVR()->TryGetControllerFacing(dominant, poseDirection);
+
+	// When 2h aiming point the main hand at the offhand 
+	if (Game::instance.bUseTwoHandAim || bHasPoseData)
+	{
+		Matrix4 aimingTransform = Game::instance.GetVR()->GetRawControllerTransform(dominant, true);
+		Matrix4 offHandTransform = Game::instance.GetVR()->GetRawControllerTransform(nonDominant, true);
+
+		const Vector3 actualControllerPos = controllerTransform * Vector3(0.0f, 0.0f, 0.0f);
+		const Vector3 mainHandPos = aimingTransform * Vector3(0.0f, 0.0f, 0.0f);
+		const Vector3 offHandPos = Game::instance.bUseTwoHandAim ? offHandTransform * Vector3(0.0f, 0.0f, 0.0f) : mainHandPos + poseDirection;
+		const Vector3 toOffHand = (offHandPos - mainHandPos).normalize();
+
+		dominantHandPos = actualControllerPos; 
+		offHand = toOffHand; 
+
+		return true; 
+	}
+
+	return false; 
+}
+
+void InputHandler::CalculateSmoothedInput()
+{
+	Matrix4 controllerTransform;
+	Vector3 actualControllerPos;
+	Vector3 toOffHand;
+
+	if (!GetCalculatedHandPositions(controllerTransform, actualControllerPos, toOffHand))
+	{
+		return;
+	}
+
+	float userInput = 0.0f;
+	short zoom = Helpers::GetInputData().zoomLevel;
+
+	if (zoom == -1)
+	{
+		userInput = Game::instance.c_WeaponSmoothingAmountNoZoom->Value();
+	}
+	else if (zoom == 0)
+	{
+		userInput = Game::instance.c_WeaponSmoothingAmountOneZoom->Value();
+	}
+	else if (zoom == 1)
+	{
+		userInput = Game::instance.c_WeaponSmoothingAmountTwoZoom->Value();
+	}
+
+	float clampedValue = std::clamp(userInput, 0.0f, 1.0f);
+
+	float maxSmoothing = 20.0f;		//20 is already a bit ridiculous but just incase people need that much smoothing. 
+	float speedRampup = 10.0f;		//This helps control the slowdown curve of the interpolation
+
+	// Apply the smoothing using linear interpolation with the adjusted deltaTime
+	float t = (clampedValue * maxSmoothing) * Game::instance.lastDeltaTime;
+	smoothedPosition = Helpers::Lerp(smoothedPosition, actualControllerPos + toOffHand, exp(-t * speedRampup));
+}
+
+
 #undef ApplyBoolInput
 #undef ApplyImpulseBoolInput
 #undef RegisterBoolInput

@@ -11,6 +11,10 @@ public:
 	void UpdateCameraForVehicles(float& yaw, float& pitch);
 	void SetMousePosition(int& x, int& y);
 	void UpdateMouseInfo(struct MouseInfo* mouseInfo);
+	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand);
+	void CalculateSmoothedInput(); 
+
+	Vector3 smoothedPosition = Vector3(0.0f, 0.0f, 0.0f);
 
 protected:
 
