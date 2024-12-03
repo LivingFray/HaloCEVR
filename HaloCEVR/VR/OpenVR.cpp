@@ -150,8 +150,13 @@ void OpenVR::Init()
 	realWidth = recommendedWidth;
 	realHeight = recommendedHeight;
 
-	recommendedWidth = static_cast<uint32_t>(recommendedWidth / (std::max)(textureBounds[0].uMax - textureBounds[0].uMin, textureBounds[1].uMax - textureBounds[1].uMin));
-	recommendedHeight = static_cast<uint32_t>(recommendedHeight / (std::max)(textureBounds[0].vMax - textureBounds[0].vMin, textureBounds[1].vMax - textureBounds[1].vMin));
+	const float widthDiv = (std::max)(textureBounds[0].uMax - textureBounds[0].uMin, textureBounds[1].uMax - textureBounds[1].uMin);
+	const float heightDiv = (std::max)(textureBounds[0].vMax - textureBounds[0].vMin, textureBounds[1].vMax - textureBounds[1].vMin);
+	const float minDiv = (std::min)(widthDiv, heightDiv);
+
+	// Scale width and height by same amount, or we may see warping on head tilt.
+	recommendedWidth = static_cast<uint32_t>(recommendedWidth / minDiv);
+	recommendedHeight = static_cast<uint32_t>(recommendedHeight / minDiv);
 
 	Logger::log << "[OpenVR] Stretched Width/Height from " << realWidth << "x" << realHeight << " to " << recommendedWidth << "x" << recommendedHeight << std::endl;
 	Logger::log << "[OpenVR] Desired fov = " << (fov * (180.0f / 3.141593f)) << " Desired aspect ratio = " << aspect << std::endl;
