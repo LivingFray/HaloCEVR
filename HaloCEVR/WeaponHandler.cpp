@@ -517,15 +517,15 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	Logger::log << "[UpdateCache] GBXModelPath = " << model->ModelPath << std::endl;
 #endif
 
-	if (strstr(model->ModelPath, "\\pistol\\"))
+	if (cachedViewModel.weaponType == WeaponType::Pistol)
 	{
 		cachedViewModel.scopeType = ScopedWeaponType::Pistol;
 	}
-	else if (strstr(model->ModelPath, "\\sniper rifle\\"))
+	else if (cachedViewModel.weaponType == WeaponType::Sniper)
 	{
 		cachedViewModel.scopeType = ScopedWeaponType::Sniper;
 	}
-	else if (strstr(model->ModelPath, "\\rocket launcher\\"))
+	else if (cachedViewModel.weaponType == WeaponType::RocketLauncher)
 	{
 		cachedViewModel.scopeType = ScopedWeaponType::Rocket;
 	}
