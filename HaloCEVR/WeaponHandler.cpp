@@ -909,8 +909,8 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 		Logger::log << "[Weapon Haptics] triggering haptics for weapon " << haptic.Description << std::endl;
 
 
-		vr->TriggerHapticVibration(ControllerRole::Left, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
-		vr->TriggerHapticVibration(ControllerRole::Right, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
+		//vr->TriggerHapticVibration(ControllerRole::Left, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
+		//vr->TriggerHapticVibration(ControllerRole::Right, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
 	}
 	else
 	{

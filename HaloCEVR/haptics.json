@@ -3,98 +3,290 @@
         {
             "Weapon": 0,
             "Description": "Unknown",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.1
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.1
+                }
+            }
         },
         {
             "Weapon": 1,
             "Description": "Pistol",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.4
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.4
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.3
+                }
+            }
         },
         {
             "Weapon": 2,
             "Description": "AssaultRifle",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.3
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.5
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 3,
             "Description": "Shotgun",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.4
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 4,
             "Description": "RocketLauncher",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.5
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 5,
             "Description": "Sniper",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 6,
             "Description": "Flamethrower",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 7,
             "Description": "PlasmaPistol",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 8,
             "Description": "PlasmaRifle",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         },
         {
             "Weapon": 9,
             "Description": "PlasmaCannon",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.3
+                }
+            }
         },
         {
             "Weapon": 10,
             "Description": "Needler",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.4
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.1
+                }
+            }
         },
         {
             "Weapon": 11,
             "Description": "FuelRod",
-            "StartSecondsDelay": 0,
-            "DurationSeconds": 1,
-            "Frequency": 1,
-            "Amplitude": 0.2
+            "OneHand": {
+                "StartSecondsDelay": 0,
+                "DurationSeconds": 1,
+                "Frequency": 1,
+                "Amplitude": 0.2
+            },
+            "TwoHand": {
+                "Dominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                },
+                "Nondominant": {
+                    "StartSecondsDelay": 0,
+                    "DurationSeconds": 1,
+                    "Frequency": 1,
+                    "Amplitude": 0.2
+                }
+            }
         }
     ]
 }

@@ -4,14 +4,26 @@
 
 using json = nlohmann::json;
 
+struct WeaponHapticArg
+{
+    int StartSecondsDelay;
+    float DurationSeconds;
+    float Frequency;
+    float Amplitude;
+};
+
+struct WeaponHapticTwoHand {
+    WeaponHapticArg Dominant;
+    WeaponHapticArg Nondominant;
+};
+
 struct WeaponHaptic
 {
     WeaponType Weapon;
     std::string Description;
-    int StartSecondsDelay; 
-    float DurationSeconds;
-    float Frequency; 
-    float Amplitude;
+    WeaponHapticArg OneHand;
+    WeaponHapticTwoHand TwoHand;
+
 };
 
 struct WeaponHapticsConfig
@@ -27,6 +39,8 @@ public:
 
 protected:
     std::list<WeaponHaptic> hapticList = {};
+
+    WeaponHapticArg GetWeaponHapticArgFromJson(json WeaponHapticArg);
 
 private:
 
