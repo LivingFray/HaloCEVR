@@ -9,7 +9,6 @@
 #include "Helpers/Menus.h"
 #include "Helpers/Objects.h"
 #include "Helpers/Maths.h"
-#include <fstream>
 
 #if EMULATE_VR
 #include "VR/VREmulator.h"
