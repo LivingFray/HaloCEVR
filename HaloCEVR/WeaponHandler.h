@@ -2,6 +2,7 @@
 #include "Maths/Vectors.h"
 #include "Maths/Matrices.h"
 #include "Helpers/Objects.h"
+
 #define DRAW_DEBUG_AIM 0
 
 enum class ScopedWeaponType

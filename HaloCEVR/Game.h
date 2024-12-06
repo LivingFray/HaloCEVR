@@ -12,6 +12,7 @@
 #include "WeaponHandler.h"
 #include "InputHandler.h"
 #include "InGameRenderer.h"
+#include "WeaponHapticsConfig.h"
 
 enum class ERenderState { UNKNOWN, LEFT_EYE, RIGHT_EYE, GAME, SCOPE};
 
@@ -119,6 +120,7 @@ protected:
 	FILE* consoleOut = nullptr;
 
 	Config config;
+	WeaponHapticsConfigManager weaponHapticsConfig;
 
 	IVR* vr;
 

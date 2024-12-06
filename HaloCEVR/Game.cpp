@@ -9,6 +9,7 @@
 #include "Helpers/Menus.h"
 #include "Helpers/Objects.h"
 #include "Helpers/Maths.h"
+#include <fstream>
 
 #if EMULATE_VR
 #include "VR/VREmulator.h"
@@ -813,6 +814,8 @@ void Game::SetupConfigs()
 		Logger::log << "[Config] Invalid value for MirrorEye, defaulting to left eye" << std::endl;
 		mirrorSource = ERenderState::LEFT_EYE;
 	}
+
+	WeaponHapticsConfigManager weaponHapticsConfig;
 
 	//Logger::log << "[Config] Loaded configs" << std::endl;
 }
