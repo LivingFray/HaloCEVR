@@ -25,15 +25,22 @@ WeaponHapticsConfigManager::WeaponHapticsConfigManager()
 
 	for (const auto& item : haptics.items())
 	{
-		WeaponHaptic haptic;
-		haptic.Weapon = item.value()["Weapon"];
-		haptic.Description = item.value()["Description"];
-		haptic.StartSecondsDelay = item.value()["StartSecondsDelay"];
-		haptic.DurationSeconds = item.value()["DurationSeconds"];
-		haptic.Frequency = item.value()["Frequency"];
-		haptic.Amplitude = item.value()["Amplitude"];
+		try {
+			WeaponHaptic haptic;
+			haptic.Weapon = item.value()["Weapon"];
+			haptic.Description = item.value()["Description"];
+			haptic.StartSecondsDelay = item.value()["StartSecondsDelay"];
+			haptic.DurationSeconds = item.value()["DurationSeconds"];
+			haptic.Frequency = item.value()["Frequency"];
+			haptic.Amplitude = item.value()["Amplitude"];
 
-		hapticList.push_back(haptic);
+			hapticList.push_back(haptic);
+		}
+		catch(...)
+		{
+			Logger::log << "[WeaponHapticsConfig] There was an issue parsing haptics item " << item.key() << std::endl;
+
+		}
 	}
 
 	for (WeaponHaptic haptic : hapticList)
