@@ -12,8 +12,6 @@ WeaponHapticsConfigManager::WeaponHapticsConfigManager()
 
 void WeaponHapticsConfigManager::LoadConfig()
 {
-	Logger::log << "[WeaponHapticsConfig] Loading Config" << std::endl;
-
 	std::string hapticsConfig = "VR/haptics.json";
 
 	fs::path f{ hapticsConfig };
@@ -31,6 +29,8 @@ void WeaponHapticsConfigManager::LoadConfig()
 	//Set to true by default, so always runs once.
 	if (reload)
 	{
+		Logger::log << "[WeaponHapticsConfig] Loading Config" << std::endl;
+
 		hapticList = {};
 		Version = latestVersion;
 		std::ifstream ifs(hapticsConfig);
