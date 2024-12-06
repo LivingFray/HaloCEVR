@@ -77,11 +77,19 @@ WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 {
 	WeaponHaptic haptic;
 	haptic.Weapon = WeaponType::Unknown;
-	//haptic.StartSecondsDelay = 0;
-	//haptic.DurationSeconds = 1;
-	//haptic.Description = "Unknown";
-	//haptic.Frequency = 30;
-	//haptic.Amplitude = .5;
+
+	WeaponHapticArg defaultHaptics = {};
+	WeaponHapticTwoHand twoHandDefault = {};
+
+	defaultHaptics.Amplitude = 0;
+	defaultHaptics.DurationSeconds = 0;
+	defaultHaptics.Frequency = 0;
+	defaultHaptics.StartSecondsDelay = 0;
+
+	haptic.OneHand = defaultHaptics;
+	haptic.TwoHand = twoHandDefault;
+	haptic.TwoHand.Dominant = defaultHaptics;
+	haptic.TwoHand.Nondominant = defaultHaptics;
 
 	for (WeaponHaptic currentHaptic : hapticList)
 	{
