@@ -9,6 +9,12 @@ enum class ControllerRole
 	Right
 };
 
+class IVRInput
+{
+public: 
+	virtual int TriggerHapticVibrationAction(uint64_t action, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude) = 0;
+};
+
 class IVR
 {
 public:
@@ -56,4 +62,7 @@ public:
 	virtual Vector2 GetVector2Input(InputBindingID id) = 0;
 	virtual Vector2 GetMousePos() = 0;
 	virtual bool GetMouseDown() = 0;
+	virtual IVRInput* GetVrInput() = 0;
+
+	//virtual IVRInput* GetVrInput() { return NULL; }
 };

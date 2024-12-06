@@ -7,6 +7,7 @@
 #include "../Logger.h"
 #include "../DirectXWrappers/IDirect3DDevice9ExWrapper.h"
 #include "../Game.h"
+#include "IVR.h"
 
 template<typename T, std::size_t N>
 constexpr std::size_t arraySize(T(&)[N]) {

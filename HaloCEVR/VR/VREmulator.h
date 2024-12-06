@@ -50,6 +50,11 @@ public:
 	Vector2 GetVector2Input(InputBindingID id);
 	Vector2 GetMousePos() { return Vector2(0.0f, 0.0f); }
 	bool GetMouseDown() { return false; }
+
+	IVRInput* GetVrInput()
+	{
+		return NULL;
+	}
 	// End Interface IVR
 
 protected:

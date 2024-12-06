@@ -894,8 +894,17 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 	bool foundPlayer = Helpers::GetLocalPlayerID(PlayerID);
 	if (Object && foundPlayer && PlayerID == Object->parent)
 	{
-		//Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << std::endl;
+		IVR* vr = Game::instance.GetVR();
+		IVRInput* input = vr->GetVrInput();
 
+		if (input)
+		{
+			input->TriggerHapticVibrationAction(0, 1, 1, 1, 1);
+		}
+		else {
+			Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << " but vrinput was null" << std::endl;
+
+		}
 		RelocatePlayer(PlayerID);
 	}
 }
