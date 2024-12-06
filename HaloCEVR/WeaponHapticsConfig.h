@@ -6,7 +6,7 @@ using json = nlohmann::json;
 
 struct WeaponHapticArg
 {
-    int StartSecondsDelay;
+    float StartSecondsDelay;
     float DurationSeconds;
     float Frequency;
     float Amplitude;

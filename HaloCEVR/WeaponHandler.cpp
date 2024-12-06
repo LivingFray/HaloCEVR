@@ -492,6 +492,12 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	}
 
 	cachedViewModel.weaponType = GetWeaponType(weapon);
+	cachedViewModel.IsTwoHanded = Game::instance.bUseTwoHandAim;
+
+	Logger::log << "[WeaponHaptics] instance c_LeftHanded " << Game::instance.c_LeftHanded->Value() << std::endl;
+
+
+	cachedViewModel.IsLeftHanded = Game::instance.c_LeftHanded->Value();
 
 	if (!weapon->WeaponData)
 	{
@@ -908,9 +914,35 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 
 		Logger::log << "[Weapon Haptics] triggering haptics for weapon " << haptic.Description << std::endl;
 
+		ControllerRole dominantHand = ControllerRole::Right;
+		ControllerRole nondominantHand = ControllerRole::Left;
+		
+		if (cachedViewModel.IsLeftHanded)
+		{
+			Logger::log << "[Weapon Haptics] Left is hand dominant hand. " << haptic.Description << std::endl;
 
-		//vr->TriggerHapticVibration(ControllerRole::Left, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
-		//vr->TriggerHapticVibration(ControllerRole::Right, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
+			dominantHand = ControllerRole::Left;
+			nondominantHand = ControllerRole::Right;
+		}
+		else
+		{
+			Logger::log << "[Weapon Haptics] Right is hand dominant hand. " << haptic.Description << std::endl;
+		}
+
+		if (cachedViewModel.IsTwoHanded)
+		{
+			Logger::log << "[Weapon Haptics] Gun is in two handed mode. " << haptic.Description << std::endl;
+			WeaponHapticArg dominantHaptics = haptic.TwoHand.Dominant;
+			WeaponHapticArg nondominantHaptics = haptic.TwoHand.Nondominant;
+			vr->TriggerHapticVibration(dominantHand, dominantHaptics.StartSecondsDelay, dominantHaptics.DurationSeconds, dominantHaptics.Frequency, dominantHaptics.Amplitude);
+			vr->TriggerHapticVibration(nondominantHand, nondominantHaptics.StartSecondsDelay, nondominantHaptics.DurationSeconds, nondominantHaptics.Frequency, nondominantHaptics.Amplitude);
+		}
+		else 
+		{
+			Logger::log << "[Weapon Haptics] Gun is in one handed mode. " << haptic.Description << std::endl;
+			WeaponHapticArg hapticArgs = haptic.OneHand;
+			vr->TriggerHapticVibration(dominantHand, hapticArgs.StartSecondsDelay, hapticArgs.DurationSeconds, hapticArgs.Frequency, hapticArgs.Amplitude);
+		}
 	}
 	else
 	{
