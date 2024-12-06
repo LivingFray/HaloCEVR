@@ -894,18 +894,27 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 	bool foundPlayer = Helpers::GetLocalPlayerID(PlayerID);
 	if (Object && foundPlayer && PlayerID == Object->parent)
 	{
-		IVR* vr = Game::instance.GetVR();
-
-		if (vr)
-		{
-			vr->TriggerHapticVibration(ControllerRole::Left, 0, 1, 1, 1);
-			vr->TriggerHapticVibration(ControllerRole::Right, 0, 1, 1, 1);
-		}
-		else 
-		{
-			Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << " but vrinput was null" << std::endl;
-		}
+		HandleWeaponHaptics();
 		RelocatePlayer(PlayerID);
+	}
+}
+
+inline void WeaponHandler::HandleWeaponHaptics() const
+{
+	IVR* vr = Game::instance.GetVR();
+	if (vr)
+	{
+		WeaponHaptic haptic = Game::instance.weaponHapticsConfig.GetWeaponHaptics(cachedViewModel.weaponType);
+
+		Logger::log << "[Weapon Haptics] triggering haptics for weapon " << haptic.Description << std::endl;
+
+
+		vr->TriggerHapticVibration(ControllerRole::Left, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
+		vr->TriggerHapticVibration(ControllerRole::Right, haptic.StartSecondsDelay, haptic.DurationSeconds, haptic.Frequency, haptic.Amplitude);
+	}
+	else
+	{
+		Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << " but vrinput was null" << std::endl;
 	}
 }
 

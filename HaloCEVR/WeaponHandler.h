@@ -57,6 +57,7 @@ protected:
 	inline void MoveBoneToTransform(int boneIndex, const class Matrix4& newTransform, struct Transform* realTransforms, struct Transform* outBoneTransforms) const;
 	inline void UpdateCache(struct HaloID& id, struct AssetData_ModelAnimations* animationData);
 	inline WeaponType GetWeaponType(struct Asset_Weapon* weapon) const;
+	inline void HandleWeaponHaptics() const;
 
 	inline void TransformToMatrix4(struct Transform& inTransform, class Matrix4& outMatrix) const;
 

@@ -88,6 +88,8 @@ public:
 
 	bool bDetectedChimera = false;
 	Vector3 LastLookDir;
+	WeaponHapticsConfigManager weaponHapticsConfig;
+
 protected:
 
 	void CreateConsole();
@@ -120,8 +122,6 @@ protected:
 	FILE* consoleOut = nullptr;
 
 	Config config;
-	WeaponHapticsConfigManager weaponHapticsConfig;
-
 	IVR* vr;
 
 	RenderTarget gameRenderTargets[8];

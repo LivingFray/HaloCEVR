@@ -23,8 +23,10 @@ class WeaponHapticsConfigManager {
 public:
     // Default constructor
     WeaponHapticsConfigManager();
+    WeaponHaptic GetWeaponHaptics(WeaponType Type);
 
-
+protected:
+    std::list<WeaponHaptic> hapticList = {};
 
 private:
 
