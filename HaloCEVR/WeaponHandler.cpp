@@ -491,6 +491,8 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 		return;
 	}
 
+	cachedViewModel.weaponType = GetWeaponType(weapon);
+
 	if (!weapon->WeaponData)
 	{
 		Logger::log << "[UpdateCache] Can't find weapon data in weapon asset " << weaponObj->tagID << std::endl;
@@ -572,6 +574,53 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 			break;
 		}
 	}
+}
+
+inline WeaponType WeaponHandler::GetWeaponType(Asset_Weapon* weapon) const
+{
+	WeaponType foundType = WeaponType::Unknown;
+	if (strstr(weapon->WeaponAsset, "\\plasma pistol\\"))
+	{
+		foundType = WeaponType::PlasmaPistol;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\sniper rifle\\"))
+	{
+		foundType = WeaponType::Sniper;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\pistol\\"))
+	{
+		foundType = WeaponType::Pistol;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\plasma rifle\\"))
+	{
+		foundType = WeaponType::PlasmaRifle;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\shotgun\\"))
+	{
+		foundType = WeaponType::Shotgun;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\assault rifle\\"))
+	{
+		foundType = WeaponType::AssaultRifle;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\rocket launcher\\"))
+	{
+		foundType = WeaponType::RocketLauncher;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\flamethrower\\"))
+	{
+		foundType = WeaponType::Flamethrower;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\plasma_cannon\\"))
+	{
+		foundType = WeaponType::PlasmaCannon;
+	}
+	else
+	{
+		Logger::log << "[WeaponHaptics] Unknown weapon with asset " << weapon->WeaponAsset << std::endl;
+	}
+
+	return foundType;
 }
 
 inline void WeaponHandler::TransformToMatrix4(Transform& inTransform, Matrix4& outMatrix) const
@@ -842,8 +891,11 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 
 	// Check if the weapon is being used by the player
 	HaloID PlayerID;
-	if (Object && Helpers::GetLocalPlayerID(PlayerID) && PlayerID == Object->parent)
+	bool foundPlayer = Helpers::GetLocalPlayerID(PlayerID);
+	if (Object && foundPlayer && PlayerID == Object->parent)
 	{
+		//Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << std::endl;
+
 		RelocatePlayer(PlayerID);
 	}
 }

@@ -12,6 +12,22 @@ enum class ScopedWeaponType
 	Sniper
 };
 
+enum class WeaponType
+{
+	Unknown,
+	Pistol,
+	AssaultRifle,
+	Shotgun,
+	RocketLauncher,
+	Sniper,
+	Flamethrower,
+	PlasmaPistol,
+	PlasmaRifle,
+	PlasmaCannon,
+	Needler,
+	FuelRod
+};
+
 class WeaponHandler
 {
 public:
@@ -39,6 +55,7 @@ protected:
 	inline void CreateEndCap(int boneIndex, const struct Bone& currentBone, struct Transform* outBoneTransforms) const;
 	inline void MoveBoneToTransform(int boneIndex, const class Matrix4& newTransform, struct Transform* realTransforms, struct Transform* outBoneTransforms) const;
 	inline void UpdateCache(struct HaloID& id, struct AssetData_ModelAnimations* animationData);
+	inline WeaponType GetWeaponType(struct Asset_Weapon* weapon) const;
 
 	inline void TransformToMatrix4(struct Transform& inTransform, class Matrix4& outMatrix) const;
 
@@ -59,6 +76,8 @@ protected:
 		Vector3 gunOffset;
 		Matrix3 fireRotation;
 		ScopedWeaponType scopeType = ScopedWeaponType::Unknown;
+		WeaponType weaponType = WeaponType::Unknown;
+		
 	} cachedViewModel;
 
 	UnitDynamicObject* weaponFiredPlayer = nullptr;
