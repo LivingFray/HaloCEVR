@@ -29,6 +29,7 @@ struct WeaponHaptic
 struct WeaponHapticsConfig
 {
     std::vector<WeaponHaptic> Haptics;
+    bool ReloadOnChange = true;
 };
 
 class WeaponHapticsConfigManager {
@@ -36,9 +37,12 @@ public:
     // Default constructor
     WeaponHapticsConfigManager();
     WeaponHaptic GetWeaponHaptics(WeaponType Type);
+    void LoadConfig();
+    std::filesystem::file_time_type Version;
+    bool ReloadOnChange = true;
 
 protected:
-    std::list<WeaponHaptic> hapticList = {};
+    std::list<WeaponHaptic> hapticList;
 
     WeaponHapticArg GetWeaponHapticArgFromJson(json WeaponHapticArg);
 

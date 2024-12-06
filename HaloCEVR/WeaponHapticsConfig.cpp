@@ -7,6 +7,12 @@ namespace fs = std::filesystem;
 WeaponHapticsConfigManager::WeaponHapticsConfigManager()
 {
 	Logger::log << "[WeaponHapticsConfig] Initializing" << std::endl;
+	LoadConfig();
+}
+
+void WeaponHapticsConfigManager::LoadConfig()
+{
+	Logger::log << "[WeaponHapticsConfig] Loading Config" << std::endl;
 
 	std::string hapticsConfig = "VR/haptics.json";
 
@@ -18,50 +24,63 @@ WeaponHapticsConfigManager::WeaponHapticsConfigManager()
 		return;
 	}
 
-	std::ifstream ifs("VR/haptics.json");
-	json jf = json::parse(ifs);
+	std::filesystem::file_time_type latestVersion = std::filesystem::last_write_time(hapticsConfig);
 
-	json haptics = jf["Haptics"];
+	bool reload = ReloadOnChange && (Version < latestVersion);
 
-	for (const auto& item : haptics.items())
+	//Set to true by default, so always runs once.
+	if (reload)
 	{
-		try {
-			WeaponHaptic haptic;
-			haptic.Weapon = item.value()["Weapon"];
-			haptic.Description = item.value()["Description"];
+		hapticList = {};
+		Version = latestVersion;
+		std::ifstream ifs(hapticsConfig);
+		json jf = json::parse(ifs);
 
-			json oneHandJson = item.value()["OneHand"];
-			json twoHandJson = item.value()["TwoHand"];
 
-			json dominant = twoHandJson["Dominant"];
-			json nondominant = twoHandJson["Nondominant"];
+		ReloadOnChange = jf["ReloadOnChange"];
 
-			haptic.OneHand = GetWeaponHapticArgFromJson(oneHandJson);
-
-			WeaponHapticTwoHand twoHands;
-			twoHands.Dominant = GetWeaponHapticArgFromJson(dominant);
-			twoHands.Nondominant = GetWeaponHapticArgFromJson(nondominant);
-
-			haptic.TwoHand = twoHands;
-
-			hapticList.push_back(haptic);
-		}
-		catch(...)
+		json haptics = jf["Haptics"];
+		for (const auto& item : haptics.items())
 		{
-			Logger::log << "[WeaponHapticsConfig] There was an issue parsing haptics item " << item.key() << std::endl;
+			try {
+				WeaponHaptic haptic;
+				haptic.Weapon = item.value()["Weapon"];
+				haptic.Description = item.value()["Description"];
 
+				json oneHandJson = item.value()["OneHand"];
+				json twoHandJson = item.value()["TwoHand"];
+
+				json dominant = twoHandJson["Dominant"];
+				json nondominant = twoHandJson["Nondominant"];
+
+				haptic.OneHand = GetWeaponHapticArgFromJson(oneHandJson);
+
+				WeaponHapticTwoHand twoHands;
+				twoHands.Dominant = GetWeaponHapticArgFromJson(dominant);
+				twoHands.Nondominant = GetWeaponHapticArgFromJson(nondominant);
+
+				haptic.TwoHand = twoHands;
+
+				hapticList.push_back(haptic);
+			}
+			catch (...)
+			{
+				Logger::log << "[WeaponHapticsConfig] There was an issue parsing haptics item " << item.key() << std::endl;
+			}
 		}
-	}
 
-	for (WeaponHaptic haptic : hapticList)
-	{
-		Logger::log << "[WeaponHapticsConfig] Haptic Item " << static_cast<int>(haptic.Weapon) << std::endl;
-		Logger::log << "Description: " << haptic.Description << std::endl;
-		Logger::log << "OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
-		Logger::log << "TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
-		Logger::log << "TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
+		//For debugging
+	/*	for (WeaponHaptic haptic : hapticList)
+		{
+			Logger::log << "[WeaponHapticsConfig] Haptic Item " << static_cast<int>(haptic.Weapon) << std::endl;
+			Logger::log << "Description: " << haptic.Description << std::endl;
+			Logger::log << "OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
+			Logger::log << "TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
+			Logger::log << "TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
+		}*/
 	}
 }
+
 
 WeaponHapticArg WeaponHapticsConfigManager::GetWeaponHapticArgFromJson(json arg)
 {
@@ -75,6 +94,7 @@ WeaponHapticArg WeaponHapticsConfigManager::GetWeaponHapticArgFromJson(json arg)
 
 WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 {
+	LoadConfig();
 	WeaponHaptic haptic;
 	haptic.Weapon = WeaponType::Unknown;
 

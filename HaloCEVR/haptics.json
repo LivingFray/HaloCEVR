@@ -1,4 +1,5 @@
 {
+    "ReloadOnChange":  true,
     "Haptics": [
         {
             "Weapon": 0,
