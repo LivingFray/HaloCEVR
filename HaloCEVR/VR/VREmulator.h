@@ -50,11 +50,8 @@ public:
 	Vector2 GetVector2Input(InputBindingID id);
 	Vector2 GetMousePos() { return Vector2(0.0f, 0.0f); }
 	bool GetMouseDown() { return false; }
+	void TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude) override;
 
-	IVRInput* GetVrInput()
-	{
-		return NULL;
-	}
 	// End Interface IVR
 
 protected:

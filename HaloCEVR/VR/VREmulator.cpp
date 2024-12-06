@@ -510,3 +510,22 @@ void VREmulator::CreateTexAndSurface(int index, UINT width, UINT height, DWORD u
 		}
 	}
 }
+
+void VREmulator::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
+{
+	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role) 
+		<< 
+		"startSeconds: " 
+		<< fStartSecondsFromNow
+		<< "\n"
+		"duration: "
+		<< fDurationSeconds
+		<< "\n"
+		"frequency: "
+		<< fFrequency
+		<< "\n"
+		"amplitude: "
+		<< fAmplitude
+		<< "\n"
+		<< std::endl;
+}

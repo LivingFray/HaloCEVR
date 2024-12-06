@@ -543,6 +543,12 @@ float OpenVR::GetYawOffset()
 	return yawOffset;
 }
 
+void OpenVR::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
+{
+	vr::TrackedDeviceIndex_t controllerIndex = vrSystem->GetTrackedDeviceIndexForControllerRole(role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+	vrInput->TriggerHapticVibrationAction(controllerIndex, fStartSecondsFromNow, fDurationSeconds, fFrequency, fAmplitude, vr::k_ulInvalidInputValueHandle);
+}
+
 Matrix4 OpenVR::GetHMDTransform(bool bRenderPose)
 {
 	if (bRenderPose)
