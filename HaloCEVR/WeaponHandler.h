@@ -79,7 +79,6 @@ protected:
 		Matrix3 fireRotation;
 		ScopedWeaponType scopeType = ScopedWeaponType::Unknown;
 		WeaponType weaponType = WeaponType::Unknown;
-		bool IsTwoHanded = false;
 		bool IsLeftHanded = false;
 
 		

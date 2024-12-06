@@ -5,13 +5,21 @@
       "binding_url": "bindings_oculus_touch.json"
     }
   ],
-  "actions": [
-    {
-      "name": "/actions/default/in/Jump",
-      "requirement": "mandatory",
-      "type": "boolean"
-    }
-  ],
+    "actions": [
+        {
+            "name": "/actions/default/in/Jump",
+            "requirement": "mandatory",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/out/RightFire",
+            "type": "vibration"
+        },
+        {
+            "name": "/actions/default/out/LeftFire",
+            "type": "vibration"
+        }
+    ],
   "action_sets": [
     {
       "name": "/actions/default",

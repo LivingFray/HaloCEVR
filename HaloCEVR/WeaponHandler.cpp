@@ -492,10 +492,6 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	}
 
 	cachedViewModel.weaponType = GetWeaponType(weapon);
-	cachedViewModel.IsTwoHanded = Game::instance.bUseTwoHandAim;
-
-	Logger::log << "[WeaponHaptics] instance c_LeftHanded " << Game::instance.c_LeftHanded->Value() << std::endl;
-
 
 	cachedViewModel.IsLeftHanded = Game::instance.c_LeftHanded->Value();
 
@@ -929,7 +925,7 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 			Logger::log << "[Weapon Haptics] Right is hand dominant hand. " << haptic.Description << std::endl;
 		}
 
-		if (cachedViewModel.IsTwoHanded)
+		if (Game::instance.bUseTwoHandAim)
 		{
 			Logger::log << "[Weapon Haptics] Gun is in two handed mode. " << haptic.Description << std::endl;
 			WeaponHapticArg dominantHaptics = haptic.TwoHand.Dominant;

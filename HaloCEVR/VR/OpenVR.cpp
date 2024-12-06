@@ -545,8 +545,34 @@ float OpenVR::GetYawOffset()
 
 void OpenVR::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
 {
-	vr::TrackedDeviceIndex_t controllerIndex = vrSystem->GetTrackedDeviceIndexForControllerRole(role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
-	vrInput->TriggerHapticVibrationAction(controllerIndex, fStartSecondsFromNow, fDurationSeconds, fFrequency, fAmplitude, vr::k_ulInvalidInputValueHandle);
+	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role)
+		<<
+		"startSeconds: "
+		<< fStartSecondsFromNow
+		<< "\n"
+		"duration: "
+		<< fDurationSeconds
+		<< "\n"
+		"frequency: "
+		<< fFrequency
+		<< "\n"
+		"amplitude: "
+		<< fAmplitude
+		<< "\n"
+		<< std::endl;
+
+	vr::VRActionHandle_t action;
+
+	if (role == ControllerRole::Left)
+	{
+		vrInput->GetActionHandle("/actions/default/out/LeftFire", &action);
+	}
+	else 
+	{
+		vrInput->GetActionHandle("/actions/default/out/RightFire", &action);
+	}
+
+	vrInput->TriggerHapticVibrationAction(action, fStartSecondsFromNow, fDurationSeconds, fFrequency, fAmplitude, vr::k_ulInvalidInputValueHandle);
 }
 
 Matrix4 OpenVR::GetHMDTransform(bool bRenderPose)
