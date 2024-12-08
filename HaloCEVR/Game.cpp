@@ -869,6 +869,8 @@ void Game::SetupConfigs()
 		mirrorSource = ERenderState::LEFT_EYE;
 	}
 
+	WeaponHapticsConfigManager weaponHapticsConfig;
+
 	//Logger::log << "[Config] Loaded configs" << std::endl;
 }
 
