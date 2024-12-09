@@ -69,15 +69,16 @@ void WeaponHapticsConfigManager::LoadConfig()
 			}
 		}
 
-		//For debugging
-	/*	for (WeaponHaptic haptic : hapticList)
+#if HAPTICS_DEBUG
+		for (WeaponHaptic haptic : hapticList)
 		{
 			Logger::log << "[WeaponHapticsConfig] Haptic Item " << static_cast<int>(haptic.Weapon) << std::endl;
 			Logger::log << "Description: " << haptic.Description << std::endl;
 			Logger::log << "OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
 			Logger::log << "TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
 			Logger::log << "TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
-		}*/
+		}
+#endif
 	}
 }
 

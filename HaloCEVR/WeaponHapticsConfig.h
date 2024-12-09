@@ -2,6 +2,9 @@
 #include <../../../ThirdParty/nlohmann/json.hpp>
 #include "WeaponHandler.h"
 
+#define HAPTICS_DEBUG 0
+
+
 using json = nlohmann::json;
 
 struct WeaponHapticArg

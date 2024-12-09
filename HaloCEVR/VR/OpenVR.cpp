@@ -10,6 +10,7 @@
 #include "../Helpers/RenderTarget.h"
 #include "../Helpers/Camera.h"
 #include "../Helpers/Cutscene.h"
+#include "../WeaponHapticsConfig.h"
 
 #pragma comment(lib, "openvr_api.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -545,7 +546,8 @@ float OpenVR::GetYawOffset()
 
 void OpenVR::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
 {
-	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role)
+#if HAPTICS_DEBUG
+		Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role)
 		<<
 		"startSeconds: "
 		<< fStartSecondsFromNow
@@ -560,6 +562,7 @@ void OpenVR::TriggerHapticVibration(ControllerRole role, float fStartSecondsFrom
 		<< fAmplitude
 		<< "\n"
 		<< std::endl;
+#endif 
 
 	vr::VRActionHandle_t action;
 

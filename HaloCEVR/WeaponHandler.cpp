@@ -519,23 +519,6 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	Logger::log << "[UpdateCache] GBXModelPath = " << model->ModelPath << std::endl;
 #endif
 
-	if (cachedViewModel.weaponType == WeaponType::Pistol)
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Pistol;
-	}
-	else if (cachedViewModel.weaponType == WeaponType::Sniper)
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Sniper;
-	}
-	else if (cachedViewModel.weaponType == WeaponType::RocketLauncher)
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Rocket;
-	}
-	else
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Unknown;
-	}
-
 	if (!model->ModelData)
 	{
 		return;
@@ -619,7 +602,7 @@ inline WeaponType WeaponHandler::GetWeaponType(Asset_Weapon* weapon) const
 	}
 	else
 	{
-		Logger::log << "[WeaponHaptics] Unknown weapon with asset " << weapon->WeaponAsset << std::endl;
+		Logger::log << "[UpdateCache] Unknown weapon with asset " << weapon->WeaponAsset << std::endl;
 	}
 
 	return foundType;
@@ -639,18 +622,18 @@ inline void WeaponHandler::TransformToMatrix4(Transform& inTransform, Matrix4& o
 	outMatrix.setColumn(3, inTransform.translation);
 }
 
-Vector3 WeaponHandler::GetScopeLocation(ScopedWeaponType type) const
+Vector3 WeaponHandler::GetScopeLocation(WeaponType type) const
 {
 	Vector3 Scale = Game::instance.c_LeftHanded->Value() ? Vector3(1.0f, -1.0f, 1.0f) : Vector3(1.0f, 1.0f, 1.0f);
 
 	switch (type)
 	{
-	case ScopedWeaponType::Rocket:
+	case WeaponType::RocketLauncher:
 		return Game::instance.c_ScopeOffsetRocket->Value() * Scale;
-	case ScopedWeaponType::Sniper:
+	case WeaponType::Sniper:
 		return Game::instance.c_ScopeOffsetSniper->Value() * Scale;
-	case ScopedWeaponType::Unknown:
-	case ScopedWeaponType::Pistol:
+	case WeaponType::Unknown:
+	case WeaponType::Pistol:
 		return Game::instance.c_ScopeOffsetPistol->Value() * Scale;
 	}
 	return Vector3(0.0f, 0.0f, 0.0f);
@@ -802,7 +785,7 @@ bool WeaponHandler::GetLocalWeaponScope(Vector3& outPosition, Vector3& outAim, V
 
 	Matrix3 finalRot = cachedViewModel.fireRotation * handRotation3;
 
-	Vector3 scopeOffset = GetScopeLocation(cachedViewModel.scopeType);
+	Vector3 scopeOffset = GetScopeLocation(cachedViewModel.weaponType);
 
 	Vector3 gunOffset = handPos + handRotation * cachedViewModel.gunOffset * Game::instance.WorldToMetres(1.0f);
 
@@ -835,7 +818,7 @@ bool WeaponHandler::GetWorldWeaponScope(Vector3& outPosition, Vector3& outAim, V
 
 bool WeaponHandler::IsSniperScope() const
 {
-	return cachedViewModel.scopeType == ScopedWeaponType::Sniper;
+	return cachedViewModel.weaponType == WeaponType::Sniper;
 }
 
 void WeaponHandler::RelocatePlayer(HaloID& PlayerID)

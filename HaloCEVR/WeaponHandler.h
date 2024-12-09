@@ -5,14 +5,6 @@
 
 #define DRAW_DEBUG_AIM 0
 
-enum class ScopedWeaponType
-{
-	Unknown,
-	Pistol,
-	Rocket,
-	Sniper
-};
-
 enum class WeaponType
 {
 	Unknown,
@@ -61,7 +53,7 @@ protected:
 
 	inline void TransformToMatrix4(struct Transform& inTransform, class Matrix4& outMatrix) const;
 
-	inline Vector3 GetScopeLocation(ScopedWeaponType Type) const;
+	inline Vector3 GetScopeLocation(WeaponType Type) const;
 
 	Matrix4 GetDominantHandTransform() const;
 
@@ -77,7 +69,6 @@ protected:
 		Vector3 fireOffset;
 		Vector3 gunOffset;
 		Matrix3 fireRotation;
-		ScopedWeaponType scopeType = ScopedWeaponType::Unknown;
 		WeaponType weaponType = WeaponType::Unknown;
 		bool IsLeftHanded = false;
 
