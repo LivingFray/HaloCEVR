@@ -5,6 +5,7 @@ boolActions = ["Jump","SwitchGrenades","Interact","SwitchWeapons","Melee","Flash
 vec1Actions = []
 vec2Actions = ["Look", "Move"]
 poseActions = ["Tip"]
+vibrationActions = ["/actions/default/out/RightFire", "/actions/default/out/LeftFire"]
 
 bindings = {
     "Jump" : { "h" : "right", "b" : "joystick|north", "f" : True},
@@ -55,6 +56,10 @@ for v in vec2Actions:
 for p in poseActions:
     manifest["actions"].append({"name" : "/actions/default/in/Left" + p, "requirement" : "suggested", "type" : "pose"})
     manifest["actions"].append({"name" : "/actions/default/in/Right" + p, "requirement" : "suggested", "type" : "pose"})
+
+for vibration in vibrationActions:
+    manifest["actions"].append({"name" : vibration, "type" : "vibration"})
+
 
 manifest["actions"].append({"name" : "/actions/default/in/LeftHand", "type" : "skeleton", "skeleton": "/skeleton/hand/left"})
 manifest["actions"].append({"name" : "/actions/default/in/RightHand", "type" : "skeleton", "skeleton": "/skeleton/hand/right"})
@@ -111,6 +116,11 @@ for v in variants:
         for p in poses:
             controller["bindings"]["/actions/default"]["poses"].append({"output" : "/actions/default/in/Left"+p, "path" : "/user/hand/left/pose/"+poses[p]});
             controller["bindings"]["/actions/default"]["poses"].append({"output" : "/actions/default/in/Right"+p, "path" : "/user/hand/right/pose/"+poses[p]});
+        
+        for vibration in vibrationActions:
+            fireAction = vibration.split("/")[-1]
+            outputHand = fireAction.replace("Fire", "").lower()
+            controller["bindings"]["/actions/default"]["haptics"].append({"output" : vibration, "path" : f'/user/hand/{outputHand}/output/haptic'});
         
         for binding in bindings:
             b = bindings[binding]
