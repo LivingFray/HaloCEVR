@@ -777,56 +777,56 @@ void Game::SetupConfigs()
 	c_DrawMirror = config.RegisterBool("DrawMirror", "Update the desktop window display to show the current game view, rather than leaving it on the splash screen", true);
 	c_MirrorEye = config.RegisterInt("MirrorEye", "Index of the eye to use for the mirror view  (0 = left, 1 = right)", 0);
 	// UI settings
-	c_CrosshairDistance = config.RegisterFloat("CrosshairDistance", "Distance in metres in front of the weapon to display the crosshair", 15.0f);
-	c_MenuOverlayDistance = config.RegisterFloat("MenuOverlayDistance", "Distance in metres in front of the HMD to display the menu", 15.0f);
-	c_UIOverlayDistance = config.RegisterFloat("UIOverlayDistance", "Distance in metres in front of the HMD to display the UI", 15.0f);
-	c_UIOverlayScale = config.RegisterFloat("UIOverlayScale", "Width of the UI overlay in metres", 10.0f);
-	c_MenuOverlayScale = config.RegisterFloat("MenuOverlayScale", "Width of the menu overlay in metres", 10.0f);
-	c_CrosshairScale = config.RegisterFloat("CrosshairScale", "Width of the crosshair overlay in metres", 10.0f);
-	c_UIOverlayCurvature = config.RegisterFloat("UIOverlayCurvature", "Curvature of the UI Overlay, on a scale of 0 to 1", 0.1f);
-	c_UIOverlayWidth = config.RegisterInt("UIOverlayWidth", "Width of the UI overlay in pixels", 600);
-	c_UIOverlayHeight = config.RegisterInt("UIOverlayHeight", "Height of the UI overlay in pixels", 600);
-	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Display a floating crosshair in the world at the location you are aiming", true);
+	c_CrosshairDistance = config.RegisterFloat("CrosshairDistance", "Distance (in metres) in front of the weapon to display the crosshair", 15.0f);
+	c_MenuOverlayDistance = config.RegisterFloat("MenuOverlayDistance", "Distance (in metres) in front of the HMD to display the menu", 15.0f);
+	c_UIOverlayDistance = config.RegisterFloat("UIOverlayDistance", "Distance (in metres) in front of the HMD to display the UI", 15.0f);
+	c_UIOverlayScale = config.RegisterFloat("UIOverlayScale", "Width of the UI overlay (in metres)", 10.0f);
+	c_MenuOverlayScale = config.RegisterFloat("MenuOverlayScale", "Width of the menu overlay (in metres)", 10.0f);
+	c_CrosshairScale = config.RegisterFloat("CrosshairScale", "Width of the crosshair overlay (in metres)", 10.0f);
+	c_UIOverlayCurvature = config.RegisterFloat("UIOverlayCurvature", "Curvature of the UI overlay, on a scale of 0 to 1", 0.1f);
+	c_UIOverlayWidth = config.RegisterInt("UIOverlayWidth", "Width of the UI overlay (in pixels)", 600);
+	c_UIOverlayHeight = config.RegisterInt("UIOverlayHeight", "Height of the UI overlay (in pixels)", 600);
+	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Displays a floating crosshair in the world where your weapon is aiming", true);
 	// Control settings
-	c_LeftHanded = config.RegisterBool("LeftHanded", "Make the left hand the dominant hand. Does not affect bindings, change these in the SteamVR overlay", false);
-	c_SnapTurn = config.RegisterBool("SnapTurn", "The look input will instantly rotate the view by a fixed amount, rather than smoothly rotating", true);
-	c_SnapTurnAmount = config.RegisterFloat("SnapTurnAmount", "Rotation in degrees a single snap turn will rotate the view by", 45.0f);
-	c_SmoothTurnAmount = config.RegisterFloat("SmoothTurnAmount", "Rotation in degrees per second the view will turn at when not using snap turning", 90.0f);
+	c_LeftHanded = config.RegisterBool("LeftHanded", "When enabled, the left hand is the dominant hand. Does not affect bindings - change these in the SteamVR overlay", false);
+	c_SnapTurn = config.RegisterBool("SnapTurn", "When enabled, the look input will instantly rotate the view by a fixed amount, rather than smoothly rotating", true);
+	c_SnapTurnAmount = config.RegisterFloat("SnapTurnAmount", "Rotation (in degrees) a single snap turn will rotate the view by", 45.0f);
+	c_SmoothTurnAmount = config.RegisterFloat("SmoothTurnAmount", "Rotation (in degrees per second) the view will turn at when not using snap turning", 90.0f);
 	c_HandRelativeMovement = config.RegisterInt("HandRelativeMovement", "Movement is relative to hand orientation, rather than head, 0 = off, 1 = left, 2 = right", 0);
-	c_HandRelativeOffsetRotation = config.RegisterFloat("HandRelativeOffsetRotation", "Hand direction rotational offset in degrees used for hand-relative movement", -20.0f);
-	c_HorizontalVehicleTurnAmount = config.RegisterFloat("HorizontalVehicleTurnAmount", "Rotation in degrees per second the view will turn horizontally when in vehicles (<0 to invert)", 90.0f);
-	c_VerticalVehicleTurnAmount = config.RegisterFloat("VerticalVehicleTurnAmount", "Rotation in degrees per second the view will turn vertically when in vehicles (<0 to invert)", 45.0f);
-	c_ToggleGrip = config.RegisterBool("ToggleGrip", "When true releasing two handed weapons requires pressing the grip action again", false);
+	c_HandRelativeOffsetRotation = config.RegisterFloat("HandRelativeOffsetRotation", "Hand direction rotational offset (in degrees). Used for hand-relative movement", -20.0f);
+	c_HorizontalVehicleTurnAmount = config.RegisterFloat("HorizontalVehicleTurnAmount", "Rotation (in degrees per second) the view will turn horizontally when in vehicles (<0 to invert)", 90.0f);
+	c_VerticalVehicleTurnAmount = config.RegisterFloat("VerticalVehicleTurnAmount", "Rotation (in degrees per second) the view will turn vertically when in vehicles (<0 to invert)", 45.0f);
+	c_ToggleGrip = config.RegisterBool("ToggleGrip", "When enabled, releasing two handed weapons will require pressing the grip action again", false);
 	c_TwoHandDistance = config.RegisterFloat("TwoHandDistance", "Maximum distance between both hands where the off hand grip action will enable two handed aiming (<0 for any distance)", 0.8f);
 	c_LeftHandFlashlightDistance = config.RegisterFloat("LeftHandFlashlight", "Bringing the left hand within this distance of the head will toggle the flashlight (<0 to disable)", 0.2f);
 	c_RightHandFlashlightDistance = config.RegisterFloat("RightHandFlashlight", "Bringing the right hand within this distance of the head will toggle the flashlight (<0 to disable)", -1.0f);
 	c_LeftHandMeleeSwingSpeed = config.RegisterFloat("LeftHandMeleeSwingSpeed", "Minimum vertical velocity of left hand required to initiate a melee attack in m/s (<0 to disable)", 2.5f);
 	c_RightHandMeleeSwingSpeed = config.RegisterFloat("RightHandMeleeSwingSpeed", "Minimum vertical velocity of right hand required to initiate a melee attack in m/s (<0 to disable)", 2.5f);
-	c_CrouchHeight = config.RegisterFloat("CrouchHeight", "Minimum height to duck by in metres to automatically trigger the crouch input in game (<0 to disable)", 0.15f);
+	c_CrouchHeight = config.RegisterFloat("CrouchHeight", "Minimum height to duck by (in metres) to automatically trigger the crouch input in game (<0 to disable)", 0.15f);
 	// Hand settings
-	c_ControllerOffset = config.RegisterVector3("ControllerOffset", "Offset from the controller's position used when calculating the in game hand position", Vector3(0.0f, 0.0f, 0.0f));
-	c_ControllerRotation = config.RegisterVector3("ControllerRotation", "Rotation added to the controller when calculating the in game hand rotation", Vector3(0.0f, 0.0f, 0.0f));
+	c_ControllerOffset = config.RegisterVector3("ControllerOffset", "Offset from the controller's position used to calculate the in game hand position", Vector3(0.0f, 0.0f, 0.0f));
+	c_ControllerRotation = config.RegisterVector3("ControllerRotation", "Rotation added to the controller to calculate the in game hand rotation", Vector3(0.0f, 0.0f, 0.0f));
 	c_ScopeRenderScale = config.RegisterFloat("ScopeRenderScale", "Size of the scope render target, expressed as a proportion of the headset's render scale (e.g. 0.5 = half resolution)", 1.0f);
-	c_ScopeScale = config.RegisterFloat("ScopeScale", "Width of the scope view in metres", 0.05f);
-	c_ScopeOffsetPistol = config.RegisterVector3("ScopeOffsetPistol", "Offset of the scope view relative to the pistol's location", Vector3(-0.1f, 0.0f, 0.15f));
-	c_ScopeOffsetSniper = config.RegisterVector3("ScopeOffsetSniper", "Offset of the scope view relative to the pistol's location", Vector3(-0.15f, 0.0f, 0.15f));
-	c_ScopeOffsetRocket = config.RegisterVector3("ScopeOffsetRocket", "Offset of the scope view relative to the pistol's location", Vector3(0.1f, 0.2f, 0.1f));
+	c_ScopeScale = config.RegisterFloat("ScopeScale", "Width of the scope view (in metres)", 0.05f);
+	c_ScopeOffsetPistol = config.RegisterVector3("ScopeOffsetPistol", "Offset of the scope view, relative to the pistol's location", Vector3(-0.1f, 0.0f, 0.15f));
+	c_ScopeOffsetSniper = config.RegisterVector3("ScopeOffsetSniper", "Offset of the scope view, relative to the pistol's location", Vector3(-0.15f, 0.0f, 0.15f));
+	c_ScopeOffsetRocket = config.RegisterVector3("ScopeOffsetRocket", "Offset of the scope view, relative to the pistol's location", Vector3(0.1f, 0.2f, 0.1f));
 	c_WeaponSmoothingAmountNoZoom = config.RegisterFloat("UnzoomedWeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when not zoomed in (0 is disabled, 1 is maximum, recommended around 0-0.2)", 0.0f);
 	c_WeaponSmoothingAmountOneZoom = config.RegisterFloat("Zoom1WeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when zoomed in once, eg zooming on the pistol (0 is disabled, 1 is maximum, recommended around 0.3-0.5)", 0.4f);
 	c_WeaponSmoothingAmountTwoZoom = config.RegisterFloat("Zoom2WeaponSmoothingAmount", "Amount of smoothing applied to weapon movement when zoomed in twice, eg second zoom on sniper (0 is disabled, 1 is maximum, recommended around 0.6-1)", 0.6f);
 	// Weapon holster settings
-	c_EnableWeaponHolsters = config.RegisterBool("EnableWeaponHolsters", "When enabled Weapons can only be switched by using the 'SwitchWeapons' binding while the dominant hand is within distance of a holster", true);
+	c_EnableWeaponHolsters = config.RegisterBool("EnableWeaponHolsters", "When enabled, weapons can only be switched by using the 'SwitchWeapons' binding while the dominant hand is within distance of a holster", false);
 	c_LeftShoulderHolsterActivationDistance = config.RegisterFloat("LeftShoulderHolsterDistance", "The 'size' of the left shoulder holster. This is the distance that the dominant hand needs to be from the holster to change weapons (<0 to disable)", 0.3f);
 	c_LeftShoulderHolsterOffset = config.RegisterVector3("LeftShoulderHolsterOffset", "The (foward, left, up) Offset of the left shoulder holster relative to the headset's location", Vector3(-0.15f, 0.25f, -0.25f));
 	c_RightShoulderHolsterActivationDistance = config.RegisterFloat("RightShoulderHolsterDistance", "The 'size' of the right shoulder holster. This is the distance that the dominant hand needs to be from the holster to change weapons (<0 to disable)", 0.3f);
 	c_RightShoulderHolsterOffset = config.RegisterVector3("RightShoulderHolsterOffset", "The (foward, left, up) Offset of the right shoulder holster relative to the headset's location", Vector3(-0.15f, -0.25f, -0.25f));
 	// Misc settings
-	c_ShowRoomCentre = config.RegisterBool("ShowRoomCentre", "Draw an indicator at your feet to show where the player character is actually positioned", true);
-	c_d3d9Path = config.RegisterString("CustomD3D9Path", "If set first try to load d3d9.dll from the specified path instead of from system32", "");
-	c_TEMPViewportLeft = config.RegisterFloat("TEMP_ViewportLeft", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", -1.0f);
-	c_TEMPViewportRight = config.RegisterFloat("TEMP_ViewportRight", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", 1.0f);
-	c_TEMPViewportTop = config.RegisterFloat("TEMP_ViewportTop", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", -1.0f);
-	c_TEMPViewportBottom = config.RegisterFloat("TEMP_ViewportBottom", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", 1.0f);
+	c_ShowRoomCentre = config.RegisterBool("ShowRoomCentre", "When enabled, draws an indicator at your feet to show where the player character is actually positioned", true);
+	c_d3d9Path = config.RegisterString("CustomD3D9Path", "If set, will first try to load d3d9.dll from the specified path instead of from system32", "");
+	c_TEMPViewportLeft = config.RegisterFloat("TEMP_ViewportLeft", "Some headsets experience warping when turning. As a workaround, the viewport scaling has been exposed so users can adjust them until the warping stops", -1.0f);
+	c_TEMPViewportRight = config.RegisterFloat("TEMP_ViewportRight", "Some headsets experience warping when turning. As a workaround, the viewport scaling has been exposed so users can adjust them until the warping stops", 1.0f);
+	c_TEMPViewportTop = config.RegisterFloat("TEMP_ViewportTop", "Some headsets experience warping when turning. As a workaround, the viewport scaling has been exposed so users can adjust them until the warping stops", -1.0f);
+	c_TEMPViewportBottom = config.RegisterFloat("TEMP_ViewportBottom", "Some headsets experience warping when turning. As a workaround, the viewport scaling has been exposed so users can adjust them until the warping stops", 1.0f);
 
 	const bool bLoadedConfig = config.LoadFromFile("VR/config.txt");
 	const bool bSavedConfig = config.SaveToFile("VR/config.txt");
@@ -844,7 +844,7 @@ void Game::SetupConfigs()
 	// First run, but couldn't create config file
 	if (!bLoadedConfig && !bSavedConfig)
 	{
-		Logger::err << "Could not create /VR/config.txt.\nHalo may have been installed in Program Files, to generate the config file either run halo.exe as an administrator or reinstall the game in a non-protected folder (e.g. Documents)." << std::endl;
+		Logger::err << "Could not create /VR/config.txt.\nHalo may have been installed in Program Files. To generate the config file, either run halo.exe as an administrator or reinstall the game in a non-protected folder (e.g. Documents)." << std::endl;
 	}
 
 	weaponHandler.localOffset = Vector3(c_ControllerOffset->Value().x, c_ControllerOffset->Value().y, c_ControllerOffset->Value().z);
