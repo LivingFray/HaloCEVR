@@ -491,6 +491,10 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 		return;
 	}
 
+	cachedViewModel.weaponType = GetWeaponType(weapon);
+
+	cachedViewModel.IsLeftHanded = Game::instance.c_LeftHanded->Value();
+
 	if (!weapon->WeaponData)
 	{
 		Logger::log << "[UpdateCache] Can't find weapon data in weapon asset " << weaponObj->tagID << std::endl;
@@ -514,23 +518,6 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	Logger::log << "[UpdateCache] GBXModelTag = " << reversedGroup << std::endl;
 	Logger::log << "[UpdateCache] GBXModelPath = " << model->ModelPath << std::endl;
 #endif
-
-	if (strstr(model->ModelPath, "\\pistol\\"))
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Pistol;
-	}
-	else if (strstr(model->ModelPath, "\\sniper rifle\\"))
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Sniper;
-	}
-	else if (strstr(model->ModelPath, "\\rocket launcher\\"))
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Rocket;
-	}
-	else
-	{
-		cachedViewModel.scopeType = ScopedWeaponType::Unknown;
-	}
 
 	if (!model->ModelData)
 	{
@@ -574,6 +561,53 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	}
 }
 
+inline WeaponType WeaponHandler::GetWeaponType(Asset_Weapon* weapon) const
+{
+	WeaponType foundType = WeaponType::Unknown;
+	if (strstr(weapon->WeaponAsset, "\\plasma pistol\\"))
+	{
+		foundType = WeaponType::PlasmaPistol;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\sniper rifle\\"))
+	{
+		foundType = WeaponType::Sniper;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\pistol\\"))
+	{
+		foundType = WeaponType::Pistol;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\plasma rifle\\"))
+	{
+		foundType = WeaponType::PlasmaRifle;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\shotgun\\"))
+	{
+		foundType = WeaponType::Shotgun;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\assault rifle\\"))
+	{
+		foundType = WeaponType::AssaultRifle;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\rocket launcher\\"))
+	{
+		foundType = WeaponType::RocketLauncher;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\flamethrower\\"))
+	{
+		foundType = WeaponType::Flamethrower;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\plasma_cannon\\"))
+	{
+		foundType = WeaponType::PlasmaCannon;
+	}
+	else
+	{
+		Logger::log << "[UpdateCache] Unknown weapon with asset " << weapon->WeaponAsset << std::endl;
+	}
+
+	return foundType;
+}
+
 inline void WeaponHandler::TransformToMatrix4(Transform& inTransform, Matrix4& outMatrix) const
 {
 	// Assumes scale of 1!
@@ -588,18 +622,18 @@ inline void WeaponHandler::TransformToMatrix4(Transform& inTransform, Matrix4& o
 	outMatrix.setColumn(3, inTransform.translation);
 }
 
-Vector3 WeaponHandler::GetScopeLocation(ScopedWeaponType type) const
+Vector3 WeaponHandler::GetScopeLocation(WeaponType type) const
 {
 	Vector3 Scale = Game::instance.c_LeftHanded->Value() ? Vector3(1.0f, -1.0f, 1.0f) : Vector3(1.0f, 1.0f, 1.0f);
 
 	switch (type)
 	{
-	case ScopedWeaponType::Rocket:
+	case WeaponType::RocketLauncher:
 		return Game::instance.c_ScopeOffsetRocket->Value() * Scale;
-	case ScopedWeaponType::Sniper:
+	case WeaponType::Sniper:
 		return Game::instance.c_ScopeOffsetSniper->Value() * Scale;
-	case ScopedWeaponType::Unknown:
-	case ScopedWeaponType::Pistol:
+	case WeaponType::Unknown:
+	case WeaponType::Pistol:
 		return Game::instance.c_ScopeOffsetPistol->Value() * Scale;
 	}
 	return Vector3(0.0f, 0.0f, 0.0f);
@@ -739,7 +773,7 @@ bool WeaponHandler::GetLocalWeaponScope(Vector3& outPosition, Vector3& outAim, V
 
 	Matrix3 finalRot = cachedViewModel.fireRotation * handRotation3;
 
-	Vector3 scopeOffset = GetScopeLocation(cachedViewModel.scopeType);
+	Vector3 scopeOffset = GetScopeLocation(cachedViewModel.weaponType);
 
 	Vector3 gunOffset = handPos + handRotation * cachedViewModel.gunOffset * Game::instance.WorldToMetres(1.0f);
 
@@ -772,7 +806,7 @@ bool WeaponHandler::GetWorldWeaponScope(Vector3& outPosition, Vector3& outAim, V
 
 bool WeaponHandler::IsSniperScope() const
 {
-	return cachedViewModel.scopeType == ScopedWeaponType::Sniper;
+	return cachedViewModel.weaponType == WeaponType::Sniper;
 }
 
 void WeaponHandler::RelocatePlayer(HaloID& PlayerID)
@@ -830,9 +864,56 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 
 	// Check if the weapon is being used by the player
 	HaloID PlayerID;
-	if (Object && Helpers::GetLocalPlayerID(PlayerID) && PlayerID == Object->parent)
+	bool foundPlayer = Helpers::GetLocalPlayerID(PlayerID);
+	if (Object && foundPlayer && PlayerID == Object->parent)
 	{
+		HandleWeaponHaptics();
 		RelocatePlayer(PlayerID);
+	}
+}
+
+inline void WeaponHandler::HandleWeaponHaptics() const
+{
+	IVR* vr = Game::instance.GetVR();
+	if (vr)
+	{
+		WeaponHaptic haptic = Game::instance.weaponHapticsConfig.GetWeaponHaptics(cachedViewModel.weaponType);
+
+		Logger::log << "[Weapon Haptics] triggering haptics for weapon " << haptic.Description << std::endl;
+
+		ControllerRole dominantHand = ControllerRole::Right;
+		ControllerRole nondominantHand = ControllerRole::Left;
+		
+		if (cachedViewModel.IsLeftHanded)
+		{
+			Logger::log << "[Weapon Haptics] Left is hand dominant hand. " << haptic.Description << std::endl;
+
+			dominantHand = ControllerRole::Left;
+			nondominantHand = ControllerRole::Right;
+		}
+		else
+		{
+			Logger::log << "[Weapon Haptics] Right is hand dominant hand. " << haptic.Description << std::endl;
+		}
+
+		if (Game::instance.bUseTwoHandAim)
+		{
+			Logger::log << "[Weapon Haptics] Gun is in two handed mode. " << haptic.Description << std::endl;
+			WeaponHapticArg dominantHaptics = haptic.TwoHand.Dominant;
+			WeaponHapticArg nondominantHaptics = haptic.TwoHand.Nondominant;
+			vr->TriggerHapticVibration(dominantHand, dominantHaptics.StartSecondsDelay, dominantHaptics.DurationSeconds, dominantHaptics.Frequency, dominantHaptics.Amplitude);
+			vr->TriggerHapticVibration(nondominantHand, nondominantHaptics.StartSecondsDelay, nondominantHaptics.DurationSeconds, nondominantHaptics.Frequency, nondominantHaptics.Amplitude);
+		}
+		else 
+		{
+			Logger::log << "[Weapon Haptics] Gun is in one handed mode. " << haptic.Description << std::endl;
+			WeaponHapticArg hapticArgs = haptic.OneHand;
+			vr->TriggerHapticVibration(dominantHand, hapticArgs.StartSecondsDelay, hapticArgs.DurationSeconds, hapticArgs.Frequency, hapticArgs.Amplitude);
+		}
+	}
+	else
+	{
+		Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << " but vrinput was null" << std::endl;
 	}
 }
 

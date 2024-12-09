@@ -2,14 +2,23 @@
 #include "Maths/Vectors.h"
 #include "Maths/Matrices.h"
 #include "Helpers/Objects.h"
+
 #define DRAW_DEBUG_AIM 0
 
-enum class ScopedWeaponType
+enum class WeaponType
 {
 	Unknown,
 	Pistol,
-	Rocket,
-	Sniper
+	AssaultRifle,
+	Shotgun,
+	RocketLauncher,
+	Sniper,
+	Flamethrower,
+	PlasmaPistol,
+	PlasmaRifle,
+	PlasmaCannon,
+	Needler,
+	FuelRod
 };
 
 class WeaponHandler
@@ -39,10 +48,12 @@ protected:
 	inline void CreateEndCap(int boneIndex, const struct Bone& currentBone, struct Transform* outBoneTransforms) const;
 	inline void MoveBoneToTransform(int boneIndex, const class Matrix4& newTransform, struct Transform* realTransforms, struct Transform* outBoneTransforms) const;
 	inline void UpdateCache(struct HaloID& id, struct AssetData_ModelAnimations* animationData);
+	inline WeaponType GetWeaponType(struct Asset_Weapon* weapon) const;
+	inline void HandleWeaponHaptics() const;
 
 	inline void TransformToMatrix4(struct Transform& inTransform, class Matrix4& outMatrix) const;
 
-	inline Vector3 GetScopeLocation(ScopedWeaponType Type) const;
+	inline Vector3 GetScopeLocation(WeaponType Type) const;
 
 	Matrix4 GetDominantHandTransform() const;
 
@@ -58,7 +69,10 @@ protected:
 		Vector3 fireOffset;
 		Vector3 gunOffset;
 		Matrix3 fireRotation;
-		ScopedWeaponType scopeType = ScopedWeaponType::Unknown;
+		WeaponType weaponType = WeaponType::Unknown;
+		bool IsLeftHanded = false;
+
+		
 	} cachedViewModel;
 
 	UnitDynamicObject* weaponFiredPlayer = nullptr;
