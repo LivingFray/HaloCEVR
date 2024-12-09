@@ -641,60 +641,48 @@ Vector3 WeaponHandler::GetScopeLocation(WeaponType type) const
 
 Matrix4 WeaponHandler::GetDominantHandTransform() const
 {
-	ControllerRole dominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Left : ControllerRole::Right;
-	ControllerRole nonDominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Right : ControllerRole::Left;
+	Matrix4 controllerTransform;
+	Vector3 actualControllerPos;
+	Vector3 toOffHand;
+	Vector3 smoothedPosition; 
 
-	Matrix4 controllerTransform = Game::instance.GetVR()->GetControllerTransform(dominant, true);
-
-	Vector3 poseDirection;
-	bool bHasPoseData = Game::instance.GetVR()->TryGetControllerFacing(dominant, poseDirection);
-
-	// When 2h aiming point the main hand at the offhand 
-	if (Game::instance.bUseTwoHandAim || bHasPoseData)
+	if (!Game::instance.GetCalculatedHandPositions(controllerTransform, actualControllerPos, toOffHand))
 	{
-		Matrix4 aimingTransform = Game::instance.GetVR()->GetRawControllerTransform(dominant, true);
-		Matrix4 offHandTransform = Game::instance.GetVR()->GetRawControllerTransform(nonDominant, true);
-
-		const Vector3 actualControllerPos = controllerTransform * Vector3(0.0f, 0.0f, 0.0f);
-		const Vector3 mainHandPos = aimingTransform * Vector3(0.0f, 0.0f, 0.0f);
-		const Vector3 offHandPos = Game::instance.bUseTwoHandAim ? offHandTransform * Vector3(0.0f, 0.0f, 0.0f) : mainHandPos + poseDirection;
-		const Vector3 toOffHand = (offHandPos - mainHandPos).normalize();
-
-		Vector3 upVector = controllerTransform.getForwardAxis();
-
-		// In the unlikely event the player decides to put their hand directly above their other hand, avoid a DIV/0 error when doing the lookat
-		if (upVector.dot(toOffHand) == 1.0f)
-		{
-			upVector += controllerTransform.getUpAxis() * 0.001f;
-		}
-
-		/*
-		Matrix3 rot;
-		for (int i = 0; i < 3; i++)
-		{
-			offHandTransform.setColumn(i, &rot.get()[i * 4]);
-		}
-		*/
-
-		controllerTransform.lookAt(actualControllerPos + toOffHand, upVector);
-
-		controllerTransform.translate(-actualControllerPos);
-		controllerTransform.rotate(-90.0f, controllerTransform.getUpAxis());
-		controllerTransform.rotate(-90.0f, controllerTransform.getLeftAxis());
-		controllerTransform.translate(actualControllerPos);
-
-		// Apply offset from weapon aiming here
-
-		Matrix4 cachedRot4;
-
-		for (int i = 0; i < 3; i++)
-		{
-			cachedRot4.setColumn(i, cachedViewModel.fireRotation.getColumn(i));
-		}
-
-		controllerTransform *= cachedRot4.invertAffine();
+		return controllerTransform;
 	}
 
+	Vector3 upVector = controllerTransform.getForwardAxis();
+
+	// In the unlikely event the player decides to put their hand directly above their other hand, avoid a DIV/0 error when doing the lookat
+	if (upVector.dot(toOffHand) == 1.0f)
+	{
+		upVector += controllerTransform.getUpAxis() * 0.001f;
+	}
+
+	/*
+	Matrix3 rot;
+	for (int i = 0; i < 3; i++)
+	{
+		offHandTransform.setColumn(i, &rot.get()[i * 4]);
+	}
+	*/
+	smoothedPosition = Game::instance.GetSmoothedInput();
+	controllerTransform.lookAt(smoothedPosition, upVector);
+
+	controllerTransform.translate(-actualControllerPos);
+	controllerTransform.rotate(-90.0f, controllerTransform.getUpAxis());
+	controllerTransform.rotate(-90.0f, controllerTransform.getLeftAxis());
+	controllerTransform.translate(actualControllerPos);
+
+	// Apply offset from weapon aiming here
+	Matrix4 cachedRot4;
+
+	for (int i = 0; i < 3; i++)
+	{
+		cachedRot4.setColumn(i, cachedViewModel.fireRotation.getColumn(i));
+	}
+
+	controllerTransform *= cachedRot4.invertAffine();
 	return controllerTransform;
 }
 
@@ -737,7 +725,7 @@ bool WeaponHandler::GetLocalWeaponAim(Vector3& outPosition, Vector3& outAim) con
 	Vector3 worldHandPos = Helpers::GetCamera().position + handPos * Game::instance.MetresToWorld(1.0f);
 	Game::instance.inGameRenderer.DrawCoordinate(worldHandPos, handRotation3, 0.015f, false);
 
-	Vector3 aimTarget = worldOutPos + outAim * Game::instance.MetresToWorld(Game::instance.c_UIOverlayDistance->Value());
+	Vector3 aimTarget = worldOutPos + outAim * Game::instance.MetresToWorld(Game::instance.c_CrosshairDistance->Value());
 	Game::instance.inGameRenderer.DrawLine3D(worldOutPos, aimTarget, D3DCOLOR_ARGB(255, 255, 20, 20));
 
 	Game::instance.inGameRenderer.DrawLine3D(lastFireLocation, lastFireAim, D3DCOLOR_ARGB(255, 20, 255, 255));
@@ -800,7 +788,7 @@ bool WeaponHandler::GetLocalWeaponScope(Vector3& outPosition, Vector3& outAim, V
 	Vector3 worldHandPos = Helpers::GetCamera().position + handPos * Game::instance.MetresToWorld(1.0f);
 	Game::instance.inGameRenderer.DrawCoordinate(worldHandPos, handRotation3, 0.015f, false);
 
-	Vector3 aimTarget = worldOutPos + outAim * Game::instance.MetresToWorld(Game::instance.c_UIOverlayDistance->Value());
+	Vector3 aimTarget = worldOutPos + outAim * Game::instance.MetresToWorld(Game::instance.c_CrosshairDistance->Value());
 	Game::instance.inGameRenderer.DrawLine3D(worldOutPos, aimTarget, D3DCOLOR_ARGB(255, 255, 20, 20));
 #endif
 

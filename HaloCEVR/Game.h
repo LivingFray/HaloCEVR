@@ -33,6 +33,7 @@ public:
 	void PreDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawFrame(struct Renderer* renderer, float deltaTime);
+	Vector3 GetSmoothedInput();
 
 	bool PreDrawHUD();
 	void PostDrawHUD();
@@ -54,8 +55,11 @@ public:
 	void PostFireWeapon(HaloID& WeaponID, short param2);
 	void PreThrowGrenade(HaloID& playerID);
 	void PostThrowGrenade(HaloID& playerID);
+	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand); 
 
 	void UpdateInputs();
+	void CalculateSmoothedInput();
+
 	void UpdateCamera(float& yaw, float& pitch);
 	void SetMousePosition(int& x, int& y);
 	void UpdateMouseInfo(struct MouseInfo* mouseInfo);
@@ -81,7 +85,7 @@ public:
 	float lastDeltaTime = 0.0f;
 
 	bool bNeedsRecentre = true;
-	bool bUseTwoHandAim = true;
+	bool bUseTwoHandAim = false;
 
 	InGameRenderer inGameRenderer;
 	InGameRenderer scopeRenderer;
@@ -166,8 +170,12 @@ public:
 	BoolProperty* c_ShowConsole = nullptr;
 	BoolProperty* c_DrawMirror = nullptr;
 	IntProperty* c_MirrorEye = nullptr;
+	FloatProperty* c_CrosshairDistance = nullptr;
+	FloatProperty* c_CrosshairScale = nullptr;
+	FloatProperty* c_MenuOverlayDistance = nullptr;
 	FloatProperty* c_UIOverlayDistance = nullptr;
 	FloatProperty* c_UIOverlayScale = nullptr;
+	FloatProperty* c_MenuOverlayScale = nullptr;
 	FloatProperty* c_UIOverlayCurvature = nullptr;
 	IntProperty* c_UIOverlayWidth = nullptr;
 	IntProperty* c_UIOverlayHeight = nullptr;
@@ -181,6 +189,11 @@ public:
 	FloatProperty* c_VerticalVehicleTurnAmount = nullptr;
 	FloatProperty* c_LeftHandFlashlightDistance = nullptr;
 	FloatProperty* c_RightHandFlashlightDistance = nullptr;
+	BoolProperty* c_EnableWeaponHolsters = nullptr;
+	FloatProperty* c_LeftShoulderHolsterActivationDistance = nullptr;
+	Vector3Property* c_LeftShoulderHolsterOffset = nullptr;
+	FloatProperty* c_RightShoulderHolsterActivationDistance = nullptr;
+	Vector3Property* c_RightShoulderHolsterOffset = nullptr;
 	Vector3Property* c_ControllerOffset = nullptr;
 	Vector3Property* c_ControllerRotation = nullptr;
 	FloatProperty* c_ScopeRenderScale = nullptr;
@@ -193,7 +206,15 @@ public:
 	FloatProperty* c_CrouchHeight = nullptr;
 	BoolProperty* c_ShowRoomCentre = nullptr;
 	BoolProperty* c_ToggleGrip = nullptr;
+	FloatProperty* c_TwoHandDistance = nullptr;
 	BoolProperty* c_LeftHanded = nullptr;
 	StringProperty* c_d3d9Path = nullptr;
+	FloatProperty* c_WeaponSmoothingAmountNoZoom = nullptr;
+	FloatProperty* c_WeaponSmoothingAmountOneZoom = nullptr;
+	FloatProperty* c_WeaponSmoothingAmountTwoZoom = nullptr;
+	FloatProperty* c_TEMPViewportLeft = nullptr;
+	FloatProperty* c_TEMPViewportRight = nullptr;
+	FloatProperty* c_TEMPViewportTop = nullptr;
+	FloatProperty* c_TEMPViewportBottom = nullptr;
 };
 

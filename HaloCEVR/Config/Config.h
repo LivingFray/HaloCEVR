@@ -116,7 +116,7 @@ public:
 		return a.second->guid < b.second->guid;
 	}
 
-	void SaveToFile(const std::string& filename) const {
+	bool SaveToFile(const std::string& filename) const {
 		std::ofstream file(filename);
 		std::vector<std::pair<std::string, Property*>> sortedProperties(properties_.begin(), properties_.end());
 		std::sort(sortedProperties.begin(), sortedProperties.end(), [](std::pair<std::string, Property*> a, std::pair<std::string, Property*> b) { return a.second->guid < b.second->guid; });
@@ -145,10 +145,20 @@ public:
 				file << name << " = " << vec3Prop->Value() << "\n\n";
 			}
 		}
+
+		file.close();
+
+		return file.good();
 	}
 
-	void LoadFromFile(const std::string& filename) {
+	bool LoadFromFile(const std::string& filename) {
 		std::ifstream file(filename);
+
+		if (!file.good())
+		{
+			return false;
+		}
+
 		std::string line;
 		while (std::getline(file, line)) {
 			// Ignore comments
@@ -238,6 +248,8 @@ public:
 				Logger::log << "[Config] " << name << " = " << vProp->Value() << ((vProp->Value() != vProp->DefaultValue()) ? "*" : "") << std::endl;
 			}
 		}
+
+		return true;
 	}
 
 	BoolProperty* GetBool(const std::string& name) const {
