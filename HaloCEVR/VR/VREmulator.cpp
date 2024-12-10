@@ -7,6 +7,7 @@
 #include "../Logger.h"
 #include "../DirectXWrappers/IDirect3DDevice9ExWrapper.h"
 #include "../Game.h"
+#include "IVR.h"
 
 template<typename T, std::size_t N>
 constexpr std::size_t arraySize(T(&)[N]) {
@@ -508,4 +509,25 @@ void VREmulator::CreateTexAndSurface(int index, UINT width, UINT height, DWORD u
 			Logger::log << "Failed to get vr render surface from " << index << ": " << result << std::endl;
 		}
 	}
+}
+
+void VREmulator::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
+{
+#if HAPTICS_EMULATED_DEBUG
+	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role) 
+		<< 
+		"startSeconds: " 
+		<< fStartSecondsFromNow
+		<< "\n"
+		"duration: "
+		<< fDurationSeconds
+		<< "\n"
+		"frequency: "
+		<< fFrequency
+		<< "\n"
+		"amplitude: "
+		<< fAmplitude
+		<< "\n"
+		<< std::endl;
+#endif
 }

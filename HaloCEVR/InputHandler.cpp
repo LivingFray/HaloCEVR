@@ -74,6 +74,8 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 	ApplyImpulseBoolInput(Zoom);
 	ApplyBoolInput(Reload);
 
+	Game::instance.bIsMouse1Down = controls.Fire;
+
 	unsigned char MotionControlFlashlight = UpdateFlashlight();
 	if (MotionControlFlashlight > 0)
 	{

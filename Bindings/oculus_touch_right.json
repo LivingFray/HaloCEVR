@@ -1,7 +1,16 @@
 {
     "bindings": {
         "/actions/default": {
-            "haptics": [],
+            "haptics": [
+                {
+                    "output": "/actions/default/out/RightFire",
+                    "path": "/user/hand/right/output/haptic"
+                },
+                {
+                    "output": "/actions/default/out/LeftFire",
+                    "path": "/user/hand/left/output/haptic"
+                }
+            ],
             "poses": [
                 {
                     "output": "/actions/default/in/LeftTip",

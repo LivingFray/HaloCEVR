@@ -12,6 +12,7 @@
 #include "WeaponHandler.h"
 #include "InputHandler.h"
 #include "InGameRenderer.h"
+#include "WeaponHapticsConfig.h"
 
 enum class ERenderState { UNKNOWN, LEFT_EYE, RIGHT_EYE, GAME, SCOPE};
 
@@ -85,12 +86,15 @@ public:
 
 	bool bNeedsRecentre = true;
 	bool bUseTwoHandAim = false;
+	bool bIsMouse1Down = false;
 
 	InGameRenderer inGameRenderer;
 	InGameRenderer scopeRenderer;
 
 	bool bDetectedChimera = false;
 	Vector3 LastLookDir;
+	WeaponHapticsConfigManager weaponHapticsConfig;
+
 protected:
 
 	void CreateConsole();
@@ -123,7 +127,6 @@ protected:
 	FILE* consoleOut = nullptr;
 
 	Config config;
-
 	IVR* vr;
 
 	RenderTarget gameRenderTargets[8];
