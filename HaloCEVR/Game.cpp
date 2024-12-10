@@ -649,6 +649,11 @@ void Game::PostFireWeapon(HaloID& weaponID, short param2)
 	weaponHandler.PostFireWeapon(weaponID, param2);
 }
 
+void Game::HandlePlasmaPistolCharge()
+{
+	weaponHandler.HandlePlasmaPistolCharge();
+}
+
 void Game::PreThrowGrenade(HaloID& playerID)
 {
 	weaponHandler.PreThrowGrenade(playerID);

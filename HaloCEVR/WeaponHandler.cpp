@@ -872,10 +872,26 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 	}
 }
 
+void WeaponHandler::HandlePlasmaPistolCharge()
+{
+	IVR* vr = Game::instance.GetVR();
+
+	if (vr && cachedViewModel.weaponType == WeaponType::PlasmaPistol)
+	{
+		bool canChargePistol = Game::instance.weaponHapticsConfig.PlasmaPistolCanCharge();
+
+		if (canChargePistol)
+		{
+			HandleWeaponHaptics();
+		}
+	}
+}
+
 inline void WeaponHandler::HandleWeaponHaptics() const
 {
 	IVR* vr = Game::instance.GetVR();
-	if (vr)
+
+	if (vr && cachedViewModel.weaponType != WeaponType::Unknown)
 	{
 		WeaponHaptic haptic = Game::instance.weaponHapticsConfig.GetWeaponHaptics(cachedViewModel.weaponType);
 
@@ -915,6 +931,8 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 	{
 		Logger::log << "[Weapon Haptics] Shot gun " << static_cast<int>(cachedViewModel.weaponType) << " but vrinput was null" << std::endl;
 	}
+
+	Game::instance.weaponHapticsConfig.WeaponFired(cachedViewModel.weaponType);
 }
 
 void WeaponHandler::PostFireWeapon(HaloID& weaponID, short param2)

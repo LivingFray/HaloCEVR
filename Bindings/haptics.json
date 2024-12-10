@@ -1,5 +1,9 @@
 {
     "ReloadOnChange":  true,
+	"PlasmaPistol": {
+		"CooldownMs": 2000,
+		"RampUpMs": 2000
+	}
     "Haptics": [
         {
             "Weapon": 0,

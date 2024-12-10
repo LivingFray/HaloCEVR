@@ -36,6 +36,16 @@ void WeaponHapticsConfigManager::LoadConfig()
 		std::ifstream ifs(hapticsConfig);
 		json jf = json::parse(ifs);
 
+		try 
+		{
+			json plasmaPistol = jf["PlasmaPistol"];
+			plasmaPistolSettings.CooldownMs = std::chrono::milliseconds(plasmaPistol["CooldownMs"]);
+			plasmaPistolSettings.RampUpMs = std::chrono::milliseconds(plasmaPistol["RampUpMs"]);
+		}
+		catch (...)
+		{
+			Logger::log << "[WeaponHapticsConfig] There was an issue loading PlasmaPistolSettings " << std::endl;
+		}
 
 		ReloadOnChange = jf["ReloadOnChange"];
 
@@ -70,13 +80,17 @@ void WeaponHapticsConfigManager::LoadConfig()
 		}
 
 #if HAPTICS_DEBUG
+
+		Logger::log << "[WeaponHapticsConfig]: Plasma Pistol Cooldown:" << plasmaPistolSettings.CooldownMs.count() << std::endl;
+
+
 		for (WeaponHaptic haptic : hapticList)
 		{
 			Logger::log << "[WeaponHapticsConfig] Haptic Item " << static_cast<int>(haptic.Weapon) << std::endl;
-			Logger::log << "Description: " << haptic.Description << std::endl;
-			Logger::log << "OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
-			Logger::log << "TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
-			Logger::log << "TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
+			Logger::log << "[WeaponHapticsConfig] Description: " << haptic.Description << std::endl;
+			Logger::log << "[WeaponHapticsConfig] OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
+			Logger::log << "[WeaponHapticsConfig] TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
+			Logger::log << "[WeaponHapticsConfig] TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
 		}
 #endif
 	}
@@ -91,6 +105,42 @@ WeaponHapticArg WeaponHapticsConfigManager::GetWeaponHapticArgFromJson(json arg)
 	haptic.Frequency = arg["Frequency"];
 	haptic.Amplitude = arg["Amplitude"];
 	return haptic;
+}
+
+
+bool WeaponHapticsConfigManager::PlasmaPistolCanCharge()
+{
+	auto now = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = now - plasmaPistolSettings.LastFire;
+
+	bool canCharge = elapsed_seconds >= plasmaPistolSettings.CooldownMs;
+
+#if HAPTICS_DEBUG
+	Logger::log << "[WeaponHapticsConfig]: Checking if plasma pistol can fire" << std::endl;
+	Logger::log << "[WeaponHapticsConfig]: duration was: " << elapsed_seconds.count() << std::endl;
+	Logger::log << "[WeaponHapticsConfig]: cooldown: " << plasmaPistolSettings.CooldownMs.count() << std::endl;
+	Logger::log << "[WeaponHapticsConfig]: can charge " << canCharge << std::endl;
+#endif
+
+	if (canCharge && plasmaPistolSettings.isCharging == false)
+	{
+		plasmaPistolSettings.isCharging = true;
+		plasmaPistolSettings.ChargingTime = now;
+	}
+
+	return canCharge;
+}
+
+void WeaponHapticsConfigManager::WeaponFired(WeaponType Weapon)
+{
+	if (Weapon == WeaponType::PlasmaPistol)
+	{
+		Logger::log << "[WeaponHapticsConfig]: settings weapon fired" << std::endl;
+
+		plasmaPistolSettings.LastFire = std::chrono::system_clock::now();
+	}
+
+	plasmaPistolSettings.isCharging = false;
 }
 
 WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
@@ -120,6 +170,43 @@ WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 			break;
 		}
 	}
+
+	if (Weapon == WeaponType::PlasmaPistol)
+	{
+		auto now = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = now - plasmaPistolSettings.ChargingTime;
+
+		long long chargeDuration = std::min<long long>(plasmaPistolSettings.RampUpMs.count(), elapsed_seconds.count());
+
+		double percentageOfCharge = chargeDuration / plasmaPistolSettings.RampUpMs.count();
+
+		WeaponHapticArg plasmaPistolHaptics = {};
+		WeaponHapticTwoHand plasmaPistolTwoHands = {};
+
+		plasmaPistolHaptics.Amplitude = haptic.OneHand.Amplitude * percentageOfCharge;
+		plasmaPistolHaptics.DurationSeconds = haptic.OneHand.DurationSeconds;
+		plasmaPistolHaptics.Frequency = haptic.OneHand.Frequency * percentageOfCharge;
+		plasmaPistolHaptics.StartSecondsDelay = 0;
+
+		plasmaPistolTwoHands.Dominant.Amplitude = haptic.TwoHand.Dominant.Amplitude * percentageOfCharge;
+		plasmaPistolTwoHands.Dominant.DurationSeconds = haptic.TwoHand.Dominant.DurationSeconds;
+		plasmaPistolTwoHands.Dominant.Frequency = haptic.TwoHand.Dominant.Frequency * percentageOfCharge;
+		plasmaPistolTwoHands.Dominant.StartSecondsDelay = haptic.TwoHand.Dominant.StartSecondsDelay;
+
+		plasmaPistolTwoHands.Nondominant.Amplitude = haptic.TwoHand.Nondominant.Amplitude * percentageOfCharge;
+		plasmaPistolTwoHands.Nondominant.DurationSeconds = haptic.TwoHand.Nondominant.DurationSeconds;
+		plasmaPistolTwoHands.Nondominant.Frequency = haptic.TwoHand.Nondominant.Frequency * percentageOfCharge;
+		plasmaPistolTwoHands.Nondominant.StartSecondsDelay = haptic.TwoHand.Nondominant.StartSecondsDelay;
+
+		WeaponHaptic plasmaPistolAdjusted = {};
+		plasmaPistolAdjusted.Description = haptic.Description;
+		plasmaPistolAdjusted.Weapon = haptic.Weapon;
+		plasmaPistolAdjusted.OneHand = plasmaPistolHaptics;
+		plasmaPistolAdjusted.TwoHand = plasmaPistolTwoHands;
+
+		haptic = plasmaPistolAdjusted;
+	}
+
 	return haptic;
 
 }

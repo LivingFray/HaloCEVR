@@ -2,7 +2,7 @@
 #include <../../../ThirdParty/nlohmann/json.hpp>
 #include "WeaponHandler.h"
 
-#define HAPTICS_DEBUG 0
+#define HAPTICS_DEBUG 1
 
 
 using json = nlohmann::json;
@@ -29,6 +29,15 @@ struct WeaponHaptic
 
 };
 
+struct PlasmaPistolSettings
+{
+    std::chrono::milliseconds CooldownMs = std::chrono::milliseconds(0);
+    std::chrono::milliseconds RampUpMs = std::chrono::milliseconds(0);
+    std::chrono::system_clock::time_point LastFire;
+    std::chrono::system_clock::time_point ChargingTime;
+    bool isCharging = false;
+};
+
 struct WeaponHapticsConfig
 {
     std::vector<WeaponHaptic> Haptics;
@@ -43,10 +52,13 @@ public:
     void LoadConfig();
     std::filesystem::file_time_type Version;
     bool ReloadOnChange = true;
+    bool PlasmaPistolCanCharge();
+    void WeaponFired(WeaponType Weapon);
+
 
 protected:
     std::list<WeaponHaptic> hapticList;
-
+    PlasmaPistolSettings plasmaPistolSettings = {};
     WeaponHapticArg GetWeaponHapticArgFromJson(json WeaponHapticArg);
 
 private:
