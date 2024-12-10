@@ -592,9 +592,9 @@ void Hooks::H_HandleInputs()
 
 	if (Game::instance.bIsMouse1Down)
 	{
-		Game::instance.HandlePlasmaPistolCharge();
+		Game::instance.SetPlasmaPistolCharge();
 	}
-
+	Game::instance.HandlePlasmaPistolCharge();
 }
 
 void __declspec(naked) Hooks::H_UpdatePitchYaw()

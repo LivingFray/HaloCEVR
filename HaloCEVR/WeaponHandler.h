@@ -26,6 +26,7 @@ class WeaponHandler
 public:
 	void UpdateViewModel(struct HaloID& id, struct Vector3* pos, struct Vector3* facing, struct Vector3* up, struct TransformQuat* boneTransforms, struct Transform* outBoneTransforms);
 	void HandlePlasmaPistolCharge();
+	void SetPlasmaPistolCharge();
 	void PreFireWeapon(HaloID& weaponID, short param2);
 	void PostFireWeapon(HaloID& weaponID, short param2);
 	void PreThrowGrenade(HaloID& playerID);

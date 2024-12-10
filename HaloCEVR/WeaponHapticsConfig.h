@@ -31,12 +31,8 @@ struct WeaponHaptic
 
 struct PlasmaPistolSettings
 {
-    int CooldownTicks = 0;
     int RampUpTicks = 0;
-    int CooldownTimer = 0;
-    int RampUpTimer = 0;
-    int CooldownDeadzoneTicks = 0;
-    int CooldownGrowthFactor = 0;
+    int RampUpTimer = RampUpTicks;
     bool isCharging = false;
 };
 
@@ -54,7 +50,8 @@ public:
     void LoadConfig();
     std::filesystem::file_time_type Version;
     bool ReloadOnChange = true;
-    bool PlasmaPistolCanCharge();
+    bool IsPlasmaPistolCharging();
+    void SetPlasmaPistolCharging();
     void WeaponFired(WeaponType Weapon);
 
 

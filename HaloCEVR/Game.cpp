@@ -654,6 +654,11 @@ void Game::HandlePlasmaPistolCharge()
 	weaponHandler.HandlePlasmaPistolCharge();
 }
 
+void Game::SetPlasmaPistolCharge()
+{
+	weaponHandler.SetPlasmaPistolCharge();
+}
+
 void Game::PreThrowGrenade(HaloID& playerID)
 {
 	weaponHandler.PreThrowGrenade(playerID);

@@ -54,6 +54,7 @@ public:
 	void PreFireWeapon(HaloID& WeaponID, short param2);
 	void PostFireWeapon(HaloID& WeaponID, short param2);
 	void HandlePlasmaPistolCharge();
+	void SetPlasmaPistolCharge();
 	void PreThrowGrenade(HaloID& playerID);
 	void PostThrowGrenade(HaloID& playerID);
 	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand); 
