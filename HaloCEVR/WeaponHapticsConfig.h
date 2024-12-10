@@ -31,10 +31,12 @@ struct WeaponHaptic
 
 struct PlasmaPistolSettings
 {
-    std::chrono::milliseconds CooldownMs = std::chrono::milliseconds(0);
-    std::chrono::milliseconds RampUpMs = std::chrono::milliseconds(0);
-    std::chrono::system_clock::time_point LastFire;
-    std::chrono::system_clock::time_point ChargingTime;
+    int CooldownTicks = 0;
+    int RampUpTicks = 0;
+    int CooldownTimer = 0;
+    int RampUpTimer = 0;
+    int CooldownDeadzoneTicks = 0;
+    int CooldownGrowthFactor = 0;
     bool isCharging = false;
 };
 
