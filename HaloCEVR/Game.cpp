@@ -1,4 +1,4 @@
-#define EMULATE_VR 0
+#define EMULATE_VR 1
 #include "Game.h"
 #include "Logger.h"
 #include "Hooking/Hooks.h"
@@ -637,6 +637,13 @@ void Game::PostDrawImage(void* param1, void* param2)
 void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* up, TransformQuat* BoneTransforms, Transform* OutBoneTransforms)
 {
 	weaponHandler.UpdateViewModel(id, pos, facing, up, BoneTransforms, OutBoneTransforms);
+
+	if (Game::instance.bIsMouse1Down)
+	{
+		weaponHandler.SetPlasmaPistolCharge();
+	}
+
+	weaponHandler.HandlePlasmaPistolCharge();
 }
 
 void Game::PreFireWeapon(HaloID& weaponID, short param2)
@@ -647,16 +654,6 @@ void Game::PreFireWeapon(HaloID& weaponID, short param2)
 void Game::PostFireWeapon(HaloID& weaponID, short param2)
 {
 	weaponHandler.PostFireWeapon(weaponID, param2);
-}
-
-void Game::HandlePlasmaPistolCharge()
-{
-	weaponHandler.HandlePlasmaPistolCharge();
-}
-
-void Game::SetPlasmaPistolCharge()
-{
-	weaponHandler.SetPlasmaPistolCharge();
 }
 
 void Game::PreThrowGrenade(HaloID& playerID)

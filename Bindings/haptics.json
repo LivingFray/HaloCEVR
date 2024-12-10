@@ -1,7 +1,7 @@
 {
     "ReloadOnChange":  true,
 	"PlasmaPistol": {
-		"RampUpTicks": 30
+		"RampUpTicks": 45
 	}
     "Haptics": [
         {

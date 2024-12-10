@@ -3,6 +3,7 @@
 #include "WeaponHandler.h"
 
 #define HAPTICS_DEBUG 1
+#define HAPTICS_EMULATED_DEBUG 0
 
 
 using json = nlohmann::json;

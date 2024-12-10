@@ -53,8 +53,6 @@ public:
 	void UpdateViewModel(HaloID& id, struct Vector3* pos, struct Vector3* facing, struct Vector3* up, struct TransformQuat* BoneTransforms, struct Transform* OutBoneTransforms);
 	void PreFireWeapon(HaloID& WeaponID, short param2);
 	void PostFireWeapon(HaloID& WeaponID, short param2);
-	void HandlePlasmaPistolCharge();
-	void SetPlasmaPistolCharge();
 	void PreThrowGrenade(HaloID& playerID);
 	void PostThrowGrenade(HaloID& playerID);
 	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand); 

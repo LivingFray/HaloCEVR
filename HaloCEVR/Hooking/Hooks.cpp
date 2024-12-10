@@ -589,12 +589,6 @@ void Hooks::H_HandleInputs()
 
 	Game::instance.UpdateInputs();
 	Game::instance.CalculateSmoothedInput();
-
-	if (Game::instance.bIsMouse1Down)
-	{
-		Game::instance.SetPlasmaPistolCharge();
-	}
-	Game::instance.HandlePlasmaPistolCharge();
 }
 
 void __declspec(naked) Hooks::H_UpdatePitchYaw()

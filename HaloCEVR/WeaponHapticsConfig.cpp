@@ -107,10 +107,6 @@ WeaponHapticArg WeaponHapticsConfigManager::GetWeaponHapticArgFromJson(json arg)
 
 void WeaponHapticsConfigManager::SetPlasmaPistolCharging()
 {
-#if HAPTICS_DEBUG
-	Logger::log << "[WeaponHapticsConfig]: In SetPlasmaPistolCharging" << std::endl;
-#endif
-
 	if (plasmaPistolSettings.isCharging == false)
 	{
 		plasmaPistolSettings.isCharging = true;
@@ -146,12 +142,15 @@ bool WeaponHapticsConfigManager::IsPlasmaPistolCharging()
 
 void WeaponHapticsConfigManager::WeaponFired(WeaponType Weapon)
 {
+#if HAPTICS_DEBUG
+	Logger::log << "[WeaponHapticsConfig]: Weapon fired" << std::endl;
+#endif 
+
 	if (plasmaPistolSettings.isCharging == true)
 	{
 		plasmaPistolSettings.isCharging = false;
 		plasmaPistolSettings.RampUpTimer = 0;
 #if HAPTICS_DEBUG
-
 		Logger::log << "[WeaponHapticsConfig]: Settings plasma pistol charging to false" << std::endl;
 #endif
 
