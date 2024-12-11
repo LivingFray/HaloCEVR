@@ -11,20 +11,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.1
+                    "Amplitude": 1
                 }
             }
         },
@@ -35,20 +35,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.4
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.4
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.3
+                    "Amplitude": 1
                 }
             }
         },
@@ -59,20 +59,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.5
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -83,20 +83,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -107,20 +107,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -131,20 +131,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -155,20 +155,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -179,20 +179,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -203,20 +203,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         },
@@ -227,20 +227,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.3
+                    "Amplitude": 1
                 }
             }
         },
@@ -251,20 +251,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.4
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.1
+                    "Amplitude": 1
                 }
             }
         },
@@ -275,20 +275,20 @@
                 "StartSecondsDelay": 0,
                 "DurationSeconds": 1,
                 "Frequency": 1,
-                "Amplitude": 0.2
+                "Amplitude": 1
             },
             "TwoHand": {
                 "Dominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 },
                 "Nondominant": {
                     "StartSecondsDelay": 0,
                     "DurationSeconds": 1,
                     "Frequency": 1,
-                    "Amplitude": 0.2
+                    "Amplitude": 1
                 }
             }
         }
