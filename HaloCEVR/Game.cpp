@@ -1,4 +1,4 @@
-#define EMULATE_VR 1
+#define EMULATE_VR 0
 #include "Game.h"
 #include "Logger.h"
 #include "Hooking/Hooks.h"
