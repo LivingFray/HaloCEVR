@@ -31,13 +31,12 @@ void WeaponHapticsConfigManager::LoadConfig()
 	{
 		Logger::log << "[WeaponHapticsConfig] Loading Config" << std::endl;
 
-		hapticList = {};
-		Version = latestVersion;
-		std::ifstream ifs(hapticsConfig);
-		json jf = json::parse(ifs);
-
-		try 
+		try
 		{
+			hapticList = {};
+			Version = latestVersion;
+			std::ifstream ifs(hapticsConfig);
+			json jf = json::parse(ifs);
 			json plasmaPistol = jf["PlasmaPistol"];
 			plasmaPistolSettings.RampUpTicks = plasmaPistol["RampUpTicks"];
 		}
