@@ -600,6 +600,14 @@ inline WeaponType WeaponHandler::GetWeaponType(Asset_Weapon* weapon) const
 	{
 		foundType = WeaponType::PlasmaCannon;
 	}
+	else if (strstr(weapon->WeaponAsset, "\\needler\\"))
+	{
+		foundType = WeaponType::Needler;
+	}
+	else if (strstr(weapon->WeaponAsset, "\\fuel rod\\"))
+	{
+		foundType = WeaponType::FuelRod;
+	}
 	else
 	{
 		Logger::log << "[UpdateCache] Unknown weapon with asset " << weapon->WeaponAsset << std::endl;
