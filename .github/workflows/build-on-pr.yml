@@ -18,10 +18,10 @@ jobs:
       - name: Set up Visual Studio
         uses: microsoft/setup-msbuild@v1
 
-      # Step 3: Build the project with PostBuildEvent disabled
+      # Step 3: Build the project using the CI-specific configuration
       - name: Build HaloCEVR
         run: |
-          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86 /p:WholeProgramOptimization=false /p:PostBuildEvent=""
+          msbuild HaloCEVR.sln /p:Configuration=CI_Release /p:Platform=x86 /p:WholeProgramOptimization=false
 
       # Step 4: Upload build artifacts
       - name: Upload build artifacts

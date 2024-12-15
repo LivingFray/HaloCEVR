@@ -180,5 +180,6 @@
   <ItemGroup>
     <None Include="VR\actions.json" />
     <None Include="cpp.hint" />
+    <None Include="VR\actions.json" />
   </ItemGroup>
 </Project>
