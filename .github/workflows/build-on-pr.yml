@@ -29,3 +29,18 @@ jobs:
         with:
           name: HaloCEVR
           path: HaloCEVR.zip
+
+      # Step 5: Comment on the PR with the artifact link
+      - name: Comment on PR with artifact link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const artifactUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+            github.issues.createComment({
+            issue_number: ${{ github.event.pull_request.number }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `The build artifacts are available [here](${artifactUrl}).`
+            })
