@@ -15,9 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bootstrap
-        run: ./bootstrap-vcpkg.sh
-
       - name: Build
         run: |
           mkdir build
