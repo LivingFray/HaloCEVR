@@ -3,39 +3,36 @@ name: Build on Pull Request
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Set up dependencies
       - name: Set up dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+          sudo apt-get install -y build-essential
 
-      - name: Configure project
-        run: |
-          mkdir -p build
-          cd build
-          cmake ..
-
+      # Step 3: Build project
       - name: Build project
         run: |
-          cd build
           make
 
+      # Step 4: Run tests
       - name: Run tests
         run: |
-          cd build
-          ctest --output-on-failure
+          make test
 
+      # Step 5: Upload build artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
-          path: build/
+          path: ./ # Adjust path to match where your build outputs are located
