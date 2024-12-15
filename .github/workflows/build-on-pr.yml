@@ -15,9 +15,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: List root directory
+        run: dir .
 
       - name: List vcpkg directory
-        run: dir .\vcpkg
+        run: dir ./vcpkg
 
       - name: Setup vcpkg
         working-directory: ./vcpkg
