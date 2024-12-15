@@ -18,15 +18,12 @@ jobs:
       - name: Set up Visual Studio
         uses: microsoft/setup-msbuild@v1
 
-      # Step 3: Build the project with Whole Program Optimization disabled
+      # Step 3: Build the project with PostBuildEvent disabled
       - name: Build HaloCEVR
         run: |
-          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86 /p:WholeProgramOptimization=false
+          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86 /p:WholeProgramOptimization=false /p:PostBuildEvent=""
 
-      # Step 4: Run tests (if applicable)
-      # Add test steps here if you have any tests to run
-
-      # Step 5: Upload build artifacts
+      # Step 4: Upload build artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
