@@ -16,15 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Setup Visual Studio
-        uses: microsoft/setup-visualstudio@v1
-        with:
-          vs-version: 2022
-
-      - name: Install vcpkg dependencies
+      - name: Setup vcpkg
         run: |
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg.exe install
@@ -32,7 +24,7 @@ jobs:
       - name: Build MinHook
         run: |
           git clone https://github.com/TsudaKageyu/minhook
-          cd minhook/build/VC17
+          cd minhook\build\VC17
           msbuild MinHook.sln /p:Configuration=Release /p:Platform=x86
 
       - name: Copy MinHook library
