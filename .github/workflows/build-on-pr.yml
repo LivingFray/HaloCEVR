@@ -17,6 +17,8 @@ jobs:
       # Step 2: Set up Visual Studio
       - name: Set up Visual Studio
         uses: microsoft/setup-msbuild@v1
+        with:
+          vs-version: 2019 # Ensure this matches the version used to build MinHook
 
       # Step 3: Build the project
       - name: Build HaloCEVR
