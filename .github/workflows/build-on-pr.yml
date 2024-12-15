@@ -16,10 +16,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: List vcpkg directory
+        run: dir .\vcpkg
+
       - name: Setup vcpkg
-        run: |
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install
+        working-directory: ./vcpkg
+        run: bootstrap-vcpkg.bat
 
       - name: Build MinHook
         run: |
