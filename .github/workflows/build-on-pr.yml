@@ -7,32 +7,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up dependencies
-      - name: Set up dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
+      # Step 2: Set up Visual Studio
+      - name: Set up Visual Studio
+        uses: microsoft/setup-msbuild@v1
 
-      # Step 3: Build project
-      - name: Build project
+      # Step 3: Build the project
+      - name: Build HaloCEVR
         run: |
-          make
+          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86
 
-      # Step 4: Run tests
-      - name: Run tests
-        run: |
-          make test
+      # Step 4: Run tests (if applicable)
+      # Add test steps here if you have any tests to run
 
       # Step 5: Upload build artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
-          path: ./ # Adjust path to match where your build outputs are located
+          path: HaloCEVR/Release
