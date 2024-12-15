@@ -1,46 +1,41 @@
-name: Build HaloCEVR
+name: Build on Pull Request
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: List root directory
-        run: dir .
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: List vcpkg directory
-        run: dir ./vcpkg
-
-      - name: Setup vcpkg
-        working-directory: ./vcpkg
-        run: bootstrap-vcpkg.bat
-
-      - name: Build MinHook
+      - name: Set up dependencies
         run: |
-          git clone https://github.com/TsudaKageyu/minhook
-          cd minhook\build\VC17
-          msbuild MinHook.sln /p:Configuration=Release /p:Platform=x86
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
 
-      - name: Copy MinHook library
+      - name: Configure project
         run: |
-          copy minhook\build\VC17\Release\libMinHook.x86.lib HaloCEVR-master\ThirdParty\MinHook\lib\libMinHook.x86.lib
+          mkdir -p build
+          cd build
+          cmake ..
 
-      - name: Build HaloCEVR
+      - name: Build project
         run: |
-          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86
+          cd build
+          make
 
-      - name: Package Release
+      - name: Run tests
         run: |
-          .\makerelease.bat
-          # Ensure openvr_api.dll is in the release folder or handle it manually
+          cd build
+          ctest --output-on-failure
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: build/
