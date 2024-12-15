@@ -27,5 +27,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
-          path: HaloCEVR/CI_Release
+          name: HaloCEVR
+          path: CI_Release
