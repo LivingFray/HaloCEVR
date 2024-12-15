@@ -18,10 +18,10 @@ jobs:
       - name: Set up Visual Studio
         uses: microsoft/setup-msbuild@v1
 
-      # Step 3: Build the project
+      # Step 3: Build the project with Whole Program Optimization disabled
       - name: Build HaloCEVR
         run: |
-          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86
+          msbuild HaloCEVR.sln /p:Configuration=Release /p:Platform=x86 /p:WholeProgramOptimization=false
 
       # Step 4: Run tests (if applicable)
       # Add test steps here if you have any tests to run
