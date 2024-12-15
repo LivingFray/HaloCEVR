@@ -31,25 +31,38 @@ protected:
 	std::chrono::time_point<std::chrono::high_resolution_clock> menuHeldTime;
 
 	bool bWasGripping = false;
+	bool bWasSwappingHands = false;
+	
 
 	InputBindingID Jump = 0;
 	InputBindingID SwitchGrenades = 0;
+	InputBindingID OffhandSwitchGrenades = 0;
 	InputBindingID Interact = 0;
+	InputBindingID OffhandInteract = 0;
 	InputBindingID SwitchWeapons = 0;
+	InputBindingID OffhandSwitchWeapons = 0;
 	InputBindingID Melee = 0;
 	InputBindingID Flashlight = 0;
 	InputBindingID Grenade = 0;
+	InputBindingID OffhandGrenade = 0;
 	InputBindingID Fire = 0;
+	InputBindingID OffhandFire = 0;
 	InputBindingID MenuForward = 0;
 	InputBindingID MenuBack = 0;
+	InputBindingID OffhandMenuBack = 0;
 	InputBindingID Crouch = 0;
 	InputBindingID Zoom = 0;
+	InputBindingID OffhandZoom = 0;
 	InputBindingID Reload = 0;
+	InputBindingID OffhandReload = 0;
 	InputBindingID Move = 0;
 	InputBindingID Look = 0;
 	
 	InputBindingID Recentre = 0;
 	InputBindingID TwoHandGrip = 0;
+	InputBindingID OffhandTwoHandGrip = 0;
+	InputBindingID SwapWeaponHands = 0;
+	InputBindingID OffhandSwapWeaponHands = 0;
 
 private:
 	bool IsHandInHolster(const Vector3& handPos, const Vector3& holsterPos, const float& holsterActivationDistance);

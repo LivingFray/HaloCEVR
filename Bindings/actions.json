@@ -29,12 +29,27 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/default/in/OffhandSwitchGrenades",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Interact",
             "requirement": "suggested",
             "type": "boolean"
         },
         {
+            "name": "/actions/default/in/OffhandInteract",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/SwitchWeapons",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/OffhandSwitchWeapons",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -54,7 +69,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/default/in/OffhandGrenade",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Fire",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/OffHandFire",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -69,6 +94,11 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/default/in/OffhandMenuBack",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Crouch",
             "requirement": "suggested",
             "type": "boolean"
@@ -79,7 +109,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/default/in/OffhandZoom",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Reload",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/OffhandReload",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -90,6 +130,21 @@
         },
         {
             "name": "/actions/default/in/TwoHandGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/OffHandTwoHandGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/SwapWeaponHands",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/OffhandSwapWeaponHands",
             "requirement": "suggested",
             "type": "boolean"
         },

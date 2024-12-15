@@ -16,21 +16,34 @@ void InputHandler::RegisterInputs()
 
 	RegisterBoolInput(Jump);
 	RegisterBoolInput(SwitchGrenades);
+	RegisterBoolInput(OffhandSwitchGrenades);
 	RegisterBoolInput(Interact);
+	RegisterBoolInput(OffhandInteract);
 	RegisterBoolInput(SwitchWeapons);
+	RegisterBoolInput(OffhandSwitchWeapons);
 	RegisterBoolInput(Melee);
 	RegisterBoolInput(Flashlight);
 	RegisterBoolInput(Grenade);
+	RegisterBoolInput(OffhandGrenade);
 	RegisterBoolInput(Fire);
+	RegisterBoolInput(OffhandFire);
 	RegisterBoolInput(MenuForward);
 	RegisterBoolInput(MenuBack);
+	RegisterBoolInput(OffhandMenuBack);
 	RegisterBoolInput(Crouch);
 	RegisterBoolInput(Zoom);
+	RegisterBoolInput(OffhandZoom);
 	RegisterBoolInput(Reload);
+	RegisterBoolInput(OffhandReload);
 	RegisterBoolInput(TwoHandGrip);
+	RegisterBoolInput(OffhandTwoHandGrip);
+	RegisterBoolInput(SwapWeaponHands);
+	RegisterBoolInput(OffhandSwapWeaponHands);
 
 	RegisterVector2Input(Move);
 	RegisterVector2Input(Look);
+
+	Game::instance.bLeftHanded = Game::instance.c_LeftHanded->Value();
 }
 
 float AngleBetweenVector2(const Vector2& v1, const Vector2& v2)
@@ -61,18 +74,37 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 
 	Controls& controls = Helpers::GetControls();
 
+	// Bindings without gestures
+	InputBindingID SwitchGrenadesBinding = Game::instance.bLeftHanded ? OffhandSwitchGrenades : SwitchGrenades;
+	InputBindingID InteractBinding = Game::instance.bLeftHanded ? OffhandInteract : Interact;
+	InputBindingID GrenadeBinding = Game::instance.bLeftHanded ? OffhandGrenade : Grenade;
+	InputBindingID FireBinding = Game::instance.bLeftHanded ? OffhandFire : Fire;
+	InputBindingID MenuBackBinding = Game::instance.bLeftHanded ? OffhandMenuBack : MenuBack;
+	InputBindingID ZoomBinding = Game::instance.bLeftHanded ? OffhandZoom : Zoom;
+	InputBindingID ReloadBinding = Game::instance.bLeftHanded ? OffhandReload : Reload;
+
+	// Bindings with gestures
+	InputBindingID SwitchWeaponsBinding = Game::instance.bLeftHanded ? OffhandSwitchWeapons : SwitchWeapons;
+	InputBindingID SwapWeaponHandsBinding = Game::instance.bLeftHanded ? OffhandSwapWeaponHands : SwapWeaponHands;
+	InputBindingID TwoHandGripBinding = Game::instance.bLeftHanded ? OffhandTwoHandGrip : TwoHandGrip;
+
+	// Controls which will swap hands
+	bool bSwitchGrenadesChanged;
+	bool bZoomChanged;
+	controls.SwitchGrenades = vr->GetBoolInput(SwitchGrenadesBinding, bSwitchGrenadesChanged) && bSwitchGrenadesChanged ? 127 : 0;
+	controls.Interact = vr->GetBoolInput(InteractBinding) ? 127 : 0;
+	controls.Grenade = vr->GetBoolInput(GrenadeBinding) ? 127 : 0;
+	controls.Fire = vr->GetBoolInput(FireBinding) ? 127 : 0;
+	controls.Zoom = vr->GetBoolInput(ZoomBinding, bZoomChanged) && bZoomChanged ? 127 : 0;
+	controls.Reload = vr->GetBoolInput(ReloadBinding) ? 127 : 0;
+
+	// Controls which will not swap hands
 	ApplyBoolInput(Jump);
-	ApplyImpulseBoolInput(SwitchGrenades);
-	ApplyBoolInput(Interact);
 	ApplyBoolInput(Melee);
 	ApplyBoolInput(Flashlight);
-	ApplyBoolInput(Grenade);
-	ApplyBoolInput(Fire);
 	ApplyBoolInput(MenuForward);
-	ApplyBoolInput(MenuBack);
 	ApplyBoolInput(Crouch);
-	ApplyImpulseBoolInput(Zoom);
-	ApplyBoolInput(Reload);
+	
 
 	unsigned char MotionControlFlashlight = UpdateFlashlight();
 	if (MotionControlFlashlight > 0)
@@ -83,16 +115,17 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 	if (Game::instance.c_EnableWeaponHolsters->Value())
 	{
 		unsigned char HolsterSwitchWeapons = UpdateHolsterSwitchWeapons();
-		bool bSwitchWeaponsPressed = vr->GetBoolInput(SwitchWeapons);
+		bool bSwitchWeaponsChanged;
+		bool bSwitchWeaponsPressed = vr->GetBoolInput(SwitchWeaponsBinding, bSwitchWeaponsChanged);
 
-		if (HolsterSwitchWeapons > 0 && bSwitchWeaponsPressed)
+		if (HolsterSwitchWeapons > 0 && bSwitchWeaponsPressed && bSwitchWeaponsChanged)
 		{
-			ApplyImpulseBoolInput(SwitchWeapons);
+			controls.SwitchWeapons = vr->GetBoolInput(SwitchWeaponsBinding) ? 127 : 0;
 		}
 	}
 	else
 	{
-		ApplyImpulseBoolInput(SwitchWeapons);
+		controls.SwitchWeapons = vr->GetBoolInput(SwitchWeaponsBinding) ? 127 : 0;
 	}
 
 	unsigned char MotionControlMelee = UpdateMelee();
@@ -110,7 +143,7 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 	const float holdToRecentreTime = 1000.0f;
 
 	bool bMenuChanged;
-	bool bMenuPressed = vr->GetBoolInput(MenuBack, bMenuChanged);
+	bool bMenuPressed = vr->GetBoolInput(MenuBackBinding, bMenuChanged);
 
 	if (bMenuPressed)
 	{
@@ -167,44 +200,81 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 		SendInput(1, &input, sizeof(INPUT));
 	}
 
-	bool bGripChanged;
-	bool bIsGripping = vr->GetBoolInput(TwoHandGrip, bGripChanged);
+	bool bWeaponHandChanged;
+	bool bOffhandWeaponHandChanged;
+	bool bIsSwitchHandsPressed = vr->GetBoolInput(SwapWeaponHands, bWeaponHandChanged);
+	bool bIsOffhandSwitchHandsPressed = vr->GetBoolInput(OffhandSwapWeaponHands, bOffhandWeaponHandChanged);
 
-	if (Game::instance.c_ToggleGrip->Value())
+	float swapHandDistance = Game::instance.c_SwapHandDistance->Value();
+
+	bool handsWithinSwapWeaponDistance = false;
+	if (swapHandDistance >= 0.0f)
 	{
-		if (bGripChanged && bIsGripping)
-		{
-			bWasGripping ^= true;
-		}
+		// Check if hands are within swap distance
+		const Vector3 leftPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Left, true) * Vector3(0.0f, 0.0f, 0.0f);
+		const Vector3 rightPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Right, true) * Vector3(0.0f, 0.0f, 0.0f);
+		handsWithinSwapWeaponDistance = (rightPos - leftPos).lengthSqr() < swapHandDistance * swapHandDistance;
 
-		bIsGripping = bWasGripping;
+		if (handsWithinSwapWeaponDistance)
+		{
+			if (!Game::instance.bLeftHanded && bWeaponHandChanged && bIsSwitchHandsPressed && !bIsOffhandSwitchHandsPressed)
+			{
+				Game::instance.bLeftHanded = true;
+			}
+			else if (Game::instance.bLeftHanded && bOffhandWeaponHandChanged && bIsOffhandSwitchHandsPressed && !bIsSwitchHandsPressed)
+			{
+				Game::instance.bLeftHanded = !Game::instance.bLeftHanded;
+			}
+		}
 	}
 
-	float handDistance = Game::instance.c_TwoHandDistance->Value();
+	bool bGripChanged;
+	bool bIsGripping = vr->GetBoolInput(TwoHandGripBinding, bGripChanged);
 
-	if (handDistance >= 0.0f)
+	if (handsWithinSwapWeaponDistance)
 	{
-		if (bGripChanged)
-		{
-			if (bIsGripping)
-			{
-				const Vector3 leftPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Left, true) * Vector3(0.0f, 0.0f, 0.0f);
-				const Vector3 rightPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Right, true) * Vector3(0.0f, 0.0f, 0.0f);
-
-				if ((rightPos - leftPos).lengthSqr() < handDistance * handDistance)
-				{
-					Game::instance.bUseTwoHandAim = true;
-				}
-			}
-			else
-			{
-				Game::instance.bUseTwoHandAim = false;
-			}
-		}
+		if (!bIsGripping) {
+	        Game::instance.bUseTwoHandAim = false;
+	    }
 	}
 	else
 	{
-		Game::instance.bUseTwoHandAim = bIsGripping;
+	    if (Game::instance.c_ToggleGrip->Value())
+	    {
+	        if (bGripChanged && bIsGripping)
+	        {
+	            bWasGripping ^= true;
+	        }
+
+	        bIsGripping = bWasGripping;
+	    }
+
+	    float handDistance = Game::instance.c_TwoHandDistance->Value();
+
+	    if (handDistance >= 0.0f)
+	    {
+	        if (bGripChanged)
+	        {
+	            if (bIsGripping)
+	            {
+	                const Vector3 leftPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Left, true) * Vector3(0.0f, 0.0f, 0.0f);
+	                const Vector3 rightPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Right, true) * Vector3(0.0f, 0.0f, 0.0f);
+
+	                if ((rightPos - leftPos).lengthSqr() < handDistance * handDistance)
+	                {
+	                    Game::instance.bUseTwoHandAim = true;
+	                }
+	            }
+	            else
+	            {
+	                Game::instance.bUseTwoHandAim = false;
+	            }
+	        }
+	    }
+	    else
+	    {
+	        Game::instance.bUseTwoHandAim = bIsGripping;
+	    }
 	}
 
 	Vector2 MoveInput = vr->GetVector2Input(Move);
@@ -336,7 +406,10 @@ unsigned char InputHandler::UpdateFlashlight()
 	float leftDistance = Game::instance.c_LeftHandFlashlightDistance->Value();
 	float rightDistance = Game::instance.c_RightHandFlashlightDistance->Value();
 
-	if (leftDistance > 0.0f)
+	bool offhandFlashlightEnabled = Game::instance.c_OffhandHandFlashlight->Value();
+
+	bool checkLeftHand = !offhandFlashlightEnabled || !Game::instance.bLeftHanded; 
+	if (checkLeftHand && leftDistance > 0.0f)
 	{
 		Vector3 handPos = vr->GetRawControllerTransform(ControllerRole::Left) * Vector3(0.0f, 0.0f, 0.0f);
 
@@ -346,7 +419,8 @@ unsigned char InputHandler::UpdateFlashlight()
 		}
 	}
 
-	if (rightDistance > 0.0f)
+	bool checkRightHand = !offhandFlashlightEnabled || Game::instance.bLeftHanded; 
+	if (checkRightHand && rightDistance > 0.0f)
 	{
 		Vector3 handPos = vr->GetRawControllerTransform(ControllerRole::Right) * Vector3(0.0f, 0.0f, 0.0f);
 
@@ -370,7 +444,7 @@ unsigned char InputHandler::UpdateHolsterSwitchWeapons()
 	Vector3 rightShoulderPos = headTransform * Game::instance.c_RightShoulderHolsterOffset->Value();
 
 	Vector3 handPos;
-	if (Game::instance.c_LeftHanded->Value())
+	if (Game::instance.bLeftHanded)
 	{
 		handPos = vr->GetRawControllerTransform(ControllerRole::Left) * Vector3(0.0f, 0.0f, 0.0f);
 	}
@@ -467,8 +541,8 @@ void InputHandler::UpdateMouseInfo(MouseInfo* mouseInfo)
 
 bool InputHandler::GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand)
 {
-	ControllerRole dominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Left : ControllerRole::Right;
-	ControllerRole nonDominant = Game::instance.c_LeftHanded->Value() ? ControllerRole::Right : ControllerRole::Left;
+	ControllerRole dominant = Game::instance.bLeftHanded ? ControllerRole::Left : ControllerRole::Right;
+	ControllerRole nonDominant = Game::instance.bLeftHanded ? ControllerRole::Right : ControllerRole::Left;
 
 	controllerTransform = Game::instance.GetVR()->GetControllerTransform(dominant, true);
 

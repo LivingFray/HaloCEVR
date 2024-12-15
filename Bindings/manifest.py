@@ -1,7 +1,7 @@
 import json
 
 controllers = ["oculus_touch", "knuckles"]
-boolActions = ["Jump","SwitchGrenades","Interact","SwitchWeapons","Melee","Flashlight","Grenade","Fire","MenuForward","MenuBack","Crouch","Zoom","Reload", "Recentre", "TwoHandGrip"]
+boolActions = ["Jump","SwitchGrenades", "OffhandSwitchGrenades","Interact","OffhandInteract","SwitchWeapons","OffhandSwitchWeapons","Melee","Flashlight","Grenade","OffhandGrenade","Fire","OffHandFire","MenuForward","MenuBack","OffhandMenuBack","Crouch","Zoom","OffhandZoom","Reload","OffhandReload","Recentre","TwoHandGrip","OffHandTwoHandGrip","SwapWeaponHands","OffhandSwapWeaponHands"]
 vec1Actions = []
 vec2Actions = ["Look", "Move"]
 poseActions = ["Tip"]
@@ -9,13 +9,25 @@ poseActions = ["Tip"]
 bindings = {
     "Jump" : { "h" : "right", "b" : "joystick|north", "f" : True},
     "TwoHandGrip" : {"h" : "left", "b" : "grip", "f" : True},
+    "OffhandTwoHandGrip" : {"h" : "right", "b" : "grip", "f" : True},
     "SwitchWeapons" : {"h" : "right", "b" : "grip", "f" : True},
+    "OffhandSwitchWeapons" : {"h" : "left", "b" : "grip", "f" : True},
+    "SwapWeaponHands" : {"h" : "left", "b" : "grip", "f" : True},
+    "OffhandSwapWeaponHands" : {"h" : "right", "b" : "grip", "f" : True},
     "MenuBack" : {"h" : "left", "b" : "y", "f" : True},
-    "SwitchGrenades" : {"h" : "left", "b" : "x", "f" : True}, 
+    "OffhandMenuBack" : {"h" : "right", "b" : "b", "f" : True},
+    "SwitchGrenades" : {"h" : "left", "b" : "x", "f" : True},
+    "offhandSwitchGrenades" : {"h" : "right", "b" : "a", "f" : True}, 
     "Grenade" : {"h" : "right", "b" : "a", "f" : True},
+    "offhandGrenade" : {"h" : "left", "b" : "x", "f" : True},
+    "Reload" : {"h" : "right", "b" : "b", "f" : True},
+    "offhandReload" : {"h" : "left", "b" : "y", "f" : True},
     "Interact" : {"h" : "right", "b" : "b", "f" : True},
+    "OffhandInteract" : {"h" : "left", "b" : "y", "f" : True},
     "Zoom" : {"h" : "left", "b" : "trigger", "f" : True},
+    "offhandZoom" : {"h" : "right", "b" : "trigger", "f" : True},
     "Fire" : {"h" : "right", "b" : "trigger", "f" : True},
+    "OffhandFire" : {"h" : "left", "b" : "trigger", "f" : True},
     "Crouch" : {"h" : "right", "b" : "joystick|south", "f" : True},
     "Look" : {"h" : "right", "b" : "joystick", "f" : True},
     "Move" : {"h" : "left", "b" : "joystick", "f" : True}

@@ -831,7 +831,7 @@ void Hooks::H_DrawCinematicBars()
 
 void Hooks::H_DrawViewModel()
 {
-	if (Game::instance.c_LeftHanded->Value())
+	if (Game::instance.bLeftHanded)
 	{
 		Helpers::GetDirect3DDevice9()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 
