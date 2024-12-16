@@ -7,15 +7,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Visual Studio
-      - name: Set up Visual Studio
+      # Step 2: Set up MS Build
+      - name: Set up MS Build
         uses: microsoft/setup-msbuild@v1
 
       # Step 3: Build the project using the CI-specific configuration
