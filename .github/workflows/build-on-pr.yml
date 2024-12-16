@@ -37,10 +37,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { context, github } = require('@actions/github');
             const artifactUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
-            github.issues.createComment({
-            issue_number: ${{ github.event.pull_request.number }},
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `The build artifacts are available [here](${artifactUrl}).`
+            await github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `The build artifacts are available [here](${artifactUrl}).`
             })
