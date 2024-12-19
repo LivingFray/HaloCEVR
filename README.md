@@ -28,7 +28,7 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 
 ## Known issues
 * Game sometimes isn't the focused window on launch and inputs/sounds may break when the game is unfocused
-* First stage of the tutorial ("look around") doesn't detect headset movement, wiggle the mouse and you should get passed it
+* First stage of the tutorial ("look around") doesn't detect headset movement, wiggle the mouse (physically or via steamvr's desktop view) and you should get past it
 * Camera behaves weirdly briefly when entering/exiting vehicles
 * Reloading a checkpoint made while in a vehicle can mess with the camera position, get out and in again to fix it
 * Melee and interact use head aiming rather than controller aiming
@@ -39,9 +39,9 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 * Some people report a minor distortion or warping effect when tilting their head side to side.
 
 ## Installation
-0. Install _Halo: Combat Evolved for PC_ (not Custom Edition) using an original installation CD + product key.  IMPORTANT: Install in a directory OTHER THAN Program Files (example: C:\HaloVRMod\Halo). Installing in Program Files potentailly causes numerous permissions-related issues.
-1. Install the 1.10 patch for PC (not Custom Edition)
-2. (Optional) Install [chimera](https://github.com/SnowyMouse/chimera) (fixes a few bugs/issues such as entities moving at 30fps).  Grab the RELEASE files from [releases](https://github.com/SnowyMouse/chimera/releases/download/1.0.0r1021/chimera-1.0.0r1021.10144368.7z).  Copy chimera.ini, strings.dll, and the fonts folder from the chimera zip after unzipping and place into your halo game folder in the same location as halo.exe.
+0. Install _Halo: Combat Evolved for PC_ (not Custom Edition) using an original installation CD + product key.  **IMPORTANT: Install in a directory OTHER THAN Program Files (example: C:\HaloVRMod\Halo). Installing in Program Files potentailly causes numerous permissions-related issues**.
+1. Install the 1.0.10 patch for PC (not Custom Edition)
+2. (Optional) Install [chimera](https://github.com/SnowyMouse/chimera) (fixes a few bugs/issues such as entities moving at 30fps).  Grab the RELEASE files from [releases](https://github.com/SnowyMouse/chimera/releases).  Copy chimera.ini, strings.dll, and the fonts folder from the chimera zip after unzipping and place into your halo game folder in the same location as halo.exe.
 3. If using chimera: open chimera.ini, locate the "Font Override Settings" section, and change enabled=1 to enabled=0 (failing to do this will break many UI elements in VR)
 4. Download the latest version of this mod from the [releases page](../../releases)
 5. Extract HaloCEVR.zip and place the files in the same directory as the halo executable (You should see a VR folder, openvr_api.dll and d3d9.dll if done correctly - if you do not see these files your antivirus may be interfering)
@@ -51,6 +51,77 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 ## Uninstalling
 1. Go play the MCC version instead
 2. Delete/rename the d3d9.dll you placed in the same directory as the halo executable (this contains all of the mod code and is only pretending to be d3d9 to trick halo into loading it).  For example, you could rename it to d3d9-backup.dll.
+
+## Installing Graphical and Audio Enhancements
+### dsoal 
+
+Dsoal allows you to turn on hardware acceleration and EAX in Halo without requisite hardware to use environmental sound effects like reverb and HRTF, providing realistic, locatable 3D sound with high accuracy for virtual reality. Highly recommended, and you do not need high-fidelity headphones to enjoy this.
+
+Note: Chimera is required for reverb on first person sounds. First person sounds have no stereo/HRTF/location effects.
+
+1) Download and extract from https://github.com/ThreeDeeJay/dsoal/releases/download/0.9.6/DSOAL+HRTF.zip 
+2) Open the DSOAL+HRTF\Win32\ folder.
+3) Copy & paste all files from Win32\ (alsoft.ini, dsoal-aldrv.dll, dsound.dll) into your Halo\ install folder where halo.exe is located.
+5) Edit alsoft.ini and copy & paste the settings shown below:
+6) ```hrtf-mode = full``` may or may not be CPU intensive, remove if you experience new performance issues.
+7) Launch Halo and go to Settings >> Audio Setup. Make sure Hardware Acceleration is set to Yes and Environmental Sound to EAX.
+
+```
+[general]
+channels=stereo
+frequency=48000
+stereo-mode=headphones
+cf_level=0
+sources=512
+sample-type=float32
+hrtf=true
+period_size=960
+hrtf-mode = full
+
+[reverb]
+boost=-6
+```
+### Chimera
+
+Chimera increases animation framerate, corrects fog, enables anisotropic filtering, enables reverb for first person sounds (requires dsoal), and boosts polygon count, object limit, and draw distance. But is highly recommended for bug fixes and QOL changes alone.
+
+See installation instructions above. If you installed chimera, there is an enhancement not enabled by default. You can execute a console command ```chimera_model_detail 8``` to reduce pop-in and low detail models (lods). There are several ways to do this. 
+
+* You can bring up the in-game console with tilde ~ key, but it helps to disable the VR mod by temporarily by renaming d3d9.dll to something like d3d9aa.dll so you can see the console. 
+
+* Or, executed console commands are saved and read from a text file. You can create this file yourself:
+1) Navigate to (Your User Folder)\Documents\My Games\Halo\chimera\ and create a text file named preferences.txt
+2) Edit your preferences.txt and add ```chimera_model_detail 8```
+
+* Or, If you want this command and other preferences to be portable and travel with your Halo installation:
+
+1) Create a new text file named chimera_preferences.txt in the Halo\ folder alongside chimera.ini
+2) Edit Halo\chimera.ini
+3) Adding ```chimera_model_detail 8``` into chimera.ini will not work.
+4) chimera.ini disables lines with a semi-colon ```;```
+5) Find ```exec=``` and remove any semi-colon on that line, such as ```;exec=```.
+6) Set the value to ```exec=./chimera_preferences.txt```
+7) Add ```chimera_model_detail 8``` into chimera_preferences.txt
+
+### Halo Refined
+
+A Community project that restores many graphical effects present in the original Xbox version by replacing Halo's map files. Fixes issues such as invisible bumpmapping, missing specular, broken transparency effects, etc. Also provides some high res asset replacements, most notably an HD HUD. 
+
+Halo Refined is poorly tested with HaloCEVR but seems to work, recommended for experimental use. Please keep backups of your original .map files before installing. If you are having any issues with HaloCEVR while using Refined's maps, restore the original files and retest before reporting your issue.
+
+Recent versions require chimera. Refined is designed with dgVoodoo2 and CEnshine in mind to fix even more effects, but these are tools and modifications can't be used with HaloCEVR. 
+
+1) Download and extract the latest distribution for Retail, not Custom Edition
+2) Backup all files in Halo\maps\ by copying them to a different location
+3) Replace files in Halo\maps\
+4) (Optional) Read Halo\maps\info.txt for project information
+
+Download, updated as of the time of writing:
+https://www.proxeninc.net/Halo/Refined/
+
+Mirror, outdated as of the time of writing:
+http://vaporeon.io/hosted/halo/refined/
+
 
 ## FAQ
 ### Why the gearbox port and not MCC?
@@ -63,13 +134,13 @@ As you may guess, this is hard. By focusing on an older title I have a simpler p
 ### Where do I even get a CD copy in \<current year\>? Can I use a cracked version?
 No.
 
-This mod is intended to only be used with legitimate copies of Halo: Combat Evolved with the official 1.10 patch. Fortunately the product keys aren't single use, so if you can find a second hand copy (or a friend willing to lend the copy they happened to archive 20 years ago) you can use that without worrying about the key being invalid. 
+This mod is intended to only be used with legitimate copies of Halo: Combat Evolved with the official 1.10 patch. Fortunately the product keys aren't single use, so if you can find a second hand copy (or a friend/person on the _internet_ willing to lend the copy they happened to _archive_ 20 years ago) you can use that without worrying about the key being invalid. 
 ### Does multiplayer work?
 This mod was designed for singleplayer, it is untested in multiplayer and as such some features, such as weapon aiming, may not function or only work for the host.
 
 Also it does not work in Co-op because this version of the game does not have that mode.
 ### Does this work with Custom Edition?
-No.
+Not currently.
 ### Does this work with MCC Edition?
 No.
 ### Does this work with SPV3?
@@ -116,44 +187,6 @@ Stand up straight (or sit up if playing seated) and hold down the menu button fo
 By default you crouch in real life. If you do not prefer that, change the option in the config.txt file in the VR folder, specifically set CrouchHeight = -1.0 and bind a button to crouch in the SteamVR Input menu.
 ### I wish (insert action) was bound to a different key
 Use SteamVR input settings to change your bindings to whatever you want. You can also search for other peoples' bindings for your controller in the bindings menu.  You can learn how to use SteamVR input by watching this video by HoriZon, who also has bindings available for Quest controllers: https://www.youtube.com/watch?v=rdlCu7IjbGI.  It's useful in a bunch of games!
-### Textures seem to pop in too much.  Any fix?
-Try using chimera (highly recommended anyway) and create a file called chimera_preferences.txt in your Halo directory.  In that text file, insert the following lines:
-```
-chimera_model_detail 8
-chimera_lod 1
-```
-Then in your chimera.ini file, find the line that starts with ;exec= and change it to:
-```
-exec=path\to\your\chimera_preferences.txt
-```
-Example:
-```
-exec=C:\HaloVRMod\Halo\chimera_preferences.txt
-```
-Note that deleting the semicolon is what makes this line active.  It's telling chimera to load the text commands you wrote that control the level of detail. If others share chimera commands in the future you can place them here.
-You can test that the commands are being executed by changing the name of the VR mod dll file, d3d9.dll, to something else temporarily and booting the game up in flat screen.  The commands will flash on the screen if this step worked.
-#### How can I make sounds even more immersive?
-Check out DSOAL for 3D sound ingame: https://github.com/ThreeDeeJay/dsoal/releases/tag/0.9.6, specific download zip link: https://github.com/ThreeDeeJay/dsoal/releases/download/0.9.6/DSOAL+HRTF.zip 
--Extract to a location on your computer. Inside the zip, find the Win32 folder, open it, and copy and paste all Win32 files into your Halo folder
--One of the files will be called alsoft.ini which is a configuration file for DSOAL.
-
-Path: Halo>alsoft.ini
-
-Copy and Paste into alsoft.ini:
-```
- [general]
-channels=stereo
-frequency=48000
-stereo-mode=headphones
-cf_level=0
-sources=512
-sample-type=float32
-hrtf=true
-period_size=960
-
-[reverb]
-boost=-6
-```
 ### I know C++ coding or will learn to help develop the mod.  How do I help?
 Thank you! See compiling source directions below and submit a Pull Request on Github explaining the changes you have made and impact on other files.  Be sure to thoroughly test any changes before submitting them. After others and I test the changes, they may be incorporated into the mod release.
 

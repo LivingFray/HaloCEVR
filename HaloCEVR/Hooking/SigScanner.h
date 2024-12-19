@@ -48,7 +48,7 @@ public:
 	OFFSET(CutsceneFPSCap,        0x0c9fb5, "b3 01 eb ?? 32 db 8b 2d ?? ?? ?? ?? 8d 4c");
 	OFFSET(CreateMouseDevice,     0x0919c0, "6a 17 ff 15 ?? ?? ?? ?? 85 c0 74 ?? 66 c7 05 ?? ?? ?? ?? 02 00");
 	OFFSET(SetViewModelVisible,   0x092430, "51 8b 0d ?? ?? ?? ?? 66 83 f9 ff 74 ?? 8b 15 ?? ?? ?? ?? 56 0f bf f1");
-	OFFSET(TextureAlphaWrite,     0x11c9a0, "81 ec ?? ?? 00 00 56 8b f0 a0 ?? ?? ?? ?? 84 c0");
+	OFFSET(TextureAlphaWrite,     0x11c9d1, "6a 01 6a 16 33 ?? 50 89 ?? ?? ?? ff 91 e4 00 00 00 a1 ?? ?? ?? ?? 8b 10 6a 07 68 a8 00 00 00 50 ff 92 e4 00 00 00 a1 ?? ?? ?? ?? 8b 08 6a 01 6a 1b 50");
 	OFFSET(TextAlphaWrite,        0x131b80, "a0 ?? ?? ?? ?? 84 c0 0f 84 ?? ?? ?? ?? 66 83 ?? ?? ?? ?? 00 01 0f 85 ?? ?? ?? ?? 53 55 56");
 	OFFSET(CrouchHeight,          0x168ff0, "d9 86 0c 05 00 00 f6 86 cc 04 00 00 01 75 ?? d8 15");
 	OFFSET(CinematicBarDrawCall,  0x049b25, "e8 ?? ?? ?? ?? 0f bf 15 ?? ?? ?? ?? 89 54 24 18 db 44 24 18 d9 5c 24 18 d9 44 24 18");
@@ -72,6 +72,8 @@ public:
 	OFFSET(UpdateMouseInfo,       0x091bc0, "8b 01 53 55 8b 6c 24 0c 89 45 00 8b 51 04 f7 da 56");
 	OFFSET(FireWeapon,            0x0c3f10, "81 ec 94 00 00 00 8b 84 24 98 00 00 00 8b 0d ?? ?? ?? ?? 8b 51 34 53");
 	OFFSET(ThrowGrenade,          0x16e440, "8b 44 24 04 8b 0d ?? ?? ?? ?? 8b 51 34 8b 0d ?? ?? ?? ?? 83 ec 3c");
+	OFFSET(ReloadStart,           0x0c35b0, "83 ec 0c 8b 54 24 10 53 55 0f bf 6c 24 1c 56 8b 35");
+	OFFSET(ReloadEnd,             0x0c3900, "8b 44 24 04 8b 15 ?? ?? ?? ?? 8b 52 34 53 8b 1d ?? ?? ?? ?? 25 ff ff 00 00 55 56");
 	
 	OFFSET(SetViewportSize,       0x0c8da0, "83 ec 10 53 55 56 57 8b f8 33 c0 83 ff 01 0f 9e c0");
 	OFFSET(SetViewportScale,      0x10ca90, "51 0f bf 50 2e 56 0f bf 70 30 57 0f bf 78 2c 2b f7");

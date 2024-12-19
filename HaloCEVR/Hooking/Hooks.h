@@ -41,6 +41,8 @@ public:
 	DEFINE_HOOK_FULL(DrawLoadingScreen2, void __fastcall, void* param1);
 	DEFINE_HOOK(DrawCinematicBars);
 	DEFINE_HOOK(DrawViewModel);
+	DEFINE_HOOK_FULL(ReloadStart, void __cdecl, HaloID param1, short param2, bool param3);
+	DEFINE_HOOK(ReloadEnd);
 
 	// All direct patches go here:
 	static void P_FixTabOut();

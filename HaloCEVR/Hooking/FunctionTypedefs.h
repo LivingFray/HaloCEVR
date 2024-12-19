@@ -24,3 +24,5 @@ typedef int(__cdecl* Func_MaybeNightVision)(float* param1);
 typedef void(__fastcall* Func_DrawLoadingScreen2)(void* parma1);
 typedef void(*Func_DrawCinematicBars)();
 typedef void(*Func_DrawViewModel)();
+typedef void(__cdecl* Func_ReloadStart)(HaloID, short, bool);
+typedef void(*Func_ReloadEnd)();

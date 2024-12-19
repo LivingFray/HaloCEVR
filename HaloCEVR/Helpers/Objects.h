@@ -212,6 +212,24 @@ public:
 	char pad_0038[216]; //0x0038
 };
 
+struct Weapon
+{
+public:
+	uint16_t reloadState;
+	uint16_t reloadRemaining;
+	uint16_t reloadTime;
+	uint16_t reserveAmmo;
+	uint16_t ammo;
+	uint16_t unk;
+};
+
+struct WeaponDynamicObject : public BaseDynamicObject
+{
+public:
+	char pad_01F4[188]; //0x01F4
+	Weapon weaponData[4]; //0x02B0
+}; //Size: 0x0340
+
 namespace Helpers
 {
 	ObjectTable& GetObjectTable();

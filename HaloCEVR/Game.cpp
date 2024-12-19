@@ -16,10 +16,18 @@
 #include "VR/OpenVR.h"
 #endif
 
+#if USE_PROFILER
+#include <algorithm>
+#endif
+
 
 void Game::Init()
 {
 	Logger::log << "[Game] HaloCEVR initialising..." << std::endl;
+
+#if USE_PROFILER
+	profiler.Init();
+#endif
 
 	SetupConfigs();
 
@@ -56,6 +64,10 @@ void Game::Shutdown()
 	Logger::log << "[Game] HaloCEVR shutting down..." << std::endl;
 
 	vr->Shutdown();
+
+#if USE_PROFILER
+	profiler.Shutdown();
+#endif
 
 	MH_STATUS hookStatus = MH_DisableHook(MH_ALL_HOOKS);
 
@@ -110,6 +122,8 @@ void Game::OnInitDirectX()
 
 void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawFrame);
+
 	lastDeltaTime = deltaTime;
 
 	renderState = ERenderState::UNKNOWN;
@@ -137,6 +151,7 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 	window->right = vr->GetViewWidth();
 	window->bottom = vr->GetViewHeight();
 
+	VR_PROFILE_START(Game_PreDrawFrame_ClearSurfaces);
 	// Clear UI surfaces
 	IDirect3DSurface9* currentSurface = nullptr;
 	Helpers::GetDirect3DDevice9()->GetRenderTarget(0, &currentSurface);
@@ -148,6 +163,7 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 	Helpers::GetDirect3DDevice9()->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 0, 0, 0), 1.0f, 0);
 	Helpers::GetDirect3DDevice9()->SetRenderTarget(0, currentSurface);
 	currentSurface->Release();
+	VR_PROFILE_STOP(Game_PreDrawFrame_ClearSurfaces);
 
 	frustum1 = renderer->frustum;
 	frustum2 = renderer->frustum2;
@@ -176,6 +192,8 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 
 	if (c_ShowRoomCentre->Value())
 	{
+		VR_PROFILE_SCOPE(Game_PreDrawFrame_DrawRoomCentre);
+
 		Vector3 position = Helpers::GetCamera().position;
 		position.z -= 0.62f;
 		Vector3 upVector(0.0f, 0.0f, 1.0f);
@@ -226,6 +244,8 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 
 void Game::PreDrawEye(Renderer* renderer, float deltaTime, int eye)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawEye);
+
 	renderState = eye == 0 ? ERenderState::LEFT_EYE : ERenderState::RIGHT_EYE;
 
 	renderer->frustum = frustum1;
@@ -247,6 +267,8 @@ void Game::PreDrawEye(Renderer* renderer, float deltaTime, int eye)
 
 void Game::PostDrawEye(struct Renderer* renderer, float deltaTime, int eye)
 {
+	VR_PROFILE_SCOPE(Game_PostDrawEye);
+
 	if (Helpers::IsLoading() || Helpers::IsCampaignLoading())
 	{
 		Helpers::GetDirect3DDevice9()->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
@@ -257,6 +279,8 @@ void Game::PostDrawEye(struct Renderer* renderer, float deltaTime, int eye)
 
 bool Game::PreDrawScope(Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawScope);
+
 	UnitDynamicObject* player = static_cast<UnitDynamicObject*>(Helpers::GetLocalPlayer());
 
 	if (!player || player->zoom == -1)
@@ -325,6 +349,8 @@ bool Game::PreDrawScope(Renderer* renderer, float deltaTime)
 
 void Game::PostDrawScope(Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Game_PostDrawScope);
+
 	RestoreRenderTargets();
 
 	Vector2 innerSize = Vector2(0.0f, 0.0f);
@@ -354,6 +380,8 @@ void Game::PostDrawScope(Renderer* renderer, float deltaTime)
 
 void Game::PreDrawMirror(struct Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawMirror);
+
 	renderState = ERenderState::GAME;
 
 	renderer->frustum = frustum1;
@@ -372,6 +400,8 @@ void Game::PreDrawMirror(struct Renderer* renderer, float deltaTime)
 
 void Game::PostDrawMirror(struct Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Game_PostDrawMirror);
+
 	// Do something here to copy the image into the backbuffer correctly
 
 	inGameRenderer.ClearRenderTargets();
@@ -380,6 +410,8 @@ void Game::PostDrawMirror(struct Renderer* renderer, float deltaTime)
 
 void Game::PostDrawFrame(struct Renderer* renderer, float deltaTime)
 {
+	VR_PROFILE_START(Game_PostDrawFrame);
+
 	RestoreRenderTargets();
 	vr->PostDrawFrame(renderer, deltaTime);
 	inGameRenderer.PostRender();
@@ -392,6 +424,8 @@ void Game::PostDrawFrame(struct Renderer* renderer, float deltaTime)
 
 	if (c_DrawMirror->Value() && mirrorSource != ERenderState::GAME)
 	{
+		VR_PROFILE_SCOPE(Game_PostDrawFrame_Mirror);
+
 		int sWidth = vr->GetViewWidth();
 		int sHeight = vr->GetViewHeight();
 
@@ -443,10 +477,18 @@ void Game::PostDrawFrame(struct Renderer* renderer, float deltaTime)
 		currentSurface->Release();
 		Helpers::GetDirect3DDevice9()->StretchRect(vr->GetRenderSurface(eye), nullptr, Helpers::GetRenderTargets()[0].renderSurface, &destRect, D3DTEXF_LINEAR);
 	}
+
+	VR_PROFILE_STOP(Game_PostDrawFrame);
+
+#if USE_PROFILER
+	profiler.NewFrame();
+#endif
 }
 
 bool Game::PreDrawHUD()
 {
+	VR_PROFILE_SCOPE(Game_PreDrawHUD);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -488,6 +530,8 @@ bool Game::PreDrawHUD()
 
 void Game::PostDrawHUD()
 {
+	VR_PROFILE_SCOPE(Game_PostDrawHUD);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -517,6 +561,8 @@ void Game::PostDrawHUD()
 
 bool Game::PreDrawMenu()
 {
+	VR_PROFILE_SCOPE(Game_PreDrawMenu);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -534,6 +580,8 @@ bool Game::PreDrawMenu()
 
 void Game::PostDrawMenu()
 {
+	VR_PROFILE_SCOPE(Game_PostDrawMenu);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -547,6 +595,8 @@ void Game::PostDrawMenu()
 D3DVIEWPORT9 currentViewport;
 bool Game::PreDrawLoading(int param1, struct Renderer* renderer)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawLoading);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -562,6 +612,8 @@ bool Game::PreDrawLoading(int param1, struct Renderer* renderer)
 
 void Game::PostDrawLoading(int param1, struct Renderer* renderer)
 {
+	VR_PROFILE_SCOPE(Game_PostDrawLoading);
+
 	// Only render UI once per frame
 	if (GetRenderState() != ERenderState::LEFT_EYE)
 	{
@@ -573,6 +625,8 @@ void Game::PostDrawLoading(int param1, struct Renderer* renderer)
 
 bool Game::PreDrawCrosshair(short* anchorLocation)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawCrosshair);
+
 	// Draw things normally for the scope
 	if (GetRenderState() == ERenderState::SCOPE)
 	{
@@ -595,6 +649,8 @@ bool Game::PreDrawCrosshair(short* anchorLocation)
 
 void Game::PostDrawCrosshair()
 {
+	VR_PROFILE_SCOPE(Game_PostDrawCrosshair);
+
 	// Draw things normally for the scope
 	if (GetRenderState() == ERenderState::SCOPE)
 	{
@@ -607,6 +663,8 @@ void Game::PostDrawCrosshair()
 
 void Game::PreDrawImage(void* param1, void* param2)
 {
+	VR_PROFILE_SCOPE(Game_PreDrawImage);
+
 	Helpers::GetDirect3DDevice9()->GetRenderState(D3DRS_ALPHAFUNC, &realAlphaFunc);
 	Helpers::GetDirect3DDevice9()->GetRenderState(D3DRS_SRCBLENDALPHA, &realAlphaSrc);
 	Helpers::GetDirect3DDevice9()->GetRenderState(D3DRS_DESTBLENDALPHA, &realAlphaDest);
@@ -621,6 +679,8 @@ void Game::PreDrawImage(void* param1, void* param2)
 
 void Game::PostDrawImage(void* param1, void* param2)
 {
+	VR_PROFILE_SCOPE(Game_PostDrawImage);
+
 	DWORD tmp1, tmp2, tmp3;
 
 	Helpers::GetDirect3DDevice9()->GetRenderState(D3DRS_ALPHAFUNC, &tmp1);
@@ -636,6 +696,7 @@ void Game::PostDrawImage(void* param1, void* param2)
 
 void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* up, TransformQuat* BoneTransforms, Transform* OutBoneTransforms)
 {
+	VR_PROFILE_SCOPE(Game_UpdateViewModel);
 	weaponHandler.UpdateViewModel(id, pos, facing, up, BoneTransforms, OutBoneTransforms);
 
 	if (Game::instance.bIsMouse1Down)
@@ -648,46 +709,88 @@ void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* u
 
 void Game::PreFireWeapon(HaloID& weaponID, short param2)
 {
+	VR_PROFILE_SCOPE(Game_PreFireWeapon);
 	weaponHandler.PreFireWeapon(weaponID, param2);
 }
 
 void Game::PostFireWeapon(HaloID& weaponID, short param2)
 {
+	VR_PROFILE_SCOPE(Game_PostFireWeapon);
 	weaponHandler.PostFireWeapon(weaponID, param2);
 }
 
 void Game::PreThrowGrenade(HaloID& playerID)
 {
+	VR_PROFILE_SCOPE(Game_PreThrowGrenade);
 	weaponHandler.PreThrowGrenade(playerID);
 }
 
 void Game::PostThrowGrenade(HaloID& playerID)
 {
+	VR_PROFILE_SCOPE(Game_PostThrowGrenade);
 	weaponHandler.PostThrowGrenade(playerID);
 }
 
 void Game::UpdateInputs()
 {
+	VR_PROFILE_SCOPE(Game_UpdateInputs);
 	inputHandler.UpdateInputs(bInVehicle);
+
+#if USE_PROFILER
+	static bool bWasPressed = false;
+
+	bool bPressed = GetAsyncKeyState(VK_F5) & 0x8000;
+
+	if (bPressed && !bWasPressed)
+	{
+		DumpProfilerData();
+	}
+
+	bWasPressed = bPressed;
+#endif
 }
 
 void Game::CalculateSmoothedInput()
 {
-	inputHandler.CalculateSmoothedInput(); 
+	VR_PROFILE_SCOPE(Game_CalculateSmoothedInput);
+	inputHandler.CalculateSmoothedInput();
 }
 
 bool Game::GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand)
 {
+	VR_PROFILE_SCOPE(Game_GetCalculatedHandPositions);
 	return inputHandler.GetCalculatedHandPositions(controllerTransform, dominantHandPos, offHand);
 }
 
-Vector3 Game::GetSmoothedInput()
+void Game::ReloadStart(HaloID param1, short param2, bool param3)
+{
+	VR_PROFILE_SCOPE(Game_ReloadStart);
+	// TODO: Check if this reload was from the player (can probably be done by checking the weapon's parent ID matches the player)
+	WeaponDynamicObject* weaponObject = static_cast<WeaponDynamicObject*>((Helpers::GetDynamicObject(param1)));
+
+	Weapon& weapon = weaponObject->weaponData[param2];
+
+	// Reload function gets called whenever the player tries to reload, if reloadstate is 1 then a reload was actually triggered
+	if (weapon.reloadState == 1)
+	{
+		Logger::log << "Reload Start (" << param1 << ", " << param2 << ", " << param3 << ")" << std::endl;
+	}
+}
+
+void Game::ReloadEnd(short param1, HaloID param2)
+{
+	VR_PROFILE_SCOPE(Game_ReloadEnd);
+	Logger::log << "Reload End" << std::endl;
+}
+
+Vector3 Game::GetSmoothedInput() const
 {
 	return inputHandler.smoothedPosition;
 }
 
 void Game::UpdateCamera(float& yaw, float& pitch)
 {
+	VR_PROFILE_SCOPE(Game_UpdateCamera);
 	// Don't bother simulating inputs if we aren't actually in vr
 #if EMULATE_VR
 	return;
@@ -705,6 +808,7 @@ void Game::UpdateCamera(float& yaw, float& pitch)
 
 void Game::SetMousePosition(int& x, int& y)
 {
+	VR_PROFILE_SCOPE(Game_SetMousePosition);
 	// Don't bother simulating inputs if we aren't actually in vr
 #if EMULATE_VR
 	return;
@@ -714,6 +818,7 @@ void Game::SetMousePosition(int& x, int& y)
 
 void Game::UpdateMouseInfo(MouseInfo* mouseInfo)
 {
+	VR_PROFILE_SCOPE(Game_UpdateMouseInfo);
 	// Don't bother simulating inputs if we aren't actually in vr
 #if EMULATE_VR
 	return;
@@ -723,6 +828,7 @@ void Game::UpdateMouseInfo(MouseInfo* mouseInfo)
 
 void Game::SetViewportScale(Viewport* viewport)
 {
+	VR_PROFILE_SCOPE(Game_SetViewportScale);
 	// This appears to be broken, the code this is overriding does something very weird with the scaling
 	/*
 	viewport->left = -1.0f;
@@ -760,6 +866,7 @@ void Game::CreateConsole()
 
 void Game::PatchGame()
 {
+	VR_PROFILE_SCOPE(Game_PatchGame);
 	MH_STATUS hookStatus;
 
 	if ((hookStatus = MH_Initialize()) != MH_OK)
@@ -777,6 +884,8 @@ void Game::PatchGame()
 
 void Game::SetupConfigs()
 {
+	VR_PROFILE_SCOPE(Game_SetupConfigs);
+
 	Config config;
 
 	// Window settings
@@ -837,7 +946,7 @@ void Game::SetupConfigs()
 
 	const bool bLoadedConfig = config.LoadFromFile("VR/config.txt");
 	const bool bSavedConfig = config.SaveToFile("VR/config.txt");
-	
+
 	if (!bLoadedConfig)
 	{
 		Logger::log << "[Config] First time startup, generating default config file" << std::endl;
@@ -847,7 +956,7 @@ void Game::SetupConfigs()
 	{
 		Logger::log << "[Config] Couldn't save config file, halo is likely running as non-administrator from a protected directory" << std::endl;
 	}
-	
+
 	// First run, but couldn't create config file
 	if (!bLoadedConfig && !bSavedConfig)
 	{
@@ -895,14 +1004,100 @@ void Game::CalcFPS(float deltaTime)
 	}
 }
 
+#if USE_PROFILER
+void Game::DumpProfilerData()
+{
+	VR_PROFILE_SCOPE(Game_DumpProfilerData);
+
+	// TODO: Create a better system for viewing this data (e.g. real time display/proper dedicated profile files)
+	std::vector<Profiler::FrameTimings*> frameTimings;
+	Game::instance.profiler.GetTimings(frameTimings);
+
+	Logger::log << "[Profiler] Dumping last 30 seconds of profiler data..." << std::endl;
+
+	float minFrame = FLT_MAX;
+	float maxFrame = -FLT_MAX;
+	float totalFrame = 0.0f;
+	int numFrames = 0;
+
+	Profiler::time_point now = std::chrono::high_resolution_clock::now();
+
+	std::unordered_map<std::string, Profiler::Timings> totalTimes;
+
+	for (auto it = frameTimings.rbegin(); it != frameTimings.rend(); ++it)
+	{
+		float ago = std::chrono::duration<float, std::milli>(now - (*it)->frameEnd).count();
+		if (ago > 30.0f * 1000.0f)
+		{
+			break;
+		}
+
+		float duration = std::chrono::duration<float, std::milli>((*it)->frameEnd - (*it)->frameStart).count();
+
+		minFrame = (std::min)(minFrame, duration);
+		maxFrame = (std::max)(maxFrame, duration);
+		totalFrame += duration;
+		numFrames++;
+
+		for (auto& kv : (*it)->timings)
+		{
+			const std::string& eventName = kv.first;
+			const Profiler::Timings* timings = kv.second;
+			/*
+			Logger::log << "[Profiler] "
+				<< eventName
+				<< ": calls " << timings->numHits
+				<< " min. " << timings->minTime
+				<< " avg. " << timings->totalTime / timings->numHits
+				<< " max. " << timings->maxTime
+				<< std::endl;
+			*/
+
+			totalTimes[eventName].minTime = (std::min)(totalTimes[eventName].minTime, timings->minTime);
+			totalTimes[eventName].maxTime = (std::max)(totalTimes[eventName].maxTime, timings->maxTime);
+			totalTimes[eventName].numHits += timings->numHits;
+			totalTimes[eventName].totalTime += timings->totalTime;
+		}
+	}
+
+	Logger::log << "[Profiler] Frame times: min. " << minFrame << " avg. " << (totalFrame / numFrames) << " max. " << maxFrame << std::endl;
+	Logger::log << "[Profiler] Total Event times: " << std::endl;
+
+	std::vector<std::pair<std::string, Profiler::Timings>> topTimings;
+	for (auto& kv : totalTimes)
+	{
+		topTimings.push_back(kv);
+	}
+
+	std::sort(topTimings.begin(), topTimings.end(), [](const auto& a, const auto& b)
+		{
+			return a.second.totalTime > b.second.totalTime;
+		}
+	);
+
+	for (auto& kv : topTimings)
+	{
+		Logger::log << "[Profiler] "
+			<< kv.first
+			<< ": calls " << kv.second.numHits
+			<< " min. " << kv.second.minTime
+			<< " avg. " << kv.second.totalTime / kv.second.numHits
+			<< " max. " << kv.second.maxTime
+			<< std::endl;
+	}
+}
+#endif
+
 void Game::UpdateCrosshairAndScope()
 {
+	VR_PROFILE_SCOPE(Game_UpdateCrosshairAndScope);
+
 	auto fixupRotation = [](Matrix4& m, Vector3& pos) {
 		m.translate(-pos);
 		m.rotate(90.0f, m.getUpAxis());
 		m.rotate(-90.0f, m.getLeftAxis());
 		m.translate(pos);
-	};
+		};
 
 	Vector3 aimPos, aimDir;
 
@@ -929,7 +1124,7 @@ void Game::UpdateCrosshairAndScope()
 
 	overlayTransform.translate(targetPos);
 	overlayTransform.lookAt(hmdPos, Vector3(0.0f, 0.0f, 1.0f));
-	
+
 	fixupRotation(overlayTransform, targetPos);
 
 	if (c_ShowCrosshair->Value())
@@ -960,6 +1155,8 @@ void Game::UpdateCrosshairAndScope()
 
 void Game::SetScopeTransform(Matrix4& newTransform, bool bIsVisible)
 {
+	VR_PROFILE_SCOPE(Game_SetScopeTransform);
+
 	if (!bIsVisible)
 	{
 		return;
@@ -996,6 +1193,8 @@ void Game::SetScopeTransform(Matrix4& newTransform, bool bIsVisible)
 
 void Game::StoreRenderTargets()
 {
+	VR_PROFILE_SCOPE(Game_StoreRenderTargets);
+
 	for (int i = 0; i < 8; i++)
 	{
 		gameRenderTargets[i].width = Helpers::GetRenderTargets()[i].width;
@@ -1008,6 +1207,8 @@ void Game::StoreRenderTargets()
 
 void Game::RestoreRenderTargets()
 {
+	VR_PROFILE_SCOPE(Game_RestoreRenderTargets);
+
 	for (int i = 0; i < 8; i++)
 	{
 		Helpers::GetRenderTargets()[i].width = gameRenderTargets[i].width;
@@ -1020,6 +1221,8 @@ void Game::RestoreRenderTargets()
 
 void Game::CreateTextureAndSurface(UINT Width, UINT Height, DWORD Usage, D3DFORMAT Format, IDirect3DSurface9** OutSurface, IDirect3DTexture9** OutTexture)
 {
+	VR_PROFILE_SCOPE(Game_CreateTextureAndSurface);
+
 	HRESULT result = Helpers::GetDirect3DDevice9()->CreateTexture(Width, Height, 1, Usage, Format, D3DPOOL_DEFAULT, OutTexture, nullptr);
 	if (FAILED(result))
 	{
