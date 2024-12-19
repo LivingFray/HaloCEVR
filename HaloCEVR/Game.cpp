@@ -773,6 +773,7 @@ void Game::ReloadStart(HaloID param1, short param2, bool param3)
 	// Reload function gets called whenever the player tries to reload, if reloadstate is 1 then a reload was actually triggered
 	if (weapon.reloadState == 1)
 	{
+		bIsReloading = true;
 		Logger::log << "Reload Start (" << param1 << ", " << param2 << ", " << param3 << ")" << std::endl;
 	}
 }
@@ -780,6 +781,7 @@ void Game::ReloadStart(HaloID param1, short param2, bool param3)
 void Game::ReloadEnd(short param1, HaloID param2)
 {
 	VR_PROFILE_SCOPE(Game_ReloadEnd);
+	bIsReloading = false;
 	Logger::log << "Reload End" << std::endl;
 }
 

@@ -910,6 +910,11 @@ void WeaponHandler::HandlePlasmaPistolCharge()
 inline void WeaponHandler::HandleWeaponHaptics() const
 {
 	IVR* vr = Game::instance.GetVR();
+
+	if (Game::instance.bIsReloading) 
+	{
+		return;
+	}
 	
 	if (cachedViewModel.weaponType != WeaponType::Unknown)
 	{

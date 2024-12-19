@@ -90,6 +90,7 @@ public:
 	bool bNeedsRecentre = true;
 	bool bUseTwoHandAim = false;
 	bool bIsMouse1Down = false;
+	bool bIsReloading = false;
 
 	InGameRenderer inGameRenderer;
 	InGameRenderer scopeRenderer;
