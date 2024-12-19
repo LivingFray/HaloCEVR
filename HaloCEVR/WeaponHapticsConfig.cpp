@@ -247,9 +247,6 @@ void WeaponHapticsConfigManager::HandleWeaponHaptics(IVR* vr, ControllerRole rol
 		return;
 	}
 
-	Logger::log << "[Weapon Haptics] Here: use pulse is " << haptics.UsePulse << std::endl;
-
-
 	if (haptics.UsePulse == true)
 	{
 		vr->TriggerHapticPulse(role, haptics.PulseMicroseconds);

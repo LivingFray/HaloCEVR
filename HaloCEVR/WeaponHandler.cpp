@@ -886,7 +886,7 @@ void WeaponHandler::SetPlasmaPistolCharge()
 	HaloID PlayerID;
 	bool foundPlayer = Helpers::GetLocalPlayerID(PlayerID);
 
-	if (foundPlayer) 
+	if (foundPlayer && cachedViewModel.weaponType == WeaponType::PlasmaPistol)
 	{
 		Game::instance.weaponHapticsConfig.SetPlasmaPistolCharging();
 	}
