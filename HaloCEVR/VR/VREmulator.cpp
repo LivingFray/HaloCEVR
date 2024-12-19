@@ -513,21 +513,34 @@ void VREmulator::CreateTexAndSurface(int index, UINT width, UINT height, DWORD u
 
 void VREmulator::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
 {
-#if HAPTICS_EMULATED_DEBUG
-	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role) 
-		<< 
-		"startSeconds: " 
+#if HAPTICS_DEBUG
+	Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \tRole: " << static_cast<int>(role)
+		<<
+		"\tstartSeconds: "
 		<< fStartSecondsFromNow
-		<< "\n"
+		<< "\t"
 		"duration: "
 		<< fDurationSeconds
-		<< "\n"
+		<< "\t"
 		"frequency: "
 		<< fFrequency
-		<< "\n"
+		<< "\t"
 		"amplitude: "
 		<< fAmplitude
-		<< "\n"
+		<< "\t"
 		<< std::endl;
-#endif
+#endif 
+}
+
+void VREmulator::TriggerHapticPulse(ControllerRole role, short usDurationMicroSec)
+{
+#if HAPTICS_DEBUG
+	Logger::log << "[WeaponHaptics] TriggerHapticPulse called with: \tRole: " << static_cast<int>(role)
+		<<
+		"\tusDurationMicroSec: "
+		<< usDurationMicroSec
+		<< "\t"
+		<< std::endl;
+#endif 
+
 }

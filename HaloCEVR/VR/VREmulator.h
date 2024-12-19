@@ -51,7 +51,7 @@ public:
 	Vector2 GetMousePos() { return Vector2(0.0f, 0.0f); }
 	bool GetMouseDown() { return false; }
 	void TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude) override;
-
+	void TriggerHapticPulse(ControllerRole role, short usDurationMicroSec) override;
 	// End Interface IVR
 
 protected:

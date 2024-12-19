@@ -115,6 +115,25 @@ void OpenVR::Init()
 		bHasValidTipPoses = false;
 	}
 
+	vr::VRActionHandle_t localLeftFire;
+	vr::VRActionHandle_t localRightFire;
+
+	vr::EVRInputError leftFireError = vrInput->GetActionHandle("/actions/default/out/LeftFire", &localLeftFire);
+	vr::EVRInputError rightFireError = vrInput->GetActionHandle("/actions/default/out/RightFire", &localRightFire);
+
+	leftFire = &localLeftFire;
+	rightFire = &localRightFire;
+
+	if (leftFireError != vr::EVRInputError::VRInputError_None)
+	{
+		Logger::log << "[OpenVR] Could not get leftFire (vibration) action: " << leftFireError << std::endl;
+	}
+
+	if (rightFireError != vr::EVRInputError::VRInputError_None)
+	{
+		Logger::log << "[OpenVR] Could not get leftFire (vibration) action: " << rightFireError << std::endl;
+	}
+
 	UpdateInputs();
 	UpdateSkeleton(ControllerRole::Left);
 	UpdateSkeleton(ControllerRole::Right);
@@ -548,35 +567,53 @@ float OpenVR::GetYawOffset()
 void OpenVR::TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude)
 {
 #if HAPTICS_DEBUG
-		Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \nRole: " << static_cast<int>(role)
+		Logger::log << "[WeaponHaptics] TriggerHapticVibration called with: \tRole: " << static_cast<int>(role)
 		<<
-		"startSeconds: "
+		"\tstartSeconds: "
 		<< fStartSecondsFromNow
-		<< "\n"
+		<< "\t"
 		"duration: "
 		<< fDurationSeconds
-		<< "\n"
+		<< "\t"
 		"frequency: "
 		<< fFrequency
-		<< "\n"
+		<< "\t"
 		"amplitude: "
 		<< fAmplitude
-		<< "\n"
+		<< "\t"
 		<< std::endl;
 #endif 
 
-	vr::VRActionHandle_t action;
-
+	vr::VRActionHandle_t* action;
+	
 	if (role == ControllerRole::Left)
 	{
-		vrInput->GetActionHandle("/actions/default/out/LeftFire", &action);
+		action = leftFire;
 	}
 	else 
 	{
-		vrInput->GetActionHandle("/actions/default/out/RightFire", &action);
+		action = rightFire;
 	}
 
-	vrInput->TriggerHapticVibrationAction(action, fStartSecondsFromNow, fDurationSeconds, fFrequency, fAmplitude, vr::k_ulInvalidInputValueHandle);
+	if (action)
+	{
+		vrInput->TriggerHapticVibrationAction(*action, fStartSecondsFromNow, fDurationSeconds, fFrequency, fAmplitude, vr::k_ulInvalidInputValueHandle);
+	}
+}
+
+void OpenVR::TriggerHapticPulse(ControllerRole role, short usDurationMicroSec)
+{
+#if HAPTICS_DEBUG
+	Logger::log << "[WeaponHaptics] TriggerHapticPulse called with: \tRole: " << static_cast<int>(role)
+		<<
+		"\tusDurationMicroSec: "
+		<< usDurationMicroSec
+		<< "\t"
+		<< std::endl;
+#endif 
+	
+	vr::TrackedDeviceIndex_t controllerIndex = vrSystem->GetTrackedDeviceIndexForControllerRole(role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+	vrSystem->TriggerHapticPulse(controllerIndex, 0, usDurationMicroSec);
 }
 
 Matrix4 OpenVR::GetHMDTransform(bool bRenderPose)
