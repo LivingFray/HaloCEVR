@@ -698,6 +698,13 @@ void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* u
 {
 	VR_PROFILE_SCOPE(Game_UpdateViewModel);
 	weaponHandler.UpdateViewModel(id, pos, facing, up, BoneTransforms, OutBoneTransforms);
+
+	if (Game::instance.bIsMouse1Down)
+	{
+		weaponHandler.SetPlasmaPistolCharge();
+	}
+
+	weaponHandler.HandlePlasmaPistolCharge();
 }
 
 void Game::PreFireWeapon(HaloID& weaponID, short param2)
@@ -977,6 +984,8 @@ void Game::SetupConfigs()
 		Logger::log << "[Config] Invalid value for MirrorEye, defaulting to left eye" << std::endl;
 		mirrorSource = ERenderState::LEFT_EYE;
 	}
+
+	WeaponHapticsConfigManager weaponHapticsConfig;
 
 	//Logger::log << "[Config] Loaded configs" << std::endl;
 }
