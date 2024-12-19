@@ -910,15 +910,11 @@ void WeaponHandler::HandlePlasmaPistolCharge()
 inline void WeaponHandler::HandleWeaponHaptics() const
 {
 	IVR* vr = Game::instance.GetVR();
-
-	if (!vr)
-	{
-		return;
-	}
 	
 	if (cachedViewModel.weaponType != WeaponType::Unknown)
 	{
-		WeaponHaptic haptic = Game::instance.weaponHapticsConfig.GetWeaponHaptics(cachedViewModel.weaponType);
+		WeaponHapticsConfigManager hapticsManager = Game::instance.weaponHapticsConfig;
+		WeaponHaptic haptic = hapticsManager.GetWeaponHaptics(cachedViewModel.weaponType);
 
 #if HAPTICS_DEBUG
 		Logger::log << "[Weapon Haptics] triggering haptics for weapon " << haptic.Description << std::endl;
@@ -950,8 +946,8 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 #endif
 			WeaponHapticArg dominantHaptics = haptic.TwoHand.Dominant;
 			WeaponHapticArg nondominantHaptics = haptic.TwoHand.Nondominant;
-			vr->TriggerHapticVibration(dominantHand, dominantHaptics.StartSecondsDelay, dominantHaptics.DurationSeconds, dominantHaptics.Frequency, dominantHaptics.Amplitude);
-			vr->TriggerHapticVibration(nondominantHand, nondominantHaptics.StartSecondsDelay, nondominantHaptics.DurationSeconds, nondominantHaptics.Frequency, nondominantHaptics.Amplitude);
+			hapticsManager.HandleWeaponHaptics(vr, dominantHand, dominantHaptics);
+			hapticsManager.HandleWeaponHaptics(vr, nondominantHand, nondominantHaptics);
 		}
 		else 
 		{
@@ -959,7 +955,7 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 			Logger::log << "[Weapon Haptics] Gun is in one handed mode. " << haptic.Description << std::endl;
 #endif
 			WeaponHapticArg hapticArgs = haptic.OneHand;
-			vr->TriggerHapticVibration(dominantHand, hapticArgs.StartSecondsDelay, hapticArgs.DurationSeconds, hapticArgs.Frequency, hapticArgs.Amplitude);
+			hapticsManager.HandleWeaponHaptics(vr, dominantHand, hapticArgs);
 		}
 	}
 	else

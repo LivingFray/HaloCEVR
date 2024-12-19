@@ -107,8 +107,8 @@ void Hooks::EnableAllHooks()
 	DrawLoadingScreen2.EnableHook();
 	DrawCinematicBars.EnableHook();
 	DrawViewModel.EnableHook();
-	//ReloadStart.EnableHook();
-	//ReloadEnd.EnableHook();
+	ReloadStart.EnableHook();
+	ReloadEnd.EnableHook();
 
 	Freeze();
 

@@ -7,8 +7,6 @@ xcopy "./Bindings" "./Output/VR/OpenVR/" /E /I
 del ".\Output\VR\OpenVR\*.py"
 :: Copy .dlls to top level
 robocopy "./Release" "./Output" "*.dll"
-:: Move haptics config into correct folder
-move .\Output\VR\OpenVR\haptics.json .\Output\VR\haptics.json
 :: Zip everything
 tar -acf HaloCEVR.zip -C Output *.*
 :: Remove temp directory

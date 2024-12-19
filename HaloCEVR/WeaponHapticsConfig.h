@@ -1,6 +1,7 @@
 #pragma once
 #include <../../../ThirdParty/nlohmann/json.hpp>
 #include "WeaponHandler.h"
+#include "VR/IVR.h";
 
 #define HAPTICS_DEBUG 1
 #define HAPTICS_EMULATED_DEBUG 0
@@ -14,6 +15,8 @@ struct WeaponHapticArg
     float DurationSeconds;
     float Frequency;
     float Amplitude;
+    bool UsePulse = false;
+    short PulseMicroseconds;
 };
 
 struct WeaponHapticTwoHand {
@@ -27,7 +30,6 @@ struct WeaponHaptic
     std::string Description;
     WeaponHapticArg OneHand;
     WeaponHapticTwoHand TwoHand;
-
 };
 
 struct PlasmaPistolSettings
@@ -54,6 +56,7 @@ public:
     bool IsPlasmaPistolCharging();
     void SetPlasmaPistolCharging();
     void WeaponFired(WeaponType Weapon);
+    void HandleWeaponHaptics(IVR* vr, ControllerRole role, WeaponHapticArg haptics);
 
 
 protected:

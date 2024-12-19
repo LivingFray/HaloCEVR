@@ -11,20 +11,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -35,20 +41,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -59,20 +71,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -83,20 +101,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -107,20 +131,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -131,20 +161,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -155,20 +191,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -179,20 +221,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -203,20 +251,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -227,20 +281,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -251,20 +311,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     },
@@ -275,20 +341,26 @@
         "StartSecondsDelay": 0,
         "DurationSeconds": 1,
         "Frequency": 1,
-        "Amplitude": 1
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
       },
       "TwoHand": {
         "Dominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         },
         "Nondominant": {
           "StartSecondsDelay": 0,
           "DurationSeconds": 1,
           "Frequency": 1,
-          "Amplitude": 1
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
         }
       }
     }

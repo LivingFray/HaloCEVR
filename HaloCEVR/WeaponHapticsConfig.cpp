@@ -12,7 +12,7 @@ WeaponHapticsConfigManager::WeaponHapticsConfigManager()
 
 void WeaponHapticsConfigManager::LoadConfig()
 {
-	std::string hapticsConfig = "VR/haptics.json";
+	std::string hapticsConfig = "VR/OpenVR/haptics.json";
 
 	fs::path f{ hapticsConfig };
 
@@ -85,10 +85,12 @@ void WeaponHapticsConfigManager::LoadConfig()
 		for (WeaponHaptic haptic : hapticList)
 		{
 			Logger::log << "[WeaponHapticsConfig] Haptic Item " << static_cast<int>(haptic.Weapon) << std::endl;
-			Logger::log << "[WeaponHapticsConfig] Description: " << haptic.Description << std::endl;
-			Logger::log << "[WeaponHapticsConfig] OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
-			Logger::log << "[WeaponHapticsConfig] TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
-			Logger::log << "[WeaponHapticsConfig] TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
+			Logger::log << "[WeaponHapticsConfig] UsePulse: " << haptic.OneHand.UsePulse << std::endl;
+			Logger::log << "[WeaponHapticsConfig] UsePulse Dominant: " << haptic.TwoHand.Dominant.UsePulse << std::endl;
+
+			//Logger::log << "[WeaponHapticsConfig] OneHandAmp: " << haptic.OneHand.Amplitude << std::endl;
+			//Logger::log << "[WeaponHapticsConfig] TwoHandDominantAmp: " << haptic.TwoHand.Dominant.Amplitude << std::endl;
+			//Logger::log << "[WeaponHapticsConfig] TwoHandNonDominantAmp: " << haptic.TwoHand.Nondominant.Amplitude << std::endl;
 		}
 #endif
 	}
@@ -102,6 +104,9 @@ WeaponHapticArg WeaponHapticsConfigManager::GetWeaponHapticArgFromJson(json arg)
 	haptic.DurationSeconds = arg["DurationSeconds"];
 	haptic.Frequency = arg["Frequency"];
 	haptic.Amplitude = arg["Amplitude"];
+	haptic.UsePulse = arg["UsePulse"];
+	haptic.PulseMicroseconds = arg["PulseMicroseconds"];
+
 	return haptic;
 }
 
@@ -200,6 +205,9 @@ WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 		WeaponHapticArg plasmaPistolHaptics = {};
 		WeaponHapticTwoHand plasmaPistolTwoHands = {};
 
+		plasmaPistolHaptics.UsePulse = haptic.OneHand.UsePulse;
+		plasmaPistolHaptics.PulseMicroseconds = haptic.OneHand.PulseMicroseconds;
+
 		plasmaPistolHaptics.Amplitude = haptic.OneHand.Amplitude * 1/percentageOfChange;
 		plasmaPistolHaptics.DurationSeconds = haptic.OneHand.DurationSeconds;
 		plasmaPistolHaptics.Frequency = haptic.OneHand.Frequency * percentageOfChange;
@@ -209,11 +217,15 @@ WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 		plasmaPistolTwoHands.Dominant.DurationSeconds = haptic.TwoHand.Dominant.DurationSeconds;
 		plasmaPistolTwoHands.Dominant.Frequency = haptic.TwoHand.Dominant.Frequency * percentageOfChange;
 		plasmaPistolTwoHands.Dominant.StartSecondsDelay = haptic.TwoHand.Dominant.StartSecondsDelay;
+		plasmaPistolTwoHands.Dominant.UsePulse = haptic.TwoHand.Dominant.UsePulse;
+		plasmaPistolTwoHands.Dominant.PulseMicroseconds = haptic.TwoHand.Dominant.PulseMicroseconds;
 
 		plasmaPistolTwoHands.Nondominant.Amplitude = haptic.TwoHand.Nondominant.Amplitude * 1/percentageOfChange;
 		plasmaPistolTwoHands.Nondominant.DurationSeconds = haptic.TwoHand.Nondominant.DurationSeconds;
 		plasmaPistolTwoHands.Nondominant.Frequency = haptic.TwoHand.Nondominant.Frequency * percentageOfChange;
 		plasmaPistolTwoHands.Nondominant.StartSecondsDelay = haptic.TwoHand.Nondominant.StartSecondsDelay;
+		plasmaPistolTwoHands.Nondominant.PulseMicroseconds = haptic.TwoHand.Nondominant.PulseMicroseconds;
+		plasmaPistolTwoHands.Nondominant.UsePulse = haptic.TwoHand.Nondominant.UsePulse;
 
 		WeaponHaptic plasmaPistolAdjusted = {};
 		plasmaPistolAdjusted.Description = haptic.Description;
@@ -226,4 +238,24 @@ WeaponHaptic WeaponHapticsConfigManager::GetWeaponHaptics(WeaponType Weapon)
 
 	return haptic;
 
+}
+
+void WeaponHapticsConfigManager::HandleWeaponHaptics(IVR* vr, ControllerRole role, WeaponHapticArg haptics)
+{
+	if (!vr)
+	{
+		return;
+	}
+
+	Logger::log << "[Weapon Haptics] Here: use pulse is " << haptics.UsePulse << std::endl;
+
+
+	if (haptics.UsePulse == true)
+	{
+		vr->TriggerHapticPulse(role, haptics.PulseMicroseconds);
+	}
+	else
+	{
+		vr->TriggerHapticVibration(role, haptics.StartSecondsDelay, haptics.DurationSeconds, haptics.Frequency, haptics.Amplitude);
+	}
 }
