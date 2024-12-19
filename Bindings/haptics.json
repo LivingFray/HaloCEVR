@@ -1,0 +1,368 @@
+{
+  "ReloadOnChange": true,
+  "PlasmaPistol": {
+    "RampUpTicks": 45
+  },
+  "Haptics": [
+    {
+      "Weapon": 0,
+      "Description": "Unknown",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 1,
+      "Description": "Pistol",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 2,
+      "Description": "AssaultRifle",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 3,
+      "Description": "Shotgun",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 4,
+      "Description": "RocketLauncher",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 5,
+      "Description": "Sniper",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 6,
+      "Description": "Flamethrower",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 7,
+      "Description": "PlasmaPistol",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 8,
+      "Description": "PlasmaRifle",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 9,
+      "Description": "PlasmaCannon",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 10,
+      "Description": "Needler",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    },
+    {
+      "Weapon": 11,
+      "Description": "FuelRod",
+      "OneHand": {
+        "StartSecondsDelay": 0,
+        "DurationSeconds": 1,
+        "Frequency": 1,
+        "Amplitude": 1,
+        "UsePulse": true,
+        "PulseMicroseconds": 400
+      },
+      "TwoHand": {
+        "Dominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        },
+        "Nondominant": {
+          "StartSecondsDelay": 0,
+          "DurationSeconds": 1,
+          "Frequency": 1,
+          "Amplitude": 1,
+          "UsePulse": true,
+          "PulseMicroseconds": 400
+        }
+      }
+    }
+  ]
+}
