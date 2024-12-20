@@ -21,7 +21,7 @@ jobs:
       # Step 3: Build the project using the CI-specific configuration
       - name: Build HaloCEVR
         run: |
-          msbuild HaloCEVR.sln /p:Configuration=CI_Release /p:Platform=x86 /p:WholeProgramOptimization=false
+          msbuild HaloCEVR.sln /p:Configuration=Package /p:Platform=x86 /p:WholeProgramOptimization=false
 
       # Step 4: Upload build artifacts
       - name: Upload build artifacts
