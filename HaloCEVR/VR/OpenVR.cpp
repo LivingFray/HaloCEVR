@@ -413,7 +413,7 @@ void OpenVR::PositionOverlay()
 	float yaw = atan2(-mat.m[2][0], mat.m[2][2]);
 	vr::HmdMatrix34_t transform = {
 		cos(yaw), 0, sin(yaw), position.v[0],
-		0, 1, 0, position.v[1],
+		0, 0.75f, 0, position.v[1],
 		-sin(yaw), 0, cos(yaw), position.v[2]
 	};
 
