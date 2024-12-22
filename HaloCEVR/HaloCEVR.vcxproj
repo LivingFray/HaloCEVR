@@ -189,8 +189,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>cd "$(SolutionDir)Bindings"
-call "python manifest.py"
+      <Command>
 cd "$(SolutionDir)"
 call "makerelease.bat"</Command>
     </PostBuildEvent>
