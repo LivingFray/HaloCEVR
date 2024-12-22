@@ -114,6 +114,14 @@
             "type": "pose"
         },
         {
+            "name": "/actions/default/out/RightFire",
+            "type": "vibration"
+        },
+        {
+            "name": "/actions/default/out/LeftFire",
+            "type": "vibration"
+        },
+        {
             "name": "/actions/default/in/LeftHand",
             "type": "skeleton",
             "skeleton": "/skeleton/hand/left"

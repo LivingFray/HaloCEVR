@@ -1,4 +1,4 @@
-#define EMULATE_VR 0
+#define EMULATE_VR 1
 #include "Game.h"
 #include "Logger.h"
 #include "Hooking/Hooks.h"
@@ -698,6 +698,13 @@ void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* u
 {
 	VR_PROFILE_SCOPE(Game_UpdateViewModel);
 	weaponHandler.UpdateViewModel(id, pos, facing, up, BoneTransforms, OutBoneTransforms);
+
+	if (Game::instance.bIsMouse1Down)
+	{
+		weaponHandler.SetPlasmaPistolCharge();
+	}
+
+	weaponHandler.HandlePlasmaPistolCharge();
 }
 
 void Game::PreFireWeapon(HaloID& weaponID, short param2)
@@ -766,6 +773,7 @@ void Game::ReloadStart(HaloID param1, short param2, bool param3)
 	// Reload function gets called whenever the player tries to reload, if reloadstate is 1 then a reload was actually triggered
 	if (weapon.reloadState == 1)
 	{
+		bIsReloading = true;
 		Logger::log << "Reload Start (" << param1 << ", " << param2 << ", " << param3 << ")" << std::endl;
 	}
 }
@@ -773,6 +781,7 @@ void Game::ReloadStart(HaloID param1, short param2, bool param3)
 void Game::ReloadEnd(short param1, HaloID param2)
 {
 	VR_PROFILE_SCOPE(Game_ReloadEnd);
+	bIsReloading = false;
 	Logger::log << "Reload End" << std::endl;
 }
 
@@ -977,6 +986,8 @@ void Game::SetupConfigs()
 		Logger::log << "[Config] Invalid value for MirrorEye, defaulting to left eye" << std::endl;
 		mirrorSource = ERenderState::LEFT_EYE;
 	}
+
+	WeaponHapticsConfigManager weaponHapticsConfig;
 
 	//Logger::log << "[Config] Loaded configs" << std::endl;
 }

@@ -56,4 +56,8 @@ public:
 	virtual Vector2 GetVector2Input(InputBindingID id) = 0;
 	virtual Vector2 GetMousePos() = 0;
 	virtual bool GetMouseDown() = 0;
+	virtual void TriggerHapticVibration(ControllerRole role, float fStartSecondsFromNow, float fDurationSeconds, float fFrequency, float fAmplitude) = 0;
+	virtual void TriggerHapticPulse(ControllerRole role, short usDurationMicroSec) = 0;
+
+	//virtual IVRInput* GetVrInput() { return NULL; }
 };
