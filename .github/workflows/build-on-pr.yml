@@ -1,4 +1,4 @@
-name: Build on Pull Request
+name: Package Pull Request
 
 on:
   pull_request:
@@ -18,12 +18,12 @@ jobs:
       - name: Set up MS Build
         uses: microsoft/setup-msbuild@v1
 
-      # Step 3: Build the project using the CI-specific configuration
+      # Step 3: Build the project using the Package configuration
       - name: Build HaloCEVR
         run: |
           msbuild HaloCEVR.sln /p:Configuration=Package /p:Platform=x86 /p:WholeProgramOptimization=false
 
-      # Step 4: Upload build artifacts
+      # Step 4: Upload Zip file
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
