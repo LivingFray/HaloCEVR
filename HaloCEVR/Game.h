@@ -12,6 +12,7 @@
 #include "WeaponHandler.h"
 #include "InputHandler.h"
 #include "InGameRenderer.h"
+#include "Profiler.h"
 
 enum class ERenderState { UNKNOWN, LEFT_EYE, RIGHT_EYE, GAME, SCOPE};
 
@@ -32,7 +33,7 @@ public:
 	void PreDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawFrame(struct Renderer* renderer, float deltaTime);
-	Vector3 GetSmoothedInput();
+	Vector3 GetSmoothedInput() const;
 
 	bool PreDrawHUD();
 	void PostDrawHUD();
@@ -93,6 +94,10 @@ public:
 
 	bool bDetectedChimera = false;
 	Vector3 LastLookDir;
+
+#if USE_PROFILER
+	Profiler profiler;
+#endif
 protected:
 
 	void CreateConsole();
@@ -102,6 +107,9 @@ protected:
 	void SetupConfigs();
 
 	void CalcFPS(float deltaTime);
+#if USE_PROFILER
+	void DumpProfilerData();
+#endif
 
 	void UpdateCrosshairAndScope();
 	void SetScopeTransform(Matrix4& newTransform, bool bIsVisible);

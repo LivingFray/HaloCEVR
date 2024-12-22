@@ -87,6 +87,9 @@
     <ClCompile Include="Helpers\Cutscene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Profiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Hooking\FunctionTypedefs.h">
@@ -174,6 +177,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Helpers\Cutscene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

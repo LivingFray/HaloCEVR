@@ -10,11 +10,15 @@
 #include "../DirectXWrappers/IDirect3DDevice9ExWrapper.h"
 #include "../Helpers/CmdLineArgs.h"
 
+#include "../Profiler.h"
+
 #define CREATEHOOK(Func) Func##.CreateHook(#Func, o.##Func##, &H_##Func##)
 #define RESOLVEINDIRECT(Name) ResolveIndirect(o.I_##Name, o.##Name)
 
 void Hooks::InitHooks()
 {
+	VR_PROFILE_SCOPE(Hooks_InitHooks);
+
 	RESOLVEINDIRECT(AssetsArray);
 	RESOLVEINDIRECT(Controls);
 	RESOLVEINDIRECT(DirectX9);
@@ -83,6 +87,8 @@ void Hooks::InitHooks()
 
 void Hooks::EnableAllHooks()
 {
+	VR_PROFILE_SCOPE(Hooks_EnableAllHooks);
+
 	InitDirectX.EnableHook();
 	DrawFrame.EnableHook();
 	DrawHUD.EnableHook();
@@ -307,6 +313,8 @@ void Hooks::ResolveIndirect(Offset& offset, long long& Address)
 
 bool Hooks::H_InitDirectX()
 {
+	VR_PROFILE_SCOPE(Hooks_InitDirectX);
+
 	bool bSuccess = InitDirectX.Original();
 
 	Game::instance.OnInitDirectX();
@@ -316,6 +324,7 @@ bool Hooks::H_InitDirectX()
 
 void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tickProgress, float deltaTime)
 {
+	VR_PROFILE_SCOPE(Hooks_DrawFrame);
 	/*
 	In order to get each perspective (left eye, right eye, PiP scope, mirror [todo: just blit an eye for the mirror])
 	we need to call the draw function multiple times, but should take care to avoid creating multiple d3d scenes as
@@ -344,7 +353,9 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 	// Draw scope if necessary
 	if (Game::instance.PreDrawScope(param1, deltaTime))
 	{
+		VR_PROFILE_START(Hooks_DrawFrame_DrawScope);
 		DrawFrame.Original(param1, param2, param3, tickProgress, deltaTime);
+		VR_PROFILE_STOP(Hooks_DrawFrame_DrawScope);
 		Game::instance.PostDrawScope(param1, deltaTime);
 
 		reinterpret_cast<IDirect3DDevice9ExWrapper*>(Helpers::GetDirect3DDevice9())->bIgnoreNextStart = true;
@@ -353,7 +364,9 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 
 	// Draw left eye
 	Game::instance.PreDrawEye(param1, deltaTime, 0);
+	VR_PROFILE_START(Hooks_DrawFrame_DrawLeftEye);
 	DrawFrame.Original(param1, param2, param3, tickProgress, deltaTime);
+	VR_PROFILE_STOP(Hooks_DrawFrame_DrawLeftEye);
 	Game::instance.PostDrawEye(param1, deltaTime, 0);
 
 	reinterpret_cast<IDirect3DDevice9ExWrapper*>(Helpers::GetDirect3DDevice9())->bIgnoreNextStart = true;
@@ -361,7 +374,9 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 
 	// Draw right eye
 	Game::instance.PreDrawEye(param1, deltaTime, 1);
+	VR_PROFILE_START(Hooks_DrawFrame_DrawRightEye);
 	DrawFrame.Original(param1, param2, param3, tickProgress, deltaTime);
+	VR_PROFILE_STOP(Hooks_DrawFrame_DrawRightEye);
 	Game::instance.PostDrawEye(param1, deltaTime, 1);
 
 	// Draw Mirror view, but only if the secret mirror mode is set in settings due to performance cost
@@ -370,7 +385,9 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 		reinterpret_cast<IDirect3DDevice9ExWrapper*>(Helpers::GetDirect3DDevice9())->bIgnoreNextStart = true;
 
 		Game::instance.PreDrawMirror(param1, deltaTime);
+		VR_PROFILE_START(Hooks_DrawFrame_DrawMirror);
 		DrawFrame.Original(param1, param2, param3, tickProgress, deltaTime);
+		VR_PROFILE_STOP(Hooks_DrawFrame_DrawMirror);
 		Game::instance.PostDrawMirror(param1, deltaTime);
 	}
 	Game::instance.PostDrawFrame(param1, deltaTime);
@@ -383,6 +400,7 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 
 void Hooks::H_DrawHUD()
 {
+	VR_PROFILE_SCOPE(Hooks_DrawHUD);
 	if (Game::instance.PreDrawHUD())
 	{
 		DrawHUD.Original();
@@ -398,10 +416,16 @@ void __declspec(naked) Hooks::H_DrawMenu()
 		pushad
 	}
 
-	if (Game::instance.PreDrawMenu())
 	{
-		DrawMenu.Original();
-		Game::instance.PostDrawMenu();
+		VR_PROFILE_START(Hooks_DrawMenu);
+
+		if (Game::instance.PreDrawMenu())
+		{
+			DrawMenu.Original();
+			Game::instance.PostDrawMenu();
+		}
+
+		VR_PROFILE_STOP(Hooks_DrawMenu);
 	}
 
 	_asm
@@ -769,6 +793,8 @@ void __declspec(naked) Hooks::H_UpdateMouseInfo()
 
 void Hooks::H_FireWeapon(HaloID param1, short param2)
 {
+	VR_PROFILE_SCOPE(Hooks_FireWeapon);
+
 	Game::instance.PreFireWeapon(param1, param2);
 
 	FireWeapon.Original(param1, param2);
@@ -780,6 +806,8 @@ void Hooks::H_FireWeapon(HaloID param1, short param2)
 
 void Hooks::H_ThrowGrenade(HaloID param1, bool param2)
 {
+	VR_PROFILE_SCOPE(Hooks_ThrowGrenade);
+
 	Game::instance.PreThrowGrenade(param1);
 
 	ThrowGrenade.Original(param1, param2);
@@ -831,6 +859,8 @@ void Hooks::H_DrawCinematicBars()
 
 void Hooks::H_DrawViewModel()
 {
+	VR_PROFILE_SCOPE(Hooks_DrawViewModel);
+
 	if (Game::instance.c_LeftHanded->Value())
 	{
 		Helpers::GetDirect3DDevice9()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -851,6 +881,8 @@ void Hooks::H_DrawViewModel()
 
 void Hooks::H_ReloadStart(HaloID param1, short param2, bool param3)
 {
+	VR_PROFILE_SCOPE(Hooks_ReloadStart);
+
 	ReloadStart.Original(param1, param2, param3);
 
 	Game::instance.ReloadStart(param1, param2, param3);
@@ -908,6 +940,7 @@ void Hooks::P_RemoveCutsceneFPSCap()
 
 void Hooks::P_KeepViewModelVisible(bool bAlwaysShow)
 {
+	VR_PROFILE_SCOPE(Hooks_P_KeepViewModelVisible); // Wouldn't normally profile patches, but this one gets dynamically applied at run time
 	// Replace "bShowViewModel = false" with "bShowViewModel = true"
 	SetByte(o.SetViewModelVisible.Address + 0x55, bAlwaysShow ? 0x0 : 0x1);
 }
@@ -916,7 +949,7 @@ void Hooks::P_EnableUIAlphaWrite()
 {
 	// By default the UI doesn't write to the alpha channel (since its being drawn last + straight onto the main image)
 	// We need the alpha value in order to have transparency in floating UI elements
-	SetByte(o.TextureAlphaWrite.Address + 0x4a, 0xf);
+	SetByte(o.TextureAlphaWrite.Address + 0x19, 0xf);
 	SetByte(o.TextAlphaWrite.Address + 0x72, 0xf);
 }
 

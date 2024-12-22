@@ -274,6 +274,7 @@ call "py" manifest.py</Command>
     <ClCompile Include="DirectXWrappers\IDirect3DDevice9ExWrapper.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="Maths\Matrices.cpp" />
+    <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="VR\OpenVR.cpp" />
     <ClCompile Include="VR\VREmulator.cpp" />
     <ClCompile Include="WeaponHandler.cpp" />
@@ -303,6 +304,7 @@ call "py" manifest.py</Command>
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Maths\Matrices.h" />
+    <ClInclude Include="Profiler.h" />
     <ClInclude Include="VR\OpenVR.h" />
     <ClInclude Include="Maths\Vectors.h" />
     <ClInclude Include="VR\VREmulator.h" />
