@@ -43,6 +43,7 @@ void Game::Init()
 
 	vr->Init();
 
+	Game::instance.bLeftHanded = Game::instance.c_LeftHanded->Value();
 	inputHandler.RegisterInputs();
 
 	backBufferWidth = vr->GetViewWidth();
@@ -897,7 +898,7 @@ void Game::SetupConfigs()
 	c_UIOverlayHeight = config.RegisterInt("UIOverlayHeight", "Height of the UI overlay in pixels", 600);
 	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Display a floating crosshair in the world at the location you are aiming", true);
 	// Control settings
-	c_LeftHanded = config.RegisterBool("LeftHanded", "Make the left hand the dominant hand. Does not affect bindings, change these in the SteamVR overlay", false);
+	c_LeftHanded = config.RegisterBool("LeftHanded", "Make the left hand the dominant hand by default. This swaps the button bindings but doesn't swap the sticks. Left handed bindings with the sticks swapped can be found in the SteamVR overlay", false);
 	c_SnapTurn = config.RegisterBool("SnapTurn", "The look input will instantly rotate the view by a fixed amount, rather than smoothly rotating", true);
 	c_SnapTurnAmount = config.RegisterFloat("SnapTurnAmount", "Rotation in degrees a single snap turn will rotate the view by", 45.0f);
 	c_SmoothTurnAmount = config.RegisterFloat("SmoothTurnAmount", "Rotation in degrees per second the view will turn at when not using snap turning", 90.0f);
@@ -907,8 +908,10 @@ void Game::SetupConfigs()
 	c_VerticalVehicleTurnAmount = config.RegisterFloat("VerticalVehicleTurnAmount", "Rotation in degrees per second the view will turn vertically when in vehicles (<0 to invert)", 45.0f);
 	c_ToggleGrip = config.RegisterBool("ToggleGrip", "When true releasing two handed weapons requires pressing the grip action again", false);
 	c_TwoHandDistance = config.RegisterFloat("TwoHandDistance", "Maximum distance between both hands where the off hand grip action will enable two handed aiming (<0 for any distance)", 0.8f);
+	c_SwapHandDistance = config.RegisterFloat("SwapHandDistance", "Maximum distance between both hands where the swap weapon hand grip action will swap your weapon into the opposite hand (<0 to disable)", 0.2f);
+	c_OffhandHandFlashlight = config.RegisterBool("OffhandHandFlashlight", "Use your offhand for toggling the flashlight, your offhand hand is the hand not holding a weapon", true);
 	c_LeftHandFlashlightDistance = config.RegisterFloat("LeftHandFlashlight", "Bringing the left hand within this distance of the head will toggle the flashlight (<0 to disable)", 0.2f);
-	c_RightHandFlashlightDistance = config.RegisterFloat("RightHandFlashlight", "Bringing the right hand within this distance of the head will toggle the flashlight (<0 to disable)", -1.0f);
+	c_RightHandFlashlightDistance = config.RegisterFloat("RightHandFlashlight", "Bringing the right hand within this distance of the head will toggle the flashlight (<0 to disable)", 0.2f);
 	c_LeftHandMeleeSwingSpeed = config.RegisterFloat("LeftHandMeleeSwingSpeed", "Minimum vertical velocity of left hand required to initiate a melee attack in m/s (<0 to disable)", 2.5f);
 	c_RightHandMeleeSwingSpeed = config.RegisterFloat("RightHandMeleeSwingSpeed", "Minimum vertical velocity of right hand required to initiate a melee attack in m/s (<0 to disable)", 2.5f);
 	c_CrouchHeight = config.RegisterFloat("CrouchHeight", "Minimum height to duck by in metres to automatically trigger the crouch input in game (<0 to disable)", 0.15f);

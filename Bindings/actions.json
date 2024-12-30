@@ -24,7 +24,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Jump",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/SwitchGrenades",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwitchGrenades",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -34,7 +44,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Interact",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/SwitchWeapons",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwitchWeapons",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -44,7 +64,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Melee",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Flashlight",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Flashlight",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -54,7 +84,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Grenade",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Fire",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Fire",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -64,7 +104,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/MenuForward",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/MenuBack",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/MenuBack",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -74,7 +124,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Crouch",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Zoom",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Zoom",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -84,7 +144,17 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/Reload",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Recentre",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Recentre",
             "requirement": "suggested",
             "type": "boolean"
         },
@@ -94,12 +164,37 @@
             "type": "boolean"
         },
         {
+            "name": "/actions/left handed/in/TwoHandGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/SwapWeaponHand",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwapWeaponHand",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
             "name": "/actions/default/in/Look",
             "requirement": "suggested",
             "type": "vector2"
         },
         {
+            "name": "/actions/left handed/in/Look",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
             "name": "/actions/default/in/Move",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
+            "name": "/actions/left handed/in/Move",
             "requirement": "suggested",
             "type": "vector2"
         },
@@ -128,6 +223,10 @@
         {
             "name": "/actions/default",
             "usage": "leftright"
+        },
+        {
+            "name": "/actions/left handed",
+            "usage": "left"
         }
     ]
 }

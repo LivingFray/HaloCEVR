@@ -88,6 +88,7 @@ public:
 
 	bool bNeedsRecentre = true;
 	bool bUseTwoHandAim = false;
+	bool bLeftHanded = false;
 
 	InGameRenderer inGameRenderer;
 	InGameRenderer scopeRenderer;
@@ -195,6 +196,7 @@ public:
 	FloatProperty* c_HandRelativeOffsetRotation = nullptr;
 	FloatProperty* c_HorizontalVehicleTurnAmount = nullptr;
 	FloatProperty* c_VerticalVehicleTurnAmount = nullptr;
+	BoolProperty* c_OffhandHandFlashlight = nullptr;
 	FloatProperty* c_LeftHandFlashlightDistance = nullptr;
 	FloatProperty* c_RightHandFlashlightDistance = nullptr;
 	BoolProperty* c_EnableWeaponHolsters = nullptr;
@@ -216,6 +218,7 @@ public:
 	BoolProperty* c_ToggleGrip = nullptr;
 	FloatProperty* c_TwoHandDistance = nullptr;
 	BoolProperty* c_LeftHanded = nullptr;
+	FloatProperty* c_SwapHandDistance = nullptr;
 	StringProperty* c_d3d9Path = nullptr;
 	FloatProperty* c_WeaponSmoothingAmountNoZoom = nullptr;
 	FloatProperty* c_WeaponSmoothingAmountOneZoom = nullptr;
