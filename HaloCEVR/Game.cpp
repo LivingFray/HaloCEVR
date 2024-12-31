@@ -776,6 +776,11 @@ void Game::ReloadEnd(short param1, HaloID param2)
 	Logger::log << "Reload End" << std::endl;
 }
 
+bool Game::IsSnapTurning()
+{
+	return inputHandler.IsSnapTurning();
+}
+
 Vector3 Game::GetSmoothedInput() const
 {
 	return inputHandler.smoothedPosition;
