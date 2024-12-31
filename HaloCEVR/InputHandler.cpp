@@ -283,7 +283,7 @@ void InputHandler::UpdateCamera(float& yaw, float& pitch)
 			{
 				lastSnapState = -1;
 				yawOffset -= Game::instance.c_SnapTurnAmount->Value();
-							}
+			}
 		}
 	}
 	else
@@ -541,7 +541,7 @@ void InputHandler::CalculateSmoothedInput()
 
 	// Apply the smoothing using linear interpolation with the adjusted deltaTime
 	float t = (clampedValue * maxSmoothing) * Game::instance.lastDeltaTime;
-		smoothedPosition = Helpers::Lerp(smoothedPosition, actualControllerPos + toOffHand, exp(-t * speedRampup));
+	smoothedPosition = Helpers::Lerp(smoothedPosition, actualControllerPos + toOffHand, exp(-t * speedRampup));
 }
 
 
