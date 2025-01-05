@@ -20,6 +20,8 @@
 #include <algorithm>
 #endif
 
+#include "UI/UIRenderer.h"
+#include "Helpers/Version.h"
 
 void Game::Init()
 {
@@ -34,6 +36,11 @@ void Game::Init()
 	CreateConsole();
 
 	PatchGame();
+
+	Logger::log << "[Game] Found Game Type: " << Helpers::GetGameTypeString() << std::endl;
+	Logger::log << "[Game] Found Game Version: " << Helpers::GetVersionString() << std::endl;
+
+	bIsCustom = std::strcmp("halor", Helpers::GetGameTypeString()) != 0;
 
 #if EMULATE_VR
 	vr = new VREmulator();
@@ -118,6 +125,14 @@ void Game::OnInitDirectX()
 
 	CreateTextureAndSurface(desc.Width, desc.Height, desc.Usage, desc.Format, &scopeSurfaces[1], &scopeTextures[1]);
 	CreateTextureAndSurface(desc.Width / 2, desc.Height / 2, desc.Usage, desc.Format, &scopeSurfaces[2], &scopeTextures[2]);
+
+	uiRenderer = new UIRenderer();
+
+	uiRenderer->Init(Helpers::GetDirect3DDevice9());
+
+	settingsMenu = new SettingsMenu();
+
+	settingsMenu->CreateMenus();
 }
 
 void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
@@ -588,6 +603,11 @@ void Game::PostDrawMenu()
 		return;
 	}
 
+	if (Helpers::IsMouseVisible())
+	{
+		uiRenderer->Render();
+	}
+
 	Helpers::GetRenderTargets()[1].renderSurface = uiRealSurface;
 	Helpers::GetDirect3DDevice9()->SetRenderTarget(0, uiRealSurface);
 }
@@ -808,20 +828,52 @@ void Game::SetMousePosition(int& x, int& y)
 {
 	VR_PROFILE_SCOPE(Game_SetMousePosition);
 	// Don't bother simulating inputs if we aren't actually in vr
-#if EMULATE_VR
-	return;
-#endif
+#if !EMULATE_VR
 	inputHandler.SetMousePosition(x, y);
+#endif
+	if (Helpers::IsMouseVisible())
+	{
+		uiRenderer->MoveCursor(static_cast<float>(x), static_cast<float>(y));
+#if !EMULATE_VR
+		// Stop menu hover events happening while ui is up
+		if (settingsMenu->bVisible)
+		{
+			x = 0;
+			y = 0;
+		}
+#endif
+	}
 }
 
 void Game::UpdateMouseInfo(MouseInfo* mouseInfo)
 {
 	VR_PROFILE_SCOPE(Game_UpdateMouseInfo);
+
+	static char realLeftClickValue = 0;
+
 	// Don't bother simulating inputs if we aren't actually in vr
-#if EMULATE_VR
-	return;
-#endif
+#if !EMULATE_VR
 	inputHandler.UpdateMouseInfo(mouseInfo);
+#endif
+	if (Helpers::IsMouseVisible() && mouseInfo->buttonState[0] == 1)
+	{
+		uiRenderer->Click();
+
+#if !EMULATE_VR
+		// Don't allow any mouse inputs to pass through to the real UI while ours is up
+		if (settingsMenu->bVisible)
+		{
+			mouseInfo->buttonState[0] = 0;
+		}
+#endif
+	}
+
+	// Hack fix for closing settings menu if the player exits a menu with it open
+	if (!Helpers::IsMouseVisible() && settingsMenu->bVisible)
+	{
+		uiRenderer->MoveCursor(0.0f, 0.0f);
+		uiRenderer->Click();
+	}
 }
 
 void Game::SetViewportScale(Viewport* viewport)
@@ -884,8 +936,6 @@ void Game::SetupConfigs()
 {
 	VR_PROFILE_SCOPE(Game_SetupConfigs);
 
-	Config config;
-
 	// Window settings
 	c_ShowConsole = config.RegisterBool("ShowConsole", "Create a console window at launch for debugging purposes", false);
 	c_DrawMirror = config.RegisterBool("DrawMirror", "Update the desktop window display to show the current game view, rather than leaving it on the splash screen", true);
@@ -898,7 +948,7 @@ void Game::SetupConfigs()
 	c_MenuOverlayScale = config.RegisterFloat("MenuOverlayScale", "Width of the menu overlay in metres", 10.0f);
 	c_CrosshairScale = config.RegisterFloat("CrosshairScale", "Width of the crosshair overlay in metres", 10.0f);
 	c_UIOverlayCurvature = config.RegisterFloat("UIOverlayCurvature", "Curvature of the UI Overlay, on a scale of 0 to 1", 0.1f);
-	c_UIOverlayWidth = config.RegisterInt("UIOverlayWidth", "Width of the UI overlay in pixels", 800);
+	c_UIOverlayWidth = config.RegisterInt("UIOverlayWidth", "Width of the UI overlay in pixels", 600);
 	c_UIOverlayHeight = config.RegisterInt("UIOverlayHeight", "Height of the UI overlay in pixels", 600);
 	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Display a floating crosshair in the world at the location you are aiming", true);
 	// Control settings
@@ -942,8 +992,8 @@ void Game::SetupConfigs()
 	c_TEMPViewportTop = config.RegisterFloat("TEMP_ViewportTop", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", -1.0f);
 	c_TEMPViewportBottom = config.RegisterFloat("TEMP_ViewportBottom", "Some headsets experience warping when turning, as a workaround the viewport scaling has been exposed so users can adjust them until the warping stops", 1.0f);
 
-	const bool bLoadedConfig = config.LoadFromFile("VR/config.txt");
-	const bool bSavedConfig = config.SaveToFile("VR/config.txt");
+	bLoadedConfig = config.LoadFromFile("VR/config.txt");
+	bSavedConfig = config.SaveToFile("VR/config.txt");
 
 	if (!bLoadedConfig)
 	{

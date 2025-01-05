@@ -23,6 +23,7 @@ class BoolProperty : public Property {
 public:
 	BoolProperty(bool value, const std::string& description) : value_(value), default_(value), Property(description) {}
 	bool Value() const { return value_; }
+	void SetValue(bool newValue) { value_ = newValue; }
 	bool DefaultValue() const { return default_; }
 private:
 	bool value_;
@@ -34,6 +35,7 @@ class IntProperty : public Property {
 public:
 	IntProperty(int value, const std::string& description) : value_(value), default_(value), Property(description) {}
 	int Value() const { return value_; }
+	void SetValue(int newValue) { value_ = newValue; }
 	int DefaultValue() const { return default_; }
 private:
 	int value_;
@@ -45,6 +47,7 @@ class FloatProperty : public Property {
 public:
 	FloatProperty(float value, const std::string& description) : value_(value), default_(value), Property(description) {}
 	float Value() const { return value_; }
+	void SetValue(float newValue) { value_ = newValue; }
 	float DefaultValue() const { return default_; }
 private:
 	float value_;
@@ -56,6 +59,7 @@ class StringProperty : public Property {
 public:
 	StringProperty(const std::string& value, const std::string& description) : value_(value), default_(value), Property(description) {}
 	std::string Value() const { return value_; }
+	void SetValue(const std::string& newValue) { value_ = newValue; }
 	std::string DefaultValue() const { return default_; }
 private:
 	std::string value_;
@@ -67,6 +71,7 @@ class Vector3Property : public Property {
 public:
 	Vector3Property(const Vector3& value, const std::string& description) : value_(value), default_(value), Property(description) {}
 	Vector3 Value() const { return value_; }
+	void SetValue(const Vector3& newValue) { value_ = newValue; }
 	Vector3 DefaultValue() const { return default_; }
 private:
 	Vector3 value_;
@@ -250,6 +255,31 @@ public:
 		}
 
 		return true;
+	}
+
+	std::vector<std::string> GetAllSettings() const {
+		std::vector<std::string> outKeys;
+		outKeys.reserve(properties_.size());
+		
+		std::vector<std::pair<std::string, Property*>> sortedProperties(properties_.begin(), properties_.end());
+		std::sort(sortedProperties.begin(), sortedProperties.end(), [](std::pair<std::string, Property*> a, std::pair<std::string, Property*> b) { return a.second->guid < b.second->guid; });
+		for (const auto& pair : sortedProperties)
+		{
+			outKeys.push_back(pair.first);
+		}
+
+		return outKeys;
+	}
+
+	Property* Get(const std::string& name) const {
+		try
+		{
+			return properties_.at(name);
+		}
+		catch (std::exception e)
+		{
+			return nullptr;
+		}
 	}
 
 	BoolProperty* GetBool(const std::string& name) const {

@@ -59,25 +59,52 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 
 	static bool bHasChanged = false;
 
-	Controls& controls = Helpers::GetControls();
+	if (Game::instance.bIsCustom)
+	{
+		Controls_Custom& controls = Helpers::GetControlsCustom();
 
-	ApplyBoolInput(Jump);
-	ApplyImpulseBoolInput(SwitchGrenades);
-	ApplyBoolInput(Interact);
-	ApplyBoolInput(Melee);
-	ApplyBoolInput(Flashlight);
-	ApplyBoolInput(Grenade);
-	ApplyBoolInput(Fire);
-	ApplyBoolInput(MenuForward);
-	ApplyBoolInput(MenuBack);
-	ApplyBoolInput(Crouch);
-	ApplyImpulseBoolInput(Zoom);
-	ApplyBoolInput(Reload);
+		ApplyBoolInput(Jump);
+		ApplyImpulseBoolInput(SwitchGrenades);
+		ApplyBoolInput(Interact);
+		ApplyBoolInput(Melee);
+		ApplyBoolInput(Flashlight);
+		ApplyBoolInput(Grenade);
+		ApplyBoolInput(Fire);
+		ApplyBoolInput(MenuForward);
+		ApplyBoolInput(MenuBack);
+		ApplyBoolInput(Crouch);
+		ApplyImpulseBoolInput(Zoom);
+		ApplyBoolInput(Reload);
+	}
+	else
+	{
+		Controls& controls = Helpers::GetControls();
+
+		ApplyBoolInput(Jump);
+		ApplyImpulseBoolInput(SwitchGrenades);
+		ApplyBoolInput(Interact);
+		ApplyBoolInput(Melee);
+		ApplyBoolInput(Flashlight);
+		ApplyBoolInput(Grenade);
+		ApplyBoolInput(Fire);
+		ApplyBoolInput(MenuForward);
+		ApplyBoolInput(MenuBack);
+		ApplyBoolInput(Crouch);
+		ApplyImpulseBoolInput(Zoom);
+		ApplyBoolInput(Reload);
+	}
 
 	unsigned char MotionControlFlashlight = UpdateFlashlight();
 	if (MotionControlFlashlight > 0)
 	{
-		controls.Flashlight = MotionControlFlashlight;
+		if (Game::instance.bIsCustom)
+		{
+			Helpers::GetControlsCustom().Flashlight = MotionControlFlashlight;
+		}
+		else
+		{
+			Helpers::GetControls().Flashlight = MotionControlFlashlight;
+		}
 	}
 
 	if (Game::instance.c_EnableWeaponHolsters->Value())
@@ -87,24 +114,56 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 
 		if (HolsterSwitchWeapons > 0 && bSwitchWeaponsPressed)
 		{
-			ApplyImpulseBoolInput(SwitchWeapons);
+			if (Game::instance.bIsCustom)
+			{
+				Controls_Custom& controls = Helpers::GetControlsCustom();
+				ApplyImpulseBoolInput(SwitchWeapons);
+			}
+			else
+			{
+				Controls& controls = Helpers::GetControls();
+				ApplyImpulseBoolInput(SwitchWeapons);
+			}
 		}
 	}
 	else
 	{
-		ApplyImpulseBoolInput(SwitchWeapons);
+		if (Game::instance.bIsCustom)
+		{
+			Controls_Custom& controls = Helpers::GetControlsCustom();
+			ApplyImpulseBoolInput(SwitchWeapons);
+		}
+		else
+		{
+			Controls& controls = Helpers::GetControls();
+			ApplyImpulseBoolInput(SwitchWeapons);
+		}
 	}
 
 	unsigned char MotionControlMelee = UpdateMelee();
 	if (MotionControlMelee > 0)
 	{
-		controls.Melee = MotionControlMelee;
+		if (Game::instance.bIsCustom)
+		{
+			Helpers::GetControlsCustom().Melee = MotionControlMelee;
+		}
+		else
+		{
+			Helpers::GetControls().Melee = MotionControlMelee;
+		}
 	}
 
 	unsigned char MotionControlCrouch = UpdateCrouch();
 	if (MotionControlCrouch > 0)
 	{
-		controls.Crouch = MotionControlCrouch;
+		if (Game::instance.bIsCustom)
+		{
+			Helpers::GetControlsCustom().Crouch = MotionControlCrouch;
+		}
+		else
+		{
+			Helpers::GetControls().Crouch = MotionControlCrouch;
+		}
 	}
 
 	const float holdToRecentreTime = 1000.0f;
@@ -244,8 +303,20 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 #endif
 	}
 
-	controls.Left = -MoveInput.x;
-	controls.Forwards = MoveInput.y;
+	if (Game::instance.bIsCustom)
+	{
+		Controls_Custom& controls = Helpers::GetControlsCustom();
+
+		controls.Left = -MoveInput.x;
+		controls.Forwards = MoveInput.y;
+	}
+	else
+	{
+		Controls& controls = Helpers::GetControls();
+
+		controls.Left = -MoveInput.x;
+		controls.Forwards = MoveInput.y;
+	}
 }
 
 void InputHandler::UpdateCamera(float& yaw, float& pitch)

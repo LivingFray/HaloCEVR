@@ -84,7 +84,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;HALOCEVR_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;HALOCEVR_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -108,7 +108,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;HALOCEVR_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;HALOCEVR_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -165,6 +165,7 @@
   <ItemGroup>
     <ClCompile Include="Helpers\CmdLineArgs.cpp" />
     <ClCompile Include="Helpers\Cutscene.cpp" />
+    <ClCompile Include="Helpers\Version.cpp" />
     <ClCompile Include="InGameRenderer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -185,6 +186,19 @@
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="Maths\Matrices.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="UI\UIFloatBox.cpp" />
+    <ClCompile Include="UI\UIIntBox.cpp" />
+    <ClCompile Include="UI\UITextBox.cpp" />
+    <ClCompile Include="UI\SettingsMenu.cpp" />
+    <ClCompile Include="UI\UIButton.cpp" />
+    <ClCompile Include="UI\UICheckbox.cpp" />
+    <ClCompile Include="UI\UIElement.cpp" />
+    <ClCompile Include="UI\UIImageButton.cpp" />
+    <ClCompile Include="UI\UILabel.cpp" />
+    <ClCompile Include="UI\UIPanel.cpp" />
+    <ClCompile Include="UI\UIRenderer.cpp" />
+    <ClCompile Include="UI\UITabPanel.cpp" />
+    <ClCompile Include="UI\UITextButton.cpp" />
     <ClCompile Include="VR\OpenVR.cpp" />
     <ClCompile Include="VR\VREmulator.cpp" />
     <ClCompile Include="WeaponHandler.cpp" />
@@ -193,6 +207,7 @@
     <ClInclude Include="Config\Config.h" />
     <ClInclude Include="Helpers\CmdLineArgs.h" />
     <ClInclude Include="Helpers\Cutscene.h" />
+    <ClInclude Include="Helpers\Version.h" />
     <ClInclude Include="InGameRenderer.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Helpers\Assets.h" />
@@ -215,6 +230,19 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Maths\Matrices.h" />
     <ClInclude Include="Profiler.h" />
+    <ClInclude Include="UI\UIFloatBox.h" />
+    <ClInclude Include="UI\UIIntBox.h" />
+    <ClInclude Include="UI\UITextBox.h" />
+    <ClInclude Include="UI\SettingsMenu.h" />
+    <ClInclude Include="UI\UIButton.h" />
+    <ClInclude Include="UI\UICheckbox.h" />
+    <ClInclude Include="UI\UIElement.h" />
+    <ClInclude Include="UI\UIImageButton.h" />
+    <ClInclude Include="UI\UILabel.h" />
+    <ClInclude Include="UI\UIPanel.h" />
+    <ClInclude Include="UI\UIRenderer.h" />
+    <ClInclude Include="UI\UITabPanel.h" />
+    <ClInclude Include="UI\UITextButton.h" />
     <ClInclude Include="VR\OpenVR.h" />
     <ClInclude Include="Maths\Vectors.h" />
     <ClInclude Include="VR\VREmulator.h" />
@@ -223,7 +251,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
-    <None Include="VR\actions.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

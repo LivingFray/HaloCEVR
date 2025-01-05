@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="460" height="215" src="./Bindings/icon.png">
+  <img width="460" height="215" src="./Extras/Bindings/icon.png">
 </p>
 
 # Halo: Combat Evolved VR

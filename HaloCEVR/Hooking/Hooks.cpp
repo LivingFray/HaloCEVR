@@ -19,6 +19,8 @@ void Hooks::InitHooks()
 {
 	VR_PROFILE_SCOPE(Hooks_InitHooks);
 
+	RESOLVEINDIRECT(GameVersion);
+	RESOLVEINDIRECT(GameType);
 	RESOLVEINDIRECT(AssetsArray);
 	RESOLVEINDIRECT(Controls);
 	RESOLVEINDIRECT(DirectX9);

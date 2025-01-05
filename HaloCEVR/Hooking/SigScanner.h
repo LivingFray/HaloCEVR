@@ -23,6 +23,8 @@ struct Offset
 class Offsets
 {
 public:
+	INDIRECT(GameVersion,         0x138056, 0x01, "A1 ?? ?? ?? ?? 81 C2 04 01 00 00 89 02");
+	INDIRECT(GameType,            0x14192e, 0x05, "52 8d 75 d0");
 	INDIRECT(AssetsArray,         0x042455, 0x4B, "74 31 57 0f bf f8 69 ff 0c 08 00 00 81 c7 ?? ?? ?? ?? e8");
 	INDIRECT(Controls,            0x08cca0, 0x12, "a1 ?? ?? ?? ?? 83 ec ?? 53 55 56 57 b9 ?? ?? ?? ?? be");
 	INDIRECT(DirectX9,            0x1169c0, 0xE4, "83 ec 60 8b 15 ?? ?? ?? ?? 8b 0d ?? ?? ?? ?? 53 33 db");

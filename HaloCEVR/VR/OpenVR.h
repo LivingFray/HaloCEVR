@@ -50,6 +50,11 @@ public:
 	Vector2 GetVector2Input(InputBindingID id) override;
 	Vector2 GetMousePos() override;
 	bool GetMouseDown() override;
+	void ShowKeyboard(const std::string& textBuffer) override;
+	bool IsKeyboardVisible() override;
+	void HideKeyboard() override;
+	std::string GetKeyboardInput() override;
+	std::string GetDeviceName() override;
 	// End Interface IVR
 
 protected:
@@ -114,6 +119,9 @@ protected:
 	vr::InputPoseActionData_t leftHandTipPose;
 	vr::InputPoseActionData_t rightHandTipPose;
 	bool bHasValidTipPoses = false;
+
+	char* keyboardBuffer = nullptr;
+	bool bKeyboardVisible = false;
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t& matPose)
 	{

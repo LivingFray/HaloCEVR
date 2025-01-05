@@ -56,4 +56,10 @@ public:
 	virtual Vector2 GetVector2Input(InputBindingID id) = 0;
 	virtual Vector2 GetMousePos() = 0;
 	virtual bool GetMouseDown() = 0;
+	virtual void ShowKeyboard(const std::string& textBuffer) = 0;
+	virtual bool IsKeyboardVisible() = 0;
+	virtual void HideKeyboard() = 0;
+	virtual std::string GetKeyboardInput() = 0;
+
+	virtual std::string GetDeviceName() = 0;
 };

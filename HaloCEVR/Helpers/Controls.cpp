@@ -7,4 +7,9 @@ namespace Helpers
 	{
 		return *reinterpret_cast<Controls*>(Hooks::o.Controls);
 	}
+
+	Controls_Custom& GetControlsCustom()
+	{
+		return *reinterpret_cast<Controls_Custom*>(Hooks::o.Controls);
+	}
 }

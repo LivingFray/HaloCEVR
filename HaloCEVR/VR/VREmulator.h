@@ -50,6 +50,11 @@ public:
 	Vector2 GetVector2Input(InputBindingID id);
 	Vector2 GetMousePos() { return Vector2(0.0f, 0.0f); }
 	bool GetMouseDown() { return false; }
+	void ShowKeyboard(const std::string& textBuffer);
+	bool IsKeyboardVisible();
+	void HideKeyboard();
+	std::string GetKeyboardInput();
+	std::string GetDeviceName();
 	// End Interface IVR
 
 protected:
@@ -148,5 +153,9 @@ protected:
 
 	Vector3 mainHandOffset;
 	Vector3 mainHandRot;
+
+	bool bKeyboardActive = false;
+	std::string keyboardBuffer;
+	bool keystate[128];
 };
 
