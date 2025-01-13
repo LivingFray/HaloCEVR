@@ -27,21 +27,6 @@ void Game::Init()
 {
 	Logger::log << "[Game] HaloCEVR initialising..." << std::endl;
 
-#if USE_PROFILER
-	profiler.Init();
-#endif
-
-	SetupConfigs();
-
-	CreateConsole();
-
-	PatchGame();
-
-	Logger::log << "[Game] Found Game Type: " << Helpers::GetGameTypeString() << std::endl;
-	Logger::log << "[Game] Found Game Version: " << Helpers::GetVersionString() << std::endl;
-
-	bIsCustom = std::strcmp("halor", Helpers::GetGameTypeString()) != 0;
-
 #if EMULATE_VR
 	vr = new VREmulator();
 #else
@@ -56,6 +41,21 @@ void Game::Init()
 	backBufferHeight = vr->GetViewHeight();
 
 	bHasShutdown = false;
+
+#if USE_PROFILER
+	profiler.Init();
+#endif
+
+	SetupConfigs();
+
+	CreateConsole();
+
+	PatchGame();
+
+	Logger::log << "[Game] Found Game Type: " << Helpers::GetGameTypeString() << std::endl;
+	Logger::log << "[Game] Found Game Version: " << Helpers::GetVersionString() << std::endl;
+
+	bIsCustom = std::strcmp("halor", Helpers::GetGameTypeString()) != 0;
 
 	Logger::log << "[Game] HaloCEVR initialised" << std::endl;
 }
@@ -943,8 +943,9 @@ void Game::SetupConfigs()
 	c_MenuOverlayScale = config.RegisterFloat("MenuOverlayScale", "Width of the menu overlay in metres", 10.0f);
 	c_CrosshairScale = config.RegisterFloat("CrosshairScale", "Width of the crosshair overlay in metres", 10.0f);
 	c_UIOverlayCurvature = config.RegisterFloat("UIOverlayCurvature", "Curvature of the UI Overlay, on a scale of 0 to 1", 0.1f);
-	c_UIOverlayWidth = config.RegisterInt("UIOverlayWidth", "Width of the UI overlay in pixels", 600);
-	c_UIOverlayHeight = config.RegisterInt("UIOverlayHeight", "Height of the UI overlay in pixels", 600);
+	c_UIOverlayRenderScale = config.RegisterFloat("c_UIOverlayRenderScale", "Resolution of the UI overlay, expressed as a proportion of the headset's render scale (e.g. 0.5 = half resolution)", 0.5f);
+	c_UIOverlayWidth  = new IntProperty( static_cast<int>( std::max( vr->GetViewHeight() , vr->GetViewWidth() ) * c_UIOverlayRenderScale->Value() ) , "" );  // 
+	c_UIOverlayHeight = new IntProperty( static_cast<int>( std::max( vr->GetViewHeight() , vr->GetViewWidth() ) * c_UIOverlayRenderScale->Value() ) , "" ); // = Choose the larger of UIOverlayWidth/Height, then * UIOverlayRenderScale 
 	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Display a floating crosshair in the world at the location you are aiming", true);
 	// Control settings
 	c_LeftHanded = config.RegisterBool("LeftHanded", "Make the left hand the dominant hand. Does not affect bindings, change these in the SteamVR overlay", false);
