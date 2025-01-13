@@ -87,8 +87,9 @@ protected:
 	Vector2 mousePos;
 	bool bMouseDown;
 
-	vr::VRActiveActionSet_t actionSets[1];
-
+	vr::VRActiveActionSet_t actionSets[2];
+	void SetActiveActionSet(int index, const std::string& actionSetName);
+	
 	vr::VROverlayHandle_t uiOverlay;
 
 	vr::TrackedDevicePose_t gamePoses[vr::k_unMaxTrackedDeviceCount];

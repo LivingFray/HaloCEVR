@@ -21,6 +21,7 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 * Motion controlled flashlight (tap head)
 * Motion controlled crouching
 * Shoulder weapon holsters (for switching weapons)
+* Swapping weapons between hands
 * Detached floating UI layer
 * Floating crosshair
 * Joystick steered vehicles
@@ -46,7 +47,7 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 4. Download the latest version of this mod from the [releases page](../../releases)
 5. Extract HaloCEVR.zip and place the files in the same directory as the halo executable (You should see a VR folder, openvr_api.dll and d3d9.dll if done correctly - if you do not see these files your antivirus may be interfering)
 6. Launch the game once to generate a config.txt file in the VR directory
-7. If setting LeftHanded=true in the config, consider selecting the left handed controller bindings in the game's SteamVR controller bindings page
+7. If setting LeftHanded=true in the config, consider selecting the left handed controller bindings in the game's SteamVR controller bindings page if you want the sticks to also be swapped
 
 ## Uninstalling
 1. Go play the MCC version instead
@@ -156,13 +157,16 @@ Either play through this initial part of the game in flat screen, or walk over t
 ### Which config.txt file do I use to make changes to VR settings?  What if I am making changes but don't see changes in game?
 The one found in the "VR" folder after install and after you run the game once in VR. If you are not seeing changes you make take effect in game, then chances are you disregarded the instruction not to install in Program Files.  You can try running in administrator mode to make the edits but safer to just install Halo and the mod in a new location.
 ### How do I turn on the flashlight?
-By default tapping your head with your left hand will toggle the flashlight, you can adjust the radius this triggers at and which hand to use in config.txt. Alternatively there is an optional binding you can configure in SteamVR's controller bindings page to toggle it directly.
+By default tapping your head with an empty hand will toggle the flashlight, you can adjust the radius this triggers at and which hand to use in config.txt. Alternatively there is an optional binding you can configure in SteamVR's controller bindings page to toggle it directly.
 ### How do I melee/can melee be bound to a button on my controller?
 By default swinging either controller vertically with enough speed will trigger a melee attack wherever you are looking. If preferred there is a controller binding that is unset by default you can configure instead.
 
 ### How do I switch weapons?
 By default, you can switch weapons using the shoulder weapon holsters. To do this, hover your dominant hand over a shoulder and press the Switch Weapon controller binding (can be configured in SteamVR's bindings).
 If you prefer, you can adjust the settings for the weapon holsters or disable them in config.txt to switch weapons using only the controller binding.
+
+### How can I swap my weapon between my hands?
+You can swap your weapon into the opposite hand by bringing your hands close together and using the `SwapWeaponHand` binding (This can be configured in SteamVR's bindings). By default, this is bound to the grip button on your non-dominant hand and changes hands depending on whether the weapon is currently in your left or right hand. Whilst holding a weapon in your left hand the `left handed` SteamVR Action Set Bindings will be used. The distance required between hands can be configured in the `config.txt` file or the feature can be disabled.
 
 ### How do I activate smooth turning?
 Go to the VR config.txt file and change SnapTurn = false.  You can also adjust turning speed with SmoothTurnAmount.

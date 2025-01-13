@@ -54,6 +54,19 @@
                 {
                     "inputs": {
                         "click": {
+                            "output": "/actions/default/in/SwapWeaponHand"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/grip",
+                    "parameters": {
+                        "click_activate_threshold": 0.8,
+                        "click_deactivate_threshold": 0.7
+                    }
+                },
+                {
+                    "inputs": {
+                        "click": {
                             "output": "/actions/default/in/MenuBack"
                         }
                     },
@@ -79,6 +92,16 @@
                     },
                     "mode": "button",
                     "path": "/user/hand/right/input/a",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/default/in/Reload"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/b",
                     "parameters": {}
                 },
                 {
@@ -142,6 +165,151 @@
                     "path": "/user/hand/right/input/skeleton/right"
                 }
             ]
+        },
+        "/actions/left handed": {
+            "haptics": [],
+            "poses": [],
+            "sources": [
+                {
+                    "inputs": {
+                        "north": {
+                            "output": "/actions/left handed/in/Jump"
+                        }
+                    },
+                    "mode": "dpad",
+                    "path": "/user/hand/right/input/thumbstick",
+                    "parameters": {
+                        "sub_mode": "touch"
+                    }
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/TwoHandGrip"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/grip",
+                    "parameters": {
+                        "click_activate_threshold": 0.8,
+                        "click_deactivate_threshold": 0.7
+                    }
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/SwitchWeapons"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/trackpad",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/SwapWeaponHand"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/grip",
+                    "parameters": {
+                        "click_activate_threshold": 0.8,
+                        "click_deactivate_threshold": 0.7
+                    }
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/MenuBack"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/b",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/SwitchGrenades"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/a",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/Grenade"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/a",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/Reload"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/b",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/Interact"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/b",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/Zoom"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/right/input/trigger",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "click": {
+                            "output": "/actions/left handed/in/Fire"
+                        }
+                    },
+                    "mode": "button",
+                    "path": "/user/hand/left/input/trigger",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "position": {
+                            "output": "/actions/left handed/in/Look"
+                        }
+                    },
+                    "mode": "joystick",
+                    "path": "/user/hand/right/input/thumbstick",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "position": {
+                            "output": "/actions/left handed/in/Move"
+                        }
+                    },
+                    "mode": "joystick",
+                    "path": "/user/hand/left/input/thumbstick",
+                    "parameters": {}
+                }
+            ],
+            "skeleton": []
         }
     },
     "controller_type": "knuckles",

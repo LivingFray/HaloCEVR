@@ -1,24 +1,26 @@
 import json
 
 controllers = ["oculus_touch", "knuckles"]
-boolActions = ["Jump","SwitchGrenades","Interact","SwitchWeapons","Melee","Flashlight","Grenade","Fire","MenuForward","MenuBack","Crouch","Zoom","Reload", "Recentre", "TwoHandGrip"]
+boolActions = ["Jump","SwitchGrenades","Interact","SwitchWeapons","Melee","Flashlight","Grenade","Fire","MenuForward","MenuBack","Crouch","Zoom","Reload","Recentre","TwoHandGrip","SwapWeaponHand"]
 vec1Actions = []
 vec2Actions = ["Look", "Move"]
 poseActions = ["Tip"]
 
 bindings = {
-    "Jump" : { "h" : "right", "b" : "joystick|north", "f" : True},
-    "TwoHandGrip" : {"h" : "left", "b" : "grip", "f" : True},
-    "SwitchWeapons" : {"h" : "right", "b" : "grip", "f" : True},
-    "MenuBack" : {"h" : "left", "b" : "y", "f" : True},
-    "SwitchGrenades" : {"h" : "left", "b" : "x", "f" : True}, 
-    "Grenade" : {"h" : "right", "b" : "a", "f" : True},
-    "Interact" : {"h" : "right", "b" : "b", "f" : True},
-    "Zoom" : {"h" : "left", "b" : "trigger", "f" : True},
-    "Fire" : {"h" : "right", "b" : "trigger", "f" : True},
-    "Crouch" : {"h" : "right", "b" : "joystick|south", "f" : True},
-    "Look" : {"h" : "right", "b" : "joystick", "f" : True},
-    "Move" : {"h" : "left", "b" : "joystick", "f" : True}
+    "Jump" : { "h" : "right", "b" : "joystick|north", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : False},
+    "TwoHandGrip" : {"h" : "left", "b" : "grip", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "SwitchWeapons" : {"h" : "right", "b" : "grip", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "SwapWeaponHand" : {"h" : "left", "b" : "grip", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "MenuBack" : {"h" : "left", "b" : "y", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "SwitchGrenades" : {"h" : "left", "b" : "x", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Grenade" : {"h" : "right", "b" : "a", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Reload" : {"h" : "right", "b" : "b", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Interact" : {"h" : "right", "b" : "b", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Zoom" : {"h" : "left", "b" : "trigger", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Fire" : {"h" : "right", "b" : "trigger", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Crouch" : {"h" : "right", "b" : "joystick|south", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : True},
+    "Look" : {"h" : "right", "b" : "joystick", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : False},
+    "Move" : {"h" : "left", "b" : "joystick", "f" : True, "actionsets" : ["default", "left handed"], "swapActionSetHand" : False}
 }
 
 manifest = {
@@ -28,6 +30,10 @@ manifest = {
         {
             "name" : "/actions/default",
             "usage" : "leftright"
+        },
+        {
+            "name" : "/actions/left handed",
+            "usage" : "left"
         }
     ]
 }
@@ -45,12 +51,15 @@ for v in variants:
 
 for b in boolActions:
     manifest["actions"].append({"name" : "/actions/default/in/" + b, "requirement" : "suggested", "type" : "boolean"})
+    manifest["actions"].append({"name" : "/actions/left handed/in/" + b, "requirement" : "suggested", "type" : "boolean"})
 
 for v in vec1Actions:
     manifest["actions"].append({"name" : "/actions/default/in/" + v, "requirement" : "suggested", "type" : "vector1"})
+    manifest["actions"].append({"name" : "/actions/left handed/in/" + v, "requirement" : "suggested", "type" : "vector1"})
     
 for v in vec2Actions:
     manifest["actions"].append({"name" : "/actions/default/in/" + v, "requirement" : "suggested", "type" : "vector2"})
+    manifest["actions"].append({"name" : "/actions/left handed/in/" + v, "requirement" : "suggested", "type" : "vector2"})
 
 for p in poseActions:
     manifest["actions"].append({"name" : "/actions/default/in/Left" + p, "requirement" : "suggested", "type" : "pose"})
@@ -89,11 +98,15 @@ for v in variants:
         
         filename = c + "_"+v.split(' ', 1)[0].lower()
         
-        invert = "left" in v.lower()
-        
         controller = {
             "bindings" : {
                 "/actions/default" : {
+                    "haptics" : [],
+                    "poses" : [],
+                    "sources" : [],
+                    "skeleton" : []
+                },
+                "/actions/left handed" : {
                     "haptics" : [],
                     "poses" : [],
                     "sources" : [],
@@ -127,8 +140,10 @@ for v in variants:
             inputtype = "click"
             
             finalhand = b["h"]
-            
-            if invert and b["f"] == True:
+
+            invertsticks = "left" in v.lower() and "joystick" in inputs[0]
+
+            if invertsticks:
                 if finalhand == "left":
                     finalhand = "right"
                 else:
@@ -169,17 +184,28 @@ for v in variants:
                 if c == "knuckles":
                     inputs[0] = "trackpad"
             
-                       
-            input = {}
-            input[inputtype] = {"output" : "/actions/default/in/" + binding}
-            
-            finalinput = inputs[0]
-            
-            if invert and b["f"] == True and c in swapmap and finalinput in swapmap[c]:
-                finalinput = swapmap[c][finalinput]
+            for actionset in b["actionsets"]:
+                # Swap hands for left Hand action set
+                actionsetHand = finalhand
+                actionsetHandSwapped = False
+                if not invertsticks and b["swapActionSetHand"] and actionset == "left handed":
+                    if finalhand == "right":
+                        actionsetHand = "left"
+                        actionsetHandSwapped = True
+                    if finalhand == "left":
+                        actionsetHand = "right"
+                        actionsetHandSwapped = True
 
-            
-            controller["bindings"]["/actions/default"]["sources"].append({"inputs" : input, "mode" : mode, "path" : "/user/hand/" + finalhand + "/input/" + finalinput, "parameters" : parameters})
+                actionset = "/actions/" + actionset 
+                
+                input = {}
+                input[inputtype] = {"output" : actionset + "/in/" + binding}
+                finalinput = inputs[0] 
+
+                if (invertsticks or actionsetHandSwapped == True) and b["f"] == True and c in swapmap and finalinput in swapmap[c]:
+                    finalinput = swapmap[c][finalinput]
+
+                controller["bindings"][actionset]["sources"].append({"inputs" : input, "mode" : mode, "path" : "/user/hand/" + actionsetHand + "/input/" + finalinput, "parameters" : parameters})
         
         try:
             with open(filename+".json", "w") as f:

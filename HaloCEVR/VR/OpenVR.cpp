@@ -797,11 +797,23 @@ void OpenVR::SetCrosshairTransform(Matrix4& newTransform)
 	Game::instance.inGameRenderer.DrawRenderTarget(gameRenderTexture[crosshairSurface], pos, rot, size, false);
 }
 
+void OpenVR::SetActiveActionSet(int index, const std::string& actionSetName)
+{	
+    vr::EVRInputError error = vrInput->GetActionSetHandle(actionSetName.c_str(), &actionSets[index].ulActionSet);
+    if (error != vr::VRInputError_None)
+    {
+        Logger::err << "[OpenVR] Could not set active action set: " << actionSetName << " Error: " << error << std::endl;
+    }
+}
+
 void OpenVR::UpdateInputs()
-{
+{	
+	SetActiveActionSet(0, "/actions/default");
+	SetActiveActionSet(1, "/actions/left handed");
+
 	VR_PROFILE_SCOPE(OpenVR_UpdateInputs);
 
-	vr::EVRInputError error = vrInput->UpdateActionState(actionSets, sizeof(vr::VRActiveActionSet_t), 1);
+	vr::EVRInputError error = vrInput->UpdateActionState(actionSets, sizeof(vr::VRActiveActionSet_t), 2);
 
 	if (error != vr::VRInputError_None)
 	{
@@ -855,6 +867,11 @@ bool OpenVR::GetBoolInput(InputBindingID id, bool& bHasChanged)
 	}
 
 	bHasChanged = digital.bChanged;
+
+	if (digital.bChanged && digital.bState)
+	{
+		Logger::log << "[OpenVR] Getting binding " << id << std::endl;
+	}
 
 	return digital.bState;
 }

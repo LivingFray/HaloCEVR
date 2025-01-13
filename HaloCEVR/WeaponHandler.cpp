@@ -126,7 +126,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 			Helpers::MakeTransformFromQuat(&currentQuat->rotation, &tempTransform);
 			tempTransform.scale = currentQuat->scale;
 
-			if (boneIndex == cachedViewModel.displayIndex && Game::instance.c_LeftHanded->Value())
+			if (boneIndex == cachedViewModel.displayIndex && Game::instance.bLeftHanded)
 			{
 				// Bit of a nasty place to do this, but we need to unflip the ammo counter on the BR
 				Matrix3 rot = tempTransform.rotation;
@@ -180,7 +180,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 								}
 							}
 
-							if (Game::instance.c_LeftHanded->Value())
+							if (Game::instance.bLeftHanded)
 							{
 								Matrix4 scale;
 								scale.scale(1.0f, -1.0f, 1.0f);
@@ -208,7 +208,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 			{
 				if (!Game::instance.bUseTwoHandAim)
 				{
-					Matrix4 newTransform = Game::instance.GetVR()->GetControllerTransform(Game::instance.c_LeftHanded->Value() ? ControllerRole::Right : ControllerRole::Left, true);
+					Matrix4 newTransform = Game::instance.GetVR()->GetControllerTransform(Game::instance.bLeftHanded ? ControllerRole::Right : ControllerRole::Left, true);
 					// Apply scale only to translation portion
 					Vector3 translation = newTransform * Vector3(0.0f, 0.0f, 0.0f);
 					newTransform.translate(-translation);
@@ -230,7 +230,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 					rightMatrix.invertAffine();
 					Matrix4 deltaMatrix = rightMatrix * leftMatrix;
 
-					if (Game::instance.c_LeftHanded->Value())
+					if (Game::instance.bLeftHanded)
 					{						
 						Matrix4 flip;
 						flip.scale(1.0f, -1.0f, 1.0f);
@@ -255,7 +255,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 				Vector3& gunPos = outBoneTransforms[boneIndex].translation;
 				Matrix3 gunRot = outBoneTransforms[boneIndex].rotation;
 
-				if (Game::instance.c_LeftHanded->Value())
+				if (Game::instance.bLeftHanded)
 				{
 					gunRot = gunRot * Matrix3(
 						1.0f, 0.0f, 0.0f,
@@ -380,7 +380,7 @@ void WeaponHandler::MoveBoneToTransform(int boneIndex, const Matrix4& newTransfo
 {
 	// Move hands to match controllers
 	Vector3 newTranslation = newTransform * Vector3(0.0f, 0.0f, 0.0f);
-	Matrix4 newRotation4 = Game::instance.c_LeftHanded->Value() ? newTransform * Matrix4().scale(1.0f, -1.0f, 1.0f) : newTransform;
+	Matrix4 newRotation4 = Game::instance.bLeftHanded ? newTransform * Matrix4().scale(1.0f, -1.0f, 1.0f) : newTransform;
 	newRotation4.translate(-newTranslation);
 	newRotation4.rotateZ(localRotation.z);
 	newRotation4.rotateY(localRotation.y);
@@ -590,7 +590,7 @@ inline void WeaponHandler::TransformToMatrix4(Transform& inTransform, Matrix4& o
 
 Vector3 WeaponHandler::GetScopeLocation(ScopedWeaponType type) const
 {
-	Vector3 Scale = Game::instance.c_LeftHanded->Value() ? Vector3(1.0f, -1.0f, 1.0f) : Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 Scale = Game::instance.bLeftHanded ? Vector3(1.0f, -1.0f, 1.0f) : Vector3(1.0f, 1.0f, 1.0f);
 
 	switch (type)
 	{
