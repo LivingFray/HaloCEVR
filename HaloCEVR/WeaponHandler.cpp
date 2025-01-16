@@ -624,17 +624,17 @@ Matrix4 WeaponHandler::GetDominantHandTransform() const
 	{
 		upVector += controllerTransform.getUpAxis() * 0.001f;
 	}
-
-	/*
-	Matrix3 rot;
-	for (int i = 0; i < 3; i++)
+	
+	if (Game::instance.IsSnapTurning())
 	{
-		offHandTransform.setColumn(i, &rot.get()[i * 4]);
+		controllerTransform.lookAt(actualControllerPos + toOffHand, upVector);
 	}
-	*/
-	smoothedPosition = Game::instance.GetSmoothedInput();
-	controllerTransform.lookAt(smoothedPosition, upVector);
-
+	else
+	{
+		smoothedPosition = Game::instance.GetSmoothedInput();
+		controllerTransform.lookAt(smoothedPosition, upVector);
+	}
+	
 	controllerTransform.translate(-actualControllerPos);
 	controllerTransform.rotate(-90.0f, controllerTransform.getUpAxis());
 	controllerTransform.rotate(-90.0f, controllerTransform.getLeftAxis());
