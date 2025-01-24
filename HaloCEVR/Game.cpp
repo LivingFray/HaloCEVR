@@ -120,6 +120,11 @@ void Game::OnInitDirectX()
 	}
 	overlayHeight = overlayWidth;
 
+	// Calculate UI element sizes with config defined distance and arc size
+	uiOverlayScale = std::tanf(c_UIOverlayArcScale->Value() / 2 * 3.141593f / 180) * c_UIOverlayDistance->Value() * 2;
+	crosshairScale = std::tanf(c_CrosshairArcScale->Value() / 2 * 3.141593f / 180) * c_CrosshairDistance->Value() * 2;
+	menuOverlayScale = std::tanf(c_MenuOverlayArcScale->Value() / 2 * 3.141593f / 180) * c_MenuOverlayDistance->Value() * 2;
+
 	vr->OnGameFinishInit();
 
 	uiSurface = vr->GetUISurface();
@@ -950,9 +955,9 @@ void Game::SetupConfigs()
 	c_CrosshairDistance = config.RegisterFloat("CrosshairDistance", "Distance in metres in front of the weapon to display the crosshair", 15.0f);
 	c_MenuOverlayDistance = config.RegisterFloat("MenuOverlayDistance", "Distance in metres in front of the HMD to display the menu", 15.0f);
 	c_UIOverlayDistance = config.RegisterFloat("UIOverlayDistance", "Distance in metres in front of the HMD to display the UI", 15.0f);
-	c_UIOverlayScale = config.RegisterFloat("UIOverlayScale", "Width of the UI overlay in metres", 10.0f);
-	c_MenuOverlayScale = config.RegisterFloat("MenuOverlayScale", "Width of the menu overlay in metres", 10.0f);
-	c_CrosshairScale = config.RegisterFloat("CrosshairScale", "Width of the crosshair overlay in metres", 10.0f);
+	c_UIOverlayArcScale = config.RegisterFloat("UIOverlayArcScale", "Width of the UI overlay in degrees as a proportion of FOV", 45.0f);
+	c_MenuOverlayArcScale = config.RegisterFloat("MenuOverlayArcScale", "Width of the menu overlay in degrees as a proportion of FOV", 45.0f);
+	c_CrosshairArcScale = config.RegisterFloat("CrosshairArcScale", "Size of the crosshair overlay in degrees as a proportion of FOV, values are relative and not actual", 35.0f);
 	c_UIOverlayCurvature = config.RegisterFloat("UIOverlayCurvature", "Curvature of the UI Overlay, on a scale of 0 to 1", 0.1f);
 	c_UIOverlayRenderScale = config.RegisterFloat("UIOverlayRenderScale", "Resolution of the UI overlay, expressed as a proportion of the headset's render scale (e.g. 0.5 = half resolution), low values default to 640px", 0.5f);
 	c_ShowCrosshair = config.RegisterBool("ShowCrosshair", "Display a floating crosshair in the world at the location you are aiming", true);

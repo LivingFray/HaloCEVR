@@ -197,12 +197,12 @@ void OpenVR::OnGameFinishInit()
 
 	vr::EVROverlayError err;
 
-	err = vrOverlay->SetOverlayWidthInMeters(uiOverlay, Game::instance.c_UIOverlayScale->Value());
+	err = vrOverlay->SetOverlayWidthInMeters(uiOverlay, Game::instance.uiOverlayScale);
 	if (err != vr::VROverlayError_None)
 	{
 		Logger::log << "[OpenVR] Error setting overlay width: " << err << std::endl;
 	}
-	Logger::log << "[OpenVR] Set UI Width = " << Game::instance.c_UIOverlayScale->Value() << std::endl;
+	Logger::log << "[OpenVR] Set UI Width = " << Game::instance.uiOverlayScale << std::endl;
 
 	float curvature = Game::instance.c_UIOverlayCurvature->Value();
 	if (curvature != 0.0f)
@@ -770,7 +770,7 @@ void OpenVR::SetMouseVisibility(bool bIsVisible)
 	}
 
 	vrOverlay->SetOverlayInputMethod(uiOverlay, bIsVisible ? vr::VROverlayInputMethod_Mouse : vr::VROverlayInputMethod_None);
-	vrOverlay->SetOverlayWidthInMeters(uiOverlay, bIsVisible ? Game::instance.c_MenuOverlayScale->Value() : Game::instance.c_UIOverlayScale->Value());
+	vrOverlay->SetOverlayWidthInMeters(uiOverlay, bIsVisible ? Game::instance.menuOverlayScale : Game::instance.uiOverlayScale);
 }
 
 void OpenVR::SetCrosshairTransform(Matrix4& newTransform)
@@ -782,7 +782,7 @@ void OpenVR::SetCrosshairTransform(Matrix4& newTransform)
 	Vector3 pos = (newTransform * Vector3(0.0f, 0.0f, 0.0f)) * Game::instance.MetresToWorld(1.0f) + Helpers::GetCamera().position;
 	Matrix3 rot;
 	Vector2 size(1.33f, 1.0f);
-	size *= Game::instance.MetresToWorld(Game::instance.c_CrosshairScale->Value());
+	size *= Game::instance.MetresToWorld(Game::instance.crosshairScale);
 
 	newTransform.translate(-pos);
 	newTransform.rotate(90.0f, newTransform.getLeftAxis());

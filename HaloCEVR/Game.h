@@ -110,6 +110,10 @@ public:
 	UINT overlayWidth = 640;
 	UINT overlayHeight = 640;
 
+	float uiOverlayScale = 10.0f;
+	float crosshairScale = 10.0f;
+	float menuOverlayScale = 10.0f;
+
 #if USE_PROFILER
 	Profiler profiler;
 #endif
@@ -192,11 +196,11 @@ public:
 	BoolProperty* c_DrawMirror = nullptr;
 	IntProperty* c_MirrorEye = nullptr;
 	FloatProperty* c_CrosshairDistance = nullptr;
-	FloatProperty* c_CrosshairScale = nullptr;
+	FloatProperty* c_CrosshairArcScale = nullptr;
 	FloatProperty* c_MenuOverlayDistance = nullptr;
 	FloatProperty* c_UIOverlayDistance = nullptr;
-	FloatProperty* c_UIOverlayScale = nullptr;
-	FloatProperty* c_MenuOverlayScale = nullptr;
+	FloatProperty* c_UIOverlayArcScale = nullptr;
+	FloatProperty* c_MenuOverlayArcScale = nullptr;
 	FloatProperty* c_UIOverlayCurvature = nullptr;
 	FloatProperty* c_UIOverlayRenderScale = nullptr;
 	BoolProperty* c_ShowCrosshair = nullptr;
