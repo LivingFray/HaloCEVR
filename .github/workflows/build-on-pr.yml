@@ -1,0 +1,32 @@
+name: Package Pull Request
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up MS Build
+      - name: Set up MS Build
+        uses: microsoft/setup-msbuild@v1
+
+      # Step 3: Build the project using the Package configuration
+      - name: Build HaloCEVR
+        run: |
+          msbuild HaloCEVR.sln /p:Configuration=Package /p:Platform=x86 /p:WholeProgramOptimization=false
+
+      # Step 4: Upload Zip file
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HaloCEVR
+          path: HaloCEVR.zip
+
