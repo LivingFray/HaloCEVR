@@ -201,3 +201,8 @@ Thank you! See compiling source directions below and submit a Pull Request on Gi
 4. Set the project configuration to "Debug", "Release" or "Emulated-VR" on "x86" (Emulated will create a desktop window showing the VR perspective rather than launching OpenVR, which is very helpful for quick debugging)
 5. Click "Local Windows Debugger". If done correctly halo should automatically launch with the mod installed and visual studio's debugger attached.
 6. If this is the first time running the mod you may need to run makerelease.bat after building to generate HaloCEVR.zip. Unzip the contents of this file into halo's directory to install the additional required assets
+
+## Final Notes
+It is my wish this mod be kept on pc only. This mod was made in part to help boost PCVR by increasing the number of pc exclusives and make PC a more appealing choice. Cheap standalone devices have taken vr down a path of games cut down to run glorified mobile phones and not the breathtaking immersive worlds half life Alyx promised. I want no part in continuing that with this mod.
+
+Additionally this mod would not have been possible without other, free, open source mods to inspire me and to learn from. If you want to make your own mod I implore you to release it freely for the community's sake.
