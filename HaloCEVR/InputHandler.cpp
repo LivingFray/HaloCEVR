@@ -354,6 +354,11 @@ void InputHandler::UpdateCamera(float& yaw, float& pitch)
 	pitch = (pitchHMD - pitchGame);
 }
 
+bool InputHandler::IsSnapTurning()
+{
+	return lastSnapState != 0;
+}
+
 void InputHandler::UpdateCameraForVehicles(float& yaw, float& pitch)
 {
 	IVR* vr = Game::instance.GetVR();

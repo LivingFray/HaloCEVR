@@ -35,6 +35,8 @@ public:
 	void PreDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawMirror(struct Renderer* renderer, float deltaTime);
 	void PostDrawFrame(struct Renderer* renderer, float deltaTime);
+
+	bool IsSnapTurning();
 	Vector3 GetSmoothedInput() const;
 
 	bool PreDrawHUD();
