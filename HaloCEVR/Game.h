@@ -84,6 +84,7 @@ public:
 	float WorldToMetres(float w) const;
 
 	inline IVR* GetVR() const { return vr; }
+	bool IsInVehicle() const { return bInVehicle; }
 
 	UINT backBufferWidth = 600;
 	UINT backBufferHeight = 600;
