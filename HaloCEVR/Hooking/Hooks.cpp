@@ -878,6 +878,14 @@ void Hooks::H_DrawViewModel()
 		return;
 	}
 
+	// Skip weapon rendering during vehicle exit camera transition — the camera
+	// is still moving from third-person to first-person and the weapon would
+	// be visible floating in mid-air
+	if (Game::instance.IsSmoothingVehicleExit())
+	{
+		return;
+	}
+
 	if (Game::instance.bLeftHanded)
 	{
 		Helpers::GetDirect3DDevice9()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);

@@ -85,6 +85,7 @@ public:
 
 	inline IVR* GetVR() const { return vr; }
 	bool IsInVehicle() const { return bInVehicle; }
+	bool IsSmoothingVehicleExit() const { return bSmoothingVehicleExit; }
 
 	UINT backBufferWidth = 600;
 	UINT backBufferHeight = 600;
@@ -195,6 +196,7 @@ protected:
 	bool bWasLoading = false;
 
 	bool bIgnoreNextRoomScaleMovement = false;
+	bool bSmoothingVehicleExit = false;
 
 	//======Configs======//
 public:
