@@ -5,7 +5,7 @@
 # Halo: Combat Evolved VR
 A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolved_.
 
-[Mod Download here](../../releases)
+[Download Mod Here](../../releases)
 
 **This mod is not compatible with _The Master Chief Collection_**
 
@@ -28,37 +28,59 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 * Desktop mirror (recommended to use SteamVR's desktop display instead)
 
 ## Known issues
-* Game sometimes isn't the focused window on launch and inputs/sounds may break when the game is unfocused
-* First stage of the tutorial ("look around") doesn't detect headset movement, wiggle the mouse (physically or via steamvr's desktop view) and you should get past it
-* Camera behaves weirdly briefly when entering/exiting vehicles
+* Game sometimes isn't the focused window on launch, and inputs/sounds may break when the game is unfocused
+* First stage of the tutorial ("look around") doesn't detect headset movement. Wiggle the mouse (physically or via SteamVR's desktop view) and you should get past it
+* Camera briefly behaves weirdly when entering/exiting vehicles
 * Reloading a checkpoint made while in a vehicle can mess with the camera position, get out and in again to fix it
 * Melee and interact use head aiming rather than controller aiming
 * Crosshair only lights up red when looking at an enemy, not when pointing a gun at one
 * On screen button prompts display keyboard bindings rather than VR bindings
-* If the game is installed in program files the mod config file (and log file) won't generate unless the game is run as administrator
+* If the game is installed to Program Files, the mod config file (and log file) won't generate unless the game is run as administrator
 * Occasional stutters can cause motion smoothing to kick in, which is very jarring in vehicles
 * Some people report a minor distortion or warping effect when tilting their head side to side.
 
 ## Installation
-0. Install _Halo: Combat Evolved for PC_ (not Custom Edition) using an original installation CD + product key.  **IMPORTANT: Install in a directory OTHER THAN Program Files (example: C:\HaloVRMod\Halo). Installing in Program Files potentailly causes numerous permissions-related issues**.
-1. Install the 1.0.10 patch for PC (not Custom Edition)
-2. (Optional) Install [chimera](https://github.com/SnowyMouse/chimera) (fixes a few bugs/issues such as entities moving at 30fps).  Grab the RELEASE files from [releases](https://github.com/SnowyMouse/chimera/releases).  Copy chimera.ini, strings.dll, and the fonts folder from the chimera zip after unzipping and place into your halo game folder in the same location as halo.exe.
-3. If using chimera: open chimera.ini, locate the "Font Override Settings" section, and change enabled=1 to enabled=0 (failing to do this will break many UI elements in VR)
+0. Install _Halo: Combat Evolved for PC_ (not Custom Edition) using an original installation CD + product key.  <br>**IMPORTANT: Install in a directory OTHER THAN Program Files (example: C:\HaloVRMod\Halo). Installing in Program Files causes numerous permissions-related issues**.
+1. Install the 1.0.10 patch for Halo PC (not the patch for Custom Edition)
+2. (Optional) Install [chimera](https://github.com/SnowyMouse/chimera) (fixes a few bugs/issues such as entities moving at 30fps).  Grab the RELEASE files from [releases](https://github.com/SnowyMouse/chimera/releases).  Copy chimera.ini, strings.dll, and the fonts folder from the chimera zip after unzipping and place into your halo game folder in the same location as halo.exe. 
+3. If using chimera: **Follow the instructions in the chimera section below.** 
 4. Download the latest version of this mod from the [releases page](../../releases)
 5. Extract HaloCEVR.zip and place the files in the same directory as the halo executable (You should see a VR folder, openvr_api.dll and d3d9.dll if done correctly - if you do not see these files your antivirus may be interfering)
 6. Launch the game once to generate a config.txt file in the VR directory
 7. If setting LeftHanded=true in the config, consider selecting the left handed controller bindings in the game's SteamVR controller bindings page if you want the sticks to also be swapped
 
 ## Uninstalling
-1. Go play the MCC version instead
-2. Delete/rename the d3d9.dll you placed in the same directory as the halo executable (this contains all of the mod code and is only pretending to be d3d9 to trick halo into loading it).  For example, you could rename it to d3d9-backup.dll.
+1. Go play the MCC version instead!
+2. Delete/rename the d3d9.dll you placed in the same directory as the Halo executable. This contains all of the mod code and is only pretending to be d3d9 to trick Halo into loading it.  For example, you could rename it to d3d9-backup.dll. 
 
 ## Installing Graphical and Audio Enhancements
+### Chimera
+Chimera increases animation framerate, corrects fog, enables anisotropic filtering, enables reverb for first person sounds (requires dsoal), and boosts polygon count, object limit, and draw distance. It is highly recommended for bug fixes and QoL changes alone. But before running the mod with chimera, some settings need to be changed. 
+
+Open chimera.ini, locate the "Font Override Settings" section, and change enabled=1 to enabled=0 (failing to do this will break many UI elements in VR). 
+
+Next, create a preferences file to run console commands at start. You can either:
+1) Navigate to (Your User Folder)\Documents\My Games\Halo\chimera\ and create a text file named preferences.txt
+
+**OR**
+1) Create a new text file named chimera_preferences.txt in the Halo\ folder alongside chimera.ini
+2) Edit Halo\chimera.ini
+3) Find ```exec=``` and remove any semi-colon on that line, such as ```;exec=```.
+4) Set the value to ```exec=./chimera_preferences.txt```
+
+In the preferences.txt file you created, add these lines
+```
+chimera_lock_fp_model_fov false
+chimera_model_detail 8
+chimera_af true
+```
+`chimera_lock_fp_model_fov false` will fix weapons appearing broken in your face. The rest are optional but recommended, since they're not turned on by default. `chimera_model_detail 8` will reduce pop-in and only render low detail models (LODs) further away from you. `chimera_af true` will turn on anisotropic filtering and make distant textures sharper. 
+
 ### dsoal 
 
-Dsoal allows you to turn on hardware acceleration and EAX in Halo without requisite hardware to use environmental sound effects like reverb and HRTF, providing realistic, locatable 3D sound with high accuracy for virtual reality. Highly recommended, and you do not need high-fidelity headphones to enjoy this.
+DSOAL allows you to turn on hardware acceleration and EAX in Halo without requisite hardware to use environmental sound effects like reverb and HRTF, providing realistic, directional 3D sound with high accuracy for virtual reality. Highly recommended, and you do not need high-fidelity headphones to enjoy this.
 
-Note: Chimera is required for reverb on first person sounds. First person sounds have no stereo/HRTF/location effects.
+Note: Chimera is required for reverb on first person sounds (i.e. gunshots). First person sounds have no stereo/HRTF/location effects.
 
 1) Download and extract from https://github.com/ThreeDeeJay/dsoal/releases/download/0.9.6/DSOAL+HRTF.zip 
 2) Open the DSOAL+HRTF\Win32\ folder.
@@ -82,28 +104,6 @@ hrtf-mode = full
 [reverb]
 boost=-6
 ```
-### Chimera
-
-Chimera increases animation framerate, corrects fog, enables anisotropic filtering, enables reverb for first person sounds (requires dsoal), and boosts polygon count, object limit, and draw distance. But is highly recommended for bug fixes and QOL changes alone.
-
-See installation instructions above. If you installed chimera, there is an enhancement not enabled by default. You can execute a console command ```chimera_model_detail 8``` to reduce pop-in and low detail models (lods). There are several ways to do this. 
-
-* You can bring up the in-game console with tilde ~ key, but it helps to disable the VR mod by temporarily by renaming d3d9.dll to something like d3d9aa.dll so you can see the console. 
-
-* Or, executed console commands are saved and read from a text file. You can create this file yourself:
-1) Navigate to (Your User Folder)\Documents\My Games\Halo\chimera\ and create a text file named preferences.txt
-2) Edit your preferences.txt and add ```chimera_model_detail 8```
-
-* Or, If you want this command and other preferences to be portable and travel with your Halo installation:
-
-1) Create a new text file named chimera_preferences.txt in the Halo\ folder alongside chimera.ini
-2) Edit Halo\chimera.ini
-3) Adding ```chimera_model_detail 8``` into chimera.ini will not work.
-4) chimera.ini disables lines with a semi-colon ```;```
-5) Find ```exec=``` and remove any semi-colon on that line, such as ```;exec=```.
-6) Set the value to ```exec=./chimera_preferences.txt```
-7) Add ```chimera_model_detail 8``` into chimera_preferences.txt
-
 ### Halo Refined
 
 A Community project that restores many graphical effects present in the original Xbox version by replacing Halo's map files. Fixes issues such as invisible bumpmapping, missing specular, broken transparency effects, etc. Also provides some high res asset replacements, most notably an HD HUD. 
@@ -141,7 +141,7 @@ This mod was designed for singleplayer, it is untested in multiplayer and as suc
 
 Also it does not work in Co-op because this version of the game does not have that mode.
 ### Does this work with Custom Edition?
-Yes, although there is no guarantee that mods/custom content designed for custom edition will be compatible with vr.
+Yes, although there is no guarantee that mods/custom content designed for custom edition will be compatible with VR.
 ### Does this work with MCC Edition?
 No.
 ### Does this work with SPV3?
@@ -203,6 +203,8 @@ Thank you! See compiling source directions below and submit a Pull Request on Gi
 6. If this is the first time running the mod you may need to run makerelease.bat after building to generate HaloCEVR.zip. Unzip the contents of this file into halo's directory to install the additional required assets
 
 ## Final Notes
-It is my wish this mod be kept on pc only. This mod was made in part to help boost PCVR by increasing the number of pc exclusives and make PC a more appealing choice. Cheap standalone devices have taken vr down a path of games cut down to run glorified mobile phones and not the breathtaking immersive worlds half life Alyx promised. I want no part in continuing that with this mod.
+It is my wish this mod be kept on PC only. This mod was made in part to help boost PCVR by increasing the number of PC exclusives and make PC a more appealing choice. Cheap standalone devices have taken VR down a path of games cut down to run glorified mobile phones and not the breathtaking immersive worlds Half-Life Alyx promised. I want no part in continuing that with this mod.
 
 Additionally this mod would not have been possible without other, free, open source mods to inspire me and to learn from. If you want to make your own mod I implore you to release it freely for the community's sake.
+
+
