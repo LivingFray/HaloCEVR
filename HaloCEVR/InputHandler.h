@@ -16,6 +16,7 @@ public:
 	void CalculateSmoothedInput();
 
 	Vector3 smoothedPosition = Vector3(0.0f, 0.0f, 0.0f);
+	bool IsSnapTurning();
 
 	// Track previous yaw offset to detect snap turns for weapon position smoothing
 	float lastSmoothingYawOffset = 0.0f;
