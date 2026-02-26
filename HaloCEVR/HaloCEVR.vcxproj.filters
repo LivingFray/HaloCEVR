@@ -87,6 +87,9 @@
     <ClCompile Include="Helpers\Cutscene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DiagnosticLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -147,6 +150,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Hooking\SigScanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DiagnosticLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Logger.h">
