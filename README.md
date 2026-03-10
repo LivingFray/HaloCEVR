@@ -10,7 +10,7 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 **This mod is not compatible with _The Master Chief Collection_**
 
 ## Features
-* 6DoF Synced Stereo view (i.e. VR camera without any AER/3D screen nonsense)
+* 6DoF Synced Stereo view
 * Tracked controllers
 * 6DoF Weapon aiming
 * 6DoF Grenade aiming
@@ -40,6 +40,11 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 * Some people report a minor distortion or warping effect when tilting their head side to side.
 
 ## Installation
+### Automatic installer
+[HALOCEVR-Installer](https://elliewasteland.github.io/HALOCEVR-Installer/) by [@EllieWasteland](https://github.com/elliewasteland)
+
+Download and run this installer to automatically install the mod, alongside a handful of additional optional QoL mods/tweak.
+### Manual installation
 0. Install _Halo: Combat Evolved for PC_ (not Custom Edition) using an original installation CD + product key.  <br>**IMPORTANT: Install in a directory OTHER THAN Program Files (example: C:\HaloVRMod\Halo). Installing in Program Files causes numerous permissions-related issues**.
 1. Install the 1.0.10 patch for Halo PC (not the patch for Custom Edition)
 2. (Optional) Install [chimera](https://github.com/SnowyMouse/chimera) (fixes a few bugs/issues such as entities moving at 30fps).  Grab the RELEASE files from [releases](https://github.com/SnowyMouse/chimera/releases).  Copy chimera.ini, strings.dll, and the fonts folder from the chimera zip after unzipping and place into your halo game folder in the same location as halo.exe. 
