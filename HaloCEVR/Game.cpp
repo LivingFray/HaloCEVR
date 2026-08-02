@@ -96,6 +96,7 @@ namespace
 	struct FirstPersonVehicleCameraTransformState
 	{
 		bool active = false;
+		bool multiplayer = false;
 		HaloID vehicleID{ 0xFFFF, 0xFFFF };
 		uint32_t cameraContext = 0;
 		float contextSeconds = 0.0f;
@@ -108,6 +109,16 @@ namespace
 		Vector3 previousUp{};
 		Vector3 currentUp{};
 		float elapsedSeconds = 0.0f;
+
+		// Multiplayer vehicle snapshots can arrive one render frame before Halo
+		// resets its 30 Hz interpolation phase. Defer those poses until the reset
+		// to avoid a mid-phase camera correction.
+		Vector3 observedPosition{};
+		Vector3 observedForward{};
+		Vector3 observedUp{};
+		bool deferredPoseValid = false;
+		bool previousRenderPhaseValid = false;
+		float previousRenderPhaseSeconds = 0.0f;
 	};
 
 	FirstPersonVehicleCameraTransformState firstPersonVehicleCameraTransformState{};
@@ -3453,16 +3464,24 @@ void Game::ApplyFirstPersonVehicleDriverCamera()
 
 	FirstPersonVehicleCameraTransformState& state =
 		firstPersonVehicleCameraTransformState;
+	const bool bMultiplayerCamera =
+		IsMultiplayerSession();
+	const bool bUseNormalizedEngineTickTime =
+		bRenderTickElapsedSecondsValid &&
+		bRenderTickIntervalSecondsValid &&
+		renderTickIntervalSeconds > 0.000001f;
 	const bool bNewVehicleCameraContext =
 		!state.active ||
 		!SameHaloIDLocal(
 			state.vehicleID,
 			player->parent) ||
-		state.cameraContext != cameraContext;
+		state.cameraContext != cameraContext ||
+		state.multiplayer != bMultiplayerCamera;
 
 	if (bNewVehicleCameraContext)
 	{
 		state.active = true;
+		state.multiplayer = bMultiplayerCamera;
 		state.vehicleID = player->parent;
 		state.cameraContext = cameraContext;
 		state.contextSeconds = 0.0f;
@@ -3480,37 +3499,103 @@ void Game::ApplyFirstPersonVehicleDriverCamera()
 		state.currentUp = liveUp;
 		state.elapsedSeconds =
 			VehicleReleasePolicy::SimulationTickSeconds;
+		state.observedPosition = vehicle->position;
+		state.observedForward = liveForward;
+		state.observedUp = liveUp;
+		state.deferredPoseValid = false;
+		state.previousRenderPhaseValid =
+			bUseNormalizedEngineTickTime;
+		state.previousRenderPhaseSeconds =
+			renderTickElapsedSeconds;
 	}
 	else
 	{
 		state.elapsedSeconds += frameSeconds;
 		state.contextSeconds += frameSeconds;
 
-		const bool bNewSimulationSnapshot =
-			(vehicle->position - state.currentPosition).lengthSqr() >
+		bool bEnginePhaseReset = false;
+		if (bUseNormalizedEngineTickTime)
+		{
+			bEnginePhaseReset =
+				state.previousRenderPhaseValid &&
+				renderTickElapsedSeconds + 0.000001f <
+					state.previousRenderPhaseSeconds;
+			state.previousRenderPhaseSeconds =
+				renderTickElapsedSeconds;
+			state.previousRenderPhaseValid = true;
+		}
+		else
+		{
+			state.previousRenderPhaseValid = false;
+		}
+
+		const bool bNewObservedPose =
+			(vehicle->position - state.observedPosition).lengthSqr() >
 				0.0000000001f ||
-			(liveForward - state.currentForward).lengthSqr() >
+			(liveForward - state.observedForward).lengthSqr() >
 				0.0000000001f ||
-			(liveUp - state.currentUp).lengthSqr() >
+			(liveUp - state.observedUp).lengthSqr() >
 				0.0000000001f;
 
-		if (bNewSimulationSnapshot)
+		if (bNewObservedPose)
 		{
-			state.previousPosition = state.currentPosition;
-			state.currentPosition = vehicle->position;
-			state.previousForward = state.currentForward;
-			state.currentForward = liveForward;
-			state.previousUp = state.currentUp;
-			state.currentUp = liveUp;
-			state.elapsedSeconds = 0.0f;
+			state.observedPosition = vehicle->position;
+			state.observedForward = liveForward;
+			state.observedUp = liveUp;
+		}
+
+		const bool bLowRefreshRender =
+			bUseNormalizedEngineTickTime &&
+			frameSeconds >=
+				renderTickIntervalSeconds * 0.75f;
+
+		if (!bMultiplayerCamera ||
+			!bUseNormalizedEngineTickTime)
+		{
+			// Campaign and the invalid-phase fallback consume changed poses
+			// immediately.
+			if (bNewObservedPose)
+			{
+				state.previousPosition = state.currentPosition;
+				state.currentPosition = state.observedPosition;
+				state.previousForward = state.currentForward;
+				state.currentForward = state.observedForward;
+				state.previousUp = state.currentUp;
+				state.currentUp = state.observedUp;
+				state.elapsedSeconds = 0.0f;
+			}
+		}
+		else if (bEnginePhaseReset || bLowRefreshRender)
+		{
+			if (bNewObservedPose || state.deferredPoseValid)
+			{
+				state.previousPosition = state.currentPosition;
+				state.currentPosition = state.observedPosition;
+				state.previousForward = state.currentForward;
+				state.currentForward = state.observedForward;
+				state.previousUp = state.currentUp;
+				state.currentUp = state.observedUp;
+				state.elapsedSeconds = 0.0f;
+				state.deferredPoseValid = false;
+			}
+			else if (bEnginePhaseReset)
+			{
+				// Do not replay the previous interpolation interval if a network
+				// tick advances without delivering a new vehicle pose.
+				state.previousPosition = state.currentPosition;
+				state.previousForward = state.currentForward;
+				state.previousUp = state.currentUp;
+				state.elapsedSeconds = 0.0f;
+			}
+		}
+		else if (bNewObservedPose)
+		{
+			// Apply off-phase multiplayer poses at the next engine phase reset.
+			state.deferredPoseValid = true;
 		}
 	}
 
 	float interpolationAmount = 1.0f;
-	const bool bUseNormalizedEngineTickTime =
-		bRenderTickElapsedSecondsValid &&
-		bRenderTickIntervalSecondsValid &&
-		renderTickIntervalSeconds > 0.000001f;
 
 	if (bUseNormalizedEngineTickTime)
 	{
