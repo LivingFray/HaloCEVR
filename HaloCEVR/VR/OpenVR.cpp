@@ -943,11 +943,6 @@ bool OpenVR::GetBoolInput(InputBindingID id, bool& bHasChanged)
 
 	bHasChanged = digital.bChanged;
 
-	if (digital.bChanged && digital.bState)
-	{
-		Logger::log << "[OpenVR] Getting binding " << id << std::endl;
-	}
-
 	return digital.bState;
 }
 

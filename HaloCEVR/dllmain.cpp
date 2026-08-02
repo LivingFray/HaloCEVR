@@ -135,7 +135,7 @@ IDirect3D9* WINAPI H_Direct3DCreate9(UINT nSDKVersion)
 		return nullptr;
 	}
 
-	IDirect3D9Ex* d3dEx;
+	IDirect3D9Ex* d3dEx = nullptr;
 	HRESULT result = H_Direct3DCreate9Ex(nSDKVersion, &d3dEx);
 
 	if (SUCCEEDED(result))

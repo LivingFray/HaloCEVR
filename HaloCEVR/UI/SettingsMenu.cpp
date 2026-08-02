@@ -14,7 +14,7 @@
 #include "../Helpers/Version.h"
 
 // TODO: Hook this up to some sort of github action
-#define MOD_VERSION "1.4.0"
+#define MOD_VERSION "1.4.0-mp.1"
 
 void SettingsMenu::CreateMenus()
 {
@@ -242,11 +242,11 @@ UIPanel* SettingsMenu::GenerateSettingsPanel(std::string propertyName, class UIP
 		float checkSize = smallFont->lineHeight;
 		float checkPadding = (labelHeight - checkSize) * 0.5f + innerPadding;
 		UICheckbox* button = new UICheckbox(settingPanel->w - checkSize - innerPadding, checkPadding, checkSize, boolProperty->Value(), mediumPanelColour, textValueColour);
-		
+
 		button->onClick = [boolProperty, button]() {
 			boolProperty->SetValue(button->bIsActive);
 		};
-		
+
 		settingPanel->AddElement(button);
 	}
 	else if (IntProperty* intProperty = dynamic_cast<IntProperty*>(propertyValue))
@@ -333,9 +333,22 @@ void SettingsMenu::PopulateBasicSettingsTab()
 		"SmoothTurnAmount",
 		"HorizontalVehicleTurnAmount",
 		"VerticalVehicleTurnAmount",
+		"MotionControlledVehicles",
+		"SinglePlayerMeleeWeaponAim",
+		"1stPersonWarthogDriver",
+		"1stPersonWarthogTurret",
+		"1stPersonGhost",
+		"1stPersonScorpion",
+		"1stPersonBanshee",
+		"1stPersonShade",
+		"HideHeadIn1stPersonVehicles",
 		"HandRelativeMovement",
 		"EnableWeaponHolsters",
 		"ShowCrosshair",
+		"CampaignZoom1Magnification",
+		"CampaignZoom2Magnification",
+		"CustomEditionZoom1Magnification",
+		"CustomEditionZoom2Magnification",
 		"ShowRoomCentre",
 		"RoomScaleMovement"
 	};

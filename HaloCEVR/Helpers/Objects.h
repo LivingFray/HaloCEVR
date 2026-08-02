@@ -9,18 +9,18 @@ struct HaloID
 	uint16_t id; //0x0002
 };
 
-inline std::ostream& operator<<(std::ostream& os, const HaloID& id) 
+inline std::ostream& operator<<(std::ostream& os, const HaloID& id)
 {
 	os << "[ID: " << id.id << ", Index: " << id.index << "]";
 	return os;
 }
 
-inline bool operator==(HaloID& a, HaloID& b)
+inline bool operator==(const HaloID& a, const HaloID& b)
 {
 	return a.id == b.id && a.index == b.index;
 }
 
-inline bool operator!=(HaloID& a, HaloID& b)
+inline bool operator!=(const HaloID& a, const HaloID& b)
 {
 	return a.id != b.id || a.index != b.index;
 }
@@ -209,8 +209,12 @@ public:
 	uint32_t respawnTime; //0x002C
 	uint32_t respawnTimeGrowth; //0x0030
 	HaloID objectID; //0x0034
-	char pad_0038[216]; //0x0038
+	// Halo allocates player-table datums with a 0x200-byte stride.  The old
+	// declaration stopped at 0x110, so table.elements[1] addressed memory
+	// 0xF0 bytes before the real second player datum in multiplayer.
+	char pad_0038[456]; //0x0038
 };
+static_assert(sizeof(PlayerDatum) == 0x200);
 
 struct Weapon
 {
@@ -236,6 +240,7 @@ namespace Helpers
 	PlayerTable& GetPlayerTable();
 
 	BaseDynamicObject* GetDynamicObject(HaloID& ID);
+	PlayerDatum* GetPlayerDatum(uint16_t index);
 	bool GetLocalPlayerID(HaloID& OutID);
 	BaseDynamicObject* GetLocalPlayer();
 }

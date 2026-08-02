@@ -2,6 +2,7 @@
 #include "Maths/Vectors.h"
 #include "Maths/Matrices.h"
 #include "Helpers/Objects.h"
+#include "Helpers/Maths.h"
 
 #define DRAW_DEBUG_AIM 0
 
@@ -44,10 +45,12 @@ public:
 
 protected:
 	void RelocatePlayer(HaloID& PlayerID);
+	bool HandleCoopProjectileCompatibility(const HaloID& weaponTagID, short triggerIndex);
+	void RestoreCoopClientProjectile();
 
 	inline void CalculateBoneTransform(int boneIndex, struct Bone* boneArray, struct Transform& root, struct TransformQuat* boneTransforms, struct Transform& outTransform) const;
 	inline void CalculateHandTransform(Vector3* pos, Matrix4& handTransform) const;
-	inline void CreateEndCap(int boneIndex, const struct Bone& currentBone, struct Transform* outBoneTransforms) const;
+	inline void CreateEndCap(int boneIndex, const struct Bone& currentBone, const struct Bone* boneArray, int numBones, struct Transform* outBoneTransforms) const;
 	inline void MoveBoneToTransform(int boneIndex, const class Matrix4& newTransform, struct Transform* realTransforms, struct Transform* outBoneTransforms) const;
 	inline void UpdateCache(struct HaloID& id, struct AssetData_ModelAnimations* animationData);
 	inline WeaponType GetWeaponType(struct Asset_Weapon* weapon) const;
@@ -80,6 +83,17 @@ protected:
 	Vector3 realPlayerPosition;
 	Vector3 realPlayerAim;
 
+	// Official Coop Evolved tags mark their visible projectiles as client-side-only
+	// while Mimic also creates the authoritative server projectile. On a joined VR
+	// client those two simulations can be seen side-by-side. Fingerprint the official
+	// release cache, suppress only its local projectile count during FireWeapon, and
+	// restore the loaded tag immediately afterward. Normal LAN and rebuilt Coop
+	// caches never enter this compatibility path.
+	uint32_t* coopTriggerFlags = nullptr;
+	int16_t* coopProjectilesPerShot = nullptr;
+	uint32_t coopOriginalTriggerFlags = 0;
+	int16_t coopOriginalProjectilesPerShot = 0;
+
 	// Smoothed facing direction for 3DOF mode weapon model
 	Vector3 smoothed3DOFFacingDir = Vector3(1.0f, 0.0f, 0.0f);
 	bool bWasIn3DOFMode = false;
@@ -93,4 +107,3 @@ protected:
 	mutable Vector3 lastFireAim;
 #endif
 };
-

@@ -1,9 +1,38 @@
 #include "IDirect3DDevice9ExWrapper.h"
+#include "ManagedTexture9Compat.h"
 #include "../Logger.h"
 #include "../Game.h"
 
+namespace
+{
+	// Local interface GUIDs avoid requiring dxguid.lib and keep QueryInterface
+	// callers on the wrapper. Returning the raw device here would let D3DX or a
+	// renderer extension bypass managed-texture unwrapping in SetTexture.
+	constexpr GUID IID_UnknownLocal =
+		{ 0x00000000, 0x0000, 0x0000, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
+	constexpr GUID IID_Direct3DDevice9Local =
+		{ 0xd0223b96, 0xbf7a, 0x43fd, { 0x92, 0xbd, 0xa4, 0x3b, 0x0d, 0x82, 0xb9, 0xeb } };
+	constexpr GUID IID_Direct3DDevice9ExLocal =
+		{ 0xb18b10ce, 0x2649, 0x405a, { 0x87, 0x0f, 0x95, 0xf7, 0x77, 0xd4, 0x31, 0x3a } };
+}
+
 HRESULT __stdcall IDirect3DDevice9ExWrapper::QueryInterface(REFIID riid, void** ppvObj)
 {
+	if (!ppvObj) return E_POINTER;
+	*ppvObj = nullptr;
+	if (D3D9ManagedCompat::SameGuid(riid, IID_UnknownLocal) ||
+		D3D9ManagedCompat::SameGuid(riid, IID_Direct3DDevice9Local))
+	{
+		*ppvObj = static_cast<IDirect3DDevice9*>(this);
+		AddRef();
+		return S_OK;
+	}
+	if (D3D9ManagedCompat::SameGuid(riid, IID_Direct3DDevice9ExLocal))
+	{
+		*ppvObj = static_cast<IDirect3DDevice9Ex*>(this);
+		AddRef();
+		return S_OK;
+	}
 	return Real->QueryInterface(riid, ppvObj);
 }
 
@@ -124,19 +153,93 @@ void __stdcall IDirect3DDevice9ExWrapper::GetGammaRamp(UINT iSwapChain, D3DGAMMA
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle)
 {
-	if (Pool == D3DPOOL_MANAGED) { Pool = D3DPOOL_DEFAULT; Usage |= D3DUSAGE_DYNAMIC; }; // 9Ex dropped support for managed pools, apparently default will work fine
+	if (Pool == D3DPOOL_MANAGED)
+	{
+		if (Usage == 0 && pSharedHandle == nullptr)
+		{
+			const HRESULT emulationResult = D3D9ManagedCompat::CreateManagedTexture2D(
+				static_cast<IDirect3DDevice9*>(this), Real, Width, Height, Levels, Usage, Format, ppTexture);
+			if (SUCCEEDED(emulationResult))
+			{
+				return emulationResult;
+			}
+
+			Logger::log << "[D3DManagedCompat] 2D shadow creation failed; using DEFAULT|DYNAMIC fallback"
+				<< " result=0x" << std::hex << static_cast<unsigned long>(emulationResult)
+				<< std::dec << std::endl;
+		}
+		else
+		{
+			Logger::log << "[D3DManagedCompat] 2D managed flags unsupported; using DEFAULT|DYNAMIC fallback"
+				<< " usage=0x" << std::hex << static_cast<unsigned long>(Usage)
+				<< " sharedHandlePointer=" << static_cast<const void*>(pSharedHandle)
+				<< std::dec << std::endl;
+		}
+		Pool = D3DPOOL_DEFAULT;
+		Usage |= D3DUSAGE_DYNAMIC;
+	}
 	return Real->CreateTexture(Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::CreateVolumeTexture(UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DVolumeTexture9** ppVolumeTexture, HANDLE* pSharedHandle)
 {
-	if (Pool == D3DPOOL_MANAGED) { Pool = D3DPOOL_DEFAULT; Usage |= D3DUSAGE_DYNAMIC; }; // 9Ex dropped support for managed pools, apparently default will work fine
+	if (Pool == D3DPOOL_MANAGED && Usage == 0 && pSharedHandle == nullptr)
+	{
+		const HRESULT emulationResult = D3D9ManagedCompat::CreateManagedVolumeTexture(
+			static_cast<IDirect3DDevice9*>(this), Real, Width, Height, Depth, Levels, Usage, Format, ppVolumeTexture);
+		if (SUCCEEDED(emulationResult))
+		{
+			return emulationResult;
+		}
+
+		Logger::log << "[D3DManagedCompat] Volume shadow creation failed; using DEFAULT|DYNAMIC fallback"
+			<< " result=0x" << std::hex << static_cast<unsigned long>(emulationResult)
+			<< std::dec << std::endl;
+	}
+
+	if (Pool == D3DPOOL_MANAGED)
+	{
+		if (Usage != 0 || pSharedHandle != nullptr)
+		{
+			Logger::log << "[D3DManagedCompat] Volume managed flags unsupported; using DEFAULT|DYNAMIC fallback"
+				<< " usage=0x" << std::hex << static_cast<unsigned long>(Usage)
+				<< " sharedHandlePointer=" << static_cast<const void*>(pSharedHandle)
+				<< std::dec << std::endl;
+		}
+		Pool = D3DPOOL_DEFAULT;
+		Usage |= D3DUSAGE_DYNAMIC;
+	}
 	return Real->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, Pool, ppVolumeTexture, pSharedHandle);
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::CreateCubeTexture(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle)
 {
-	if (Pool == D3DPOOL_MANAGED) { Pool = D3DPOOL_DEFAULT; Usage |= D3DUSAGE_DYNAMIC; }; // 9Ex dropped support for managed pools, apparently default will work fine
+	if (Pool == D3DPOOL_MANAGED && Usage == 0 && pSharedHandle == nullptr)
+	{
+		const HRESULT emulationResult = D3D9ManagedCompat::CreateManagedCubeTexture(
+			static_cast<IDirect3DDevice9*>(this), Real, EdgeLength, Levels, Usage, Format, ppCubeTexture);
+		if (SUCCEEDED(emulationResult))
+		{
+			return emulationResult;
+		}
+
+		Logger::log << "[D3DManagedCompat] Cube shadow creation failed; using DEFAULT|DYNAMIC fallback"
+			<< " result=0x" << std::hex << static_cast<unsigned long>(emulationResult)
+			<< std::dec << std::endl;
+	}
+
+	if (Pool == D3DPOOL_MANAGED)
+	{
+		if (Usage != 0 || pSharedHandle != nullptr)
+		{
+			Logger::log << "[D3DManagedCompat] Cube managed flags unsupported; using DEFAULT|DYNAMIC fallback"
+				<< " usage=0x" << std::hex << static_cast<unsigned long>(Usage)
+				<< " sharedHandlePointer=" << static_cast<const void*>(pSharedHandle)
+				<< std::dec << std::endl;
+		}
+		Pool = D3DPOOL_DEFAULT;
+		Usage |= D3DUSAGE_DYNAMIC;
+	}
 	return Real->CreateCubeTexture(EdgeLength, Levels, Usage, Format, Pool, ppCubeTexture, pSharedHandle);
 }
 
@@ -169,7 +272,9 @@ HRESULT __stdcall IDirect3DDevice9ExWrapper::UpdateSurface(IDirect3DSurface9* pS
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::UpdateTexture(IDirect3DBaseTexture9* pSourceTexture, IDirect3DBaseTexture9* pDestinationTexture)
 {
-	return Real->UpdateTexture(pSourceTexture, pDestinationTexture);
+	return Real->UpdateTexture(
+		D3D9ManagedCompat::PrepareUpdateSource(pSourceTexture),
+		D3D9ManagedCompat::PrepareUpdateDestination(pDestinationTexture));
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface)
@@ -368,12 +473,17 @@ HRESULT __stdcall IDirect3DDevice9ExWrapper::GetClipStatus(D3DCLIPSTATUS9* pClip
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture)
 {
-	return Real->GetTexture(Stage, ppTexture);
+	const HRESULT result = Real->GetTexture(Stage, ppTexture);
+	if (SUCCEEDED(result) && ppTexture && *ppTexture)
+	{
+		D3D9ManagedCompat::ReturnApplicationTexture(*ppTexture, ppTexture);
+	}
+	return result;
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture)
 {
-	return Real->SetTexture(Stage, pTexture);
+	return Real->SetTexture(Stage, D3D9ManagedCompat::PrepareForBinding(pTexture));
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue)

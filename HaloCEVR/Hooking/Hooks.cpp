@@ -6,8 +6,13 @@
 #include "../Game.h"
 #include "../Helpers/Menus.h"
 #include "../Helpers/Maths.h"
+#include "../Helpers/Objects.h"
+#include "../Helpers/Assets.h"
+#include "../Helpers/Version.h"
 
 #include <tlhelp32.h>
+#include <cmath>
+#include <cstring>
 #include "../DirectXWrappers/IDirect3DDevice9ExWrapper.h"
 #include "../Helpers/CmdLineArgs.h"
 
@@ -15,6 +20,1139 @@
 
 #define CREATEHOOK(Func) Func##.CreateHook(#Func, o.##Func##, &H_##Func##)
 #define RESOLVEINDIRECT(Name) ResolveIndirect(o.I_##Name, o.##Name)
+
+namespace
+{
+	using HudRenderPlayersFunction = void(__cdecl*)();
+	using HudRenderNavPointsFunction = void(__cdecl*)(void*);
+
+	class HudRenderPlayersHook final :
+		public Hook<HudRenderPlayersFunction>
+	{
+	public:
+		void CallOriginal()
+		{
+			if (Original)
+			{
+				Original();
+			}
+		}
+	};
+
+	class HudRenderNavPointsHook final :
+		public Hook<HudRenderNavPointsFunction>
+	{
+	public:
+		void CallOriginal(void* arg0)
+		{
+			if (Original)
+			{
+				Original(arg0);
+			}
+		}
+	};
+
+	// OpenSauce's Halo Custom Edition 1.10 layout identifies the dedicated
+	// teammate/player-indicator function at absolute 0x4AD830. HaloCEVR offsets
+	// are module-relative, so the matching image offset is 0x0AD830.
+	Offset g_hudRenderPlayersOffset{
+		"HudRenderPlayers",
+		0x0AD830,
+		""
+	};
+	HudRenderPlayersHook g_hudRenderPlayersHook{};
+	bool g_bHudRenderPlayersHookCreated = false;
+
+	// Mission waypoints, object markers and multiplayer game-goal indicators
+	// are rendered by Halo's separate HUD nav-point function at 0x4B2F80.
+	Offset g_hudRenderNavPointsOffset{
+		"HudRenderNavPoints",
+		0x0B2F80,
+		""
+	};
+	HudRenderNavPointsHook g_hudRenderNavPointsHook{};
+	bool g_bHudRenderNavPointsHookCreated = false;
+
+	void __cdecl H_HudRenderPlayers()
+	{
+		const bool bProjectionOverridden =
+			Game::instance.BeginWorldSpaceIndicatorProjectionOverride();
+
+		g_hudRenderPlayersHook.CallOriginal();
+
+		if (bProjectionOverridden)
+		{
+			Game::instance.EndWorldSpaceIndicatorProjectionOverride();
+		}
+	}
+
+	void __cdecl H_HudRenderNavPoints(void* arg0)
+	{
+		const bool bProjectionOverridden =
+			Game::instance.BeginWorldSpaceIndicatorProjectionOverride();
+
+		g_hudRenderNavPointsHook.CallOriginal(arg0);
+
+		if (bProjectionOverridden)
+		{
+			Game::instance.EndWorldSpaceIndicatorProjectionOverride();
+		}
+	}
+
+	bool ResolveRelativeCallTargetOffset(
+		long long callOffset,
+		long long& outTargetOffset)
+	{
+		HMODULE module = GetModuleHandleA(nullptr);
+		if (!module)
+		{
+			return false;
+		}
+
+		MODULEINFO moduleInfo{};
+		if (!GetModuleInformation(
+			GetCurrentProcess(),
+			module,
+			&moduleInfo,
+			sizeof(moduleInfo)))
+		{
+			return false;
+		}
+
+		if (callOffset < 0 ||
+			callOffset + 5 >
+				static_cast<long long>(moduleInfo.SizeOfImage))
+		{
+			return false;
+		}
+
+		const uint8_t* image =
+			reinterpret_cast<const uint8_t*>(
+				moduleInfo.lpBaseOfDll);
+		if (image[callOffset] != 0xE8)
+		{
+			return false;
+		}
+
+		int32_t relativeTarget = 0;
+		std::memcpy(
+			&relativeTarget,
+			image + callOffset + 1,
+			sizeof(relativeTarget));
+
+		const long long targetOffset =
+			callOffset + 5 +
+			static_cast<long long>(relativeTarget);
+		if (targetOffset < 0 ||
+			targetOffset >=
+				static_cast<long long>(moduleInfo.SizeOfImage))
+		{
+			return false;
+		}
+
+		outTargetOffset = targetOffset;
+		return true;
+	}
+
+	bool ResolveRetailWorldSpaceIndicatorOffsets(
+		long long& outPlayersOffset,
+		long long& outNavPointsOffset)
+	{
+		// Proven Custom Edition 1.10 layout:
+		//   DrawCrosshair        0x0AFEC0
+		//   HudRenderPlayers    0x0AD830
+		//   HudRenderNavPoints  0x0B2F80
+		//   Players CALL        0x0ACA6E
+		//   Nav-points CALL     0x0ACAED
+		//
+		// Retail and Custom Edition retain this local interface layout while
+		// earlier executable sections shift. Base the search on DrawCrosshair,
+		// which HaloCEVR has already located by a full byte signature.
+		constexpr long long CeDrawCrosshair = 0x0AFEC0;
+		constexpr long long CePlayersCall = 0x0ACA6E;
+		constexpr long long CeNavPointsCall = 0x0ACAED;
+		constexpr long long CePlayersTarget = 0x0AD830;
+		constexpr long long CeNavPointsTarget = 0x0B2F80;
+
+		constexpr long long PlayersCallDelta =
+			CePlayersCall - CeDrawCrosshair;
+		constexpr long long NavPointsCallDelta =
+			CeNavPointsCall - CeDrawCrosshair;
+		constexpr long long PlayersTargetDelta =
+			CePlayersTarget - CeDrawCrosshair;
+		constexpr long long NavPointsTargetDelta =
+			CeNavPointsTarget - CeDrawCrosshair;
+		constexpr long long CallSpacing =
+			CeNavPointsCall - CePlayersCall;
+
+		const long long drawCrosshairOffset =
+			Hooks::o.DrawCrosshair.Offset;
+		const long long expectedPlayersCall =
+			drawCrosshairOffset + PlayersCallDelta;
+		const long long expectedPlayersTarget =
+			drawCrosshairOffset + PlayersTargetDelta;
+		const long long expectedNavPointsTarget =
+			drawCrosshairOffset + NavPointsTargetDelta;
+
+		// First try the exact relative layout. If a small retail-only insertion
+		// exists in the parent HUD function, search nearby while requiring:
+		//   - both instructions are CALL rel32;
+		//   - the calls remain exactly 0x7F apart;
+		//   - both destinations remain close to their expected local targets.
+		constexpr long long SearchRadius = 0x600;
+		constexpr long long TargetTolerance = 0x1800;
+
+		for (long long adjustment = 0;
+			adjustment <= SearchRadius;
+			++adjustment)
+		{
+			const long long signedAdjustments[2] =
+			{
+				adjustment,
+				-adjustment
+			};
+
+			for (long long signedAdjustment : signedAdjustments)
+			{
+				if (adjustment == 0 &&
+					signedAdjustment < 0)
+				{
+					continue;
+				}
+
+				const long long playersCall =
+					expectedPlayersCall +
+					signedAdjustment;
+				const long long navPointsCall =
+					playersCall +
+					CallSpacing;
+
+				long long playersTarget = -1;
+				long long navPointsTarget = -1;
+				if (!ResolveRelativeCallTargetOffset(
+						playersCall,
+						playersTarget) ||
+					!ResolveRelativeCallTargetOffset(
+						navPointsCall,
+						navPointsTarget))
+				{
+					continue;
+				}
+
+				const long long playersDistance =
+					std::llabs(
+						playersTarget -
+						expectedPlayersTarget);
+				const long long navPointsDistance =
+					std::llabs(
+						navPointsTarget -
+						expectedNavPointsTarget);
+
+				if (playersDistance >
+						TargetTolerance ||
+					navPointsDistance >
+						TargetTolerance)
+				{
+					continue;
+				}
+
+				// Sanity checks matching the known interface layout:
+				// player indicators precede DrawCrosshair, nav points follow it.
+				if (playersTarget >=
+						drawCrosshairOffset ||
+					navPointsTarget <=
+						drawCrosshairOffset ||
+					playersTarget ==
+						navPointsTarget)
+				{
+					continue;
+				}
+
+				outPlayersOffset = playersTarget;
+				outNavPointsOffset = navPointsTarget;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void CreateWorldSpaceIndicatorHooks(
+		const char* gameType)
+	{
+		const bool bIsRetail =
+			gameType &&
+			std::strcmp("halor", gameType) == 0;
+
+		if (!bIsRetail)
+		{
+			// Proven Halo Custom Edition 1.10 addresses.
+			g_hudRenderPlayersOffset.Offset = 0x0AD830;
+			g_hudRenderNavPointsOffset.Offset = 0x0B2F80;
+		}
+		else
+		{
+			long long playersOffset = -1;
+			long long navPointsOffset = -1;
+
+			if (!ResolveRetailWorldSpaceIndicatorOffsets(
+					playersOffset,
+					navPointsOffset))
+			{
+				Logger::err
+					<< "[Hook] Could not safely resolve Halo Retail "
+					<< "world-space indicator routines; skipping them"
+					<< std::endl;
+				return;
+			}
+
+			g_hudRenderPlayersOffset.Offset =
+				playersOffset;
+			g_hudRenderNavPointsOffset.Offset =
+				navPointsOffset;
+
+		}
+
+		g_hudRenderPlayersHook.CreateHook(
+			"HudRenderPlayers",
+			g_hudRenderPlayersOffset,
+			reinterpret_cast<LPVOID>(
+				&H_HudRenderPlayers));
+		g_bHudRenderPlayersHookCreated = true;
+
+		g_hudRenderNavPointsHook.CreateHook(
+			"HudRenderNavPoints",
+			g_hudRenderNavPointsOffset,
+			reinterpret_cast<LPVOID>(
+				&H_HudRenderNavPoints));
+		g_bHudRenderNavPointsHookCreated = true;
+	}
+
+	struct ArmedPassengerOnFootTransportState
+	{
+		bool active = false;
+		HaloID localBipedID{ 0xFFFF, 0xFFFF };
+		HaloID localPlayerID{ 0xFFFF, 0xFFFF };
+		HaloID vehicleID{ 0xFFFF, 0xFFFF };
+		HaloID weaponID{ 0xFFFF, 0xFFFF };
+		uint32_t seatIndex = 0xFFFFFFFF;
+
+		Vector3 trackedAim{};
+		Camera savedCamera{};
+		Vector3 savedLastLookDir{};
+	};
+
+	ArmedPassengerOnFootTransportState
+		g_armedPassengerOnFootTransport{};
+
+	struct VehicleTagPathView
+	{
+		char pad_0000[16];
+		const char* path;
+	};
+
+	bool IsShadeTagPath(
+		const char* tagPath)
+	{
+		return tagPath &&
+			(std::strstr(tagPath, "shade") != nullptr ||
+				std::strstr(tagPath, "c gun turret") != nullptr ||
+				std::strstr(tagPath, "c_gun_turret") != nullptr ||
+				std::strstr(tagPath, "c-gun-turret") != nullptr ||
+				std::strstr(tagPath, "covenant_turret") != nullptr ||
+				std::strstr(tagPath, "covenant turret") != nullptr ||
+				std::strstr(tagPath, "plasma_turret") != nullptr);
+	}
+
+	struct VehicleSeatClassification
+	{
+		bool supported = false;
+		bool warthogDriver = false;
+		bool warthogSidePassenger = false;
+	};
+
+	VehicleSeatClassification
+		ClassifyVehicleSeat(
+			BaseDynamicObject* parentVehicle,
+			UnitDynamicObject* localUnit)
+	{
+		VehicleSeatClassification result{};
+
+		if (!parentVehicle ||
+			!localUnit ||
+			parentVehicle->N0000027E != ObjectType::VEHICLE)
+		{
+			return result;
+		}
+
+		Asset_Generic* vehicleTag =
+			Helpers::GetTypedAsset<Asset_Generic>(
+				parentVehicle->tagID);
+		const VehicleTagPathView* tagView =
+			reinterpret_cast<
+				const VehicleTagPathView*>(
+					vehicleTag);
+
+		if (!tagView || !tagView->path)
+		{
+			return result;
+		}
+
+		const bool bIsWarthog =
+			std::strstr(tagView->path, "warthog") != nullptr;
+		const bool bIsGhost =
+			std::strstr(tagView->path, "ghost") != nullptr;
+		const bool bIsScorpion =
+			std::strstr(tagView->path, "scorpion") != nullptr;
+		const bool bIsBanshee =
+			std::strstr(tagView->path, "banshee") != nullptr;
+		const bool bIsShade =
+			IsShadeTagPath(tagView->path);
+
+		const uint32_t seatLowByte =
+			localUnit->parentSeatIndex & 0xFFu;
+		const bool bHasLocalWeapon =
+			localUnit->weapon.id != 0xFFFF &&
+			localUnit->weapon.index != 0xFFFF;
+
+		result.warthogDriver =
+			bIsWarthog &&
+			seatLowByte == 0 &&
+			!bHasLocalWeapon;
+		const bool bWarthogGunner =
+			bIsWarthog &&
+			seatLowByte == 1;
+		result.warthogSidePassenger =
+			bIsWarthog &&
+			seatLowByte == 2;
+		const bool bScorpionDriver =
+			bIsScorpion &&
+			seatLowByte == 0;
+
+		result.supported =
+			result.warthogDriver ||
+			bWarthogGunner ||
+			bIsGhost ||
+			bScorpionDriver ||
+			bIsBanshee ||
+			bIsShade;
+
+		return result;
+	}
+
+	struct VehicleModelAimState
+	{
+		bool cameraOverrideActive = false;
+		bool contextActive = false;
+		HaloID parentID{
+			0xFFFF,
+			0xFFFF
+		};
+		uint32_t seatLowByte = 0xFFFFFFFFu;
+
+		Camera savedCamera{};
+		Vector3 savedLastLookDir{};
+
+		bool activationComplete = false;
+		std::chrono::steady_clock::time_point
+			seatEntryTime =
+				std::chrono::steady_clock::now();
+
+		bool haveNativeCameraSample = false;
+		Vector3 lastNativeCameraAim{};
+		float pendingYaw = 0.0f;
+		float pendingPitch = 0.0f;
+	};
+
+	VehicleModelAimState g_vehicleModelAim{};
+
+	float NormalizeVehicleModelAimRadians(
+		float radians)
+	{
+		constexpr float Pi =
+			3.14159265358979323846f;
+		constexpr float TwoPi =
+			Pi * 2.0f;
+
+		while (radians > Pi)
+		{
+			radians -= TwoPi;
+		}
+		while (radians < -Pi)
+		{
+			radians += TwoPi;
+		}
+
+		return radians;
+	}
+
+	void RestoreVehicleModelAimCamera()
+	{
+		VehicleModelAimState& state =
+			g_vehicleModelAim;
+
+		if (!state.cameraOverrideActive)
+		{
+			return;
+		}
+
+		Helpers::GetCamera() =
+			state.savedCamera;
+		Game::instance.LastLookDir =
+			state.savedLastLookDir;
+		state.cameraOverrideActive = false;
+	}
+
+	void ResetVehicleModelAimState()
+	{
+		RestoreVehicleModelAimCamera();
+
+		VehicleModelAimState& state =
+			g_vehicleModelAim;
+		state =
+			VehicleModelAimState{};
+	}
+
+	bool PrepareVehicleModelAimCommand(
+		float& outYaw,
+		float& outPitch)
+	{
+		RestoreVehicleModelAimCamera();
+
+		const bool bEnabled =
+			Game::instance.c_MotionControlledVehicles &&
+			Game::instance.c_MotionControlledVehicles->Value();
+
+		if (!bEnabled)
+		{
+			ResetVehicleModelAimState();
+			return false;
+		}
+
+		UnitDynamicObject* localUnit =
+			static_cast<UnitDynamicObject*>(
+				Helpers::GetLocalPlayer());
+		if (!localUnit ||
+			localUnit->parent.id == 0xFFFF ||
+			localUnit->parent.index == 0xFFFF)
+		{
+			ResetVehicleModelAimState();
+			return false;
+		}
+
+		BaseDynamicObject* parentVehicle =
+			Helpers::GetDynamicObject(
+				localUnit->parent);
+		if (!parentVehicle ||
+			parentVehicle->N0000027E !=
+				ObjectType::VEHICLE)
+		{
+			ResetVehicleModelAimState();
+			return false;
+		}
+
+		const VehicleSeatClassification vehicleSeat =
+			ClassifyVehicleSeat(
+				parentVehicle,
+				localUnit);
+		const uint32_t seatLowByte =
+			localUnit->parentSeatIndex &
+			0xFFu;
+
+		if (!vehicleSeat.supported ||
+			vehicleSeat.warthogSidePassenger)
+		{
+			// Explicitly supported:
+			// Warthog driver/gunner, Ghost, Scorpion, Banshee and Shade.
+			// The Warthog side passenger keeps handheld/on-foot VR behavior.
+			ResetVehicleModelAimState();
+			return false;
+		}
+
+		const bool bIgnoredWarthogDriver =
+			vehicleSeat.warthogDriver &&
+			Game::instance
+				.c_DisableWarthogSteeringMotionControls &&
+			Game::instance
+				.c_DisableWarthogSteeringMotionControls
+				->Value();
+
+		if (bIgnoredWarthogDriver)
+		{
+			ResetVehicleModelAimState();
+			return false;
+		}
+
+		VehicleModelAimState& state =
+			g_vehicleModelAim;
+		const bool bNewContext =
+			!state.contextActive ||
+			state.parentID.id !=
+				localUnit->parent.id ||
+			state.parentID.index !=
+				localUnit->parent.index ||
+			state.seatLowByte !=
+				seatLowByte;
+
+		const auto now =
+			std::chrono::steady_clock::now();
+
+		const float activationDelay =
+			VehicleReleasePolicy::ModelAimActivationDelaySeconds;
+		const float transitionSeconds =
+			VehicleReleasePolicy::ModelAimTransitionSeconds;
+
+		if (bNewContext)
+		{
+			state =
+				VehicleModelAimState{};
+			state.contextActive = true;
+			state.parentID =
+				localUnit->parent;
+			state.seatLowByte =
+				seatLowByte;
+			state.seatEntryTime = now;
+		}
+
+		const float seatedSeconds =
+			std::chrono::duration<float>(
+				now -
+					state.seatEntryTime)
+				.count();
+
+		if (seatedSeconds < activationDelay)
+		{
+			// Keep native right-stick model control while the entry animation
+			// settles. Reticle and projectile aim remain controller-tracked.
+			return false;
+		}
+
+		if (!state.activationComplete)
+		{
+			state.activationComplete = true;
+			state.haveNativeCameraSample = false;
+			state.pendingYaw = 0.0f;
+			state.pendingPitch = 0.0f;
+		}
+
+		Vector3 trackedPosition{};
+		Vector3 trackedAim{};
+		Vector3 trackedUp{};
+		if (!Game::instance.GetVehicleVRAim(
+				trackedPosition,
+				trackedAim,
+				trackedUp) ||
+			!(std::isfinite(trackedAim.x) &&
+				std::isfinite(trackedAim.y) &&
+				std::isfinite(trackedAim.z) &&
+				trackedAim.lengthSqr() >
+					0.000001f))
+		{
+			return false;
+		}
+
+		Vector3 nativeCameraAim =
+			Helpers::GetCamera().lookDir;
+		if (!(std::isfinite(nativeCameraAim.x) &&
+				std::isfinite(nativeCameraAim.y) &&
+				std::isfinite(nativeCameraAim.z) &&
+				nativeCameraAim.lengthSqr() >
+					0.000001f))
+		{
+			return false;
+		}
+
+		trackedAim.normalize();
+		nativeCameraAim.normalize();
+
+		const bool bCameraSampleChanged =
+			!state.haveNativeCameraSample ||
+			(nativeCameraAim -
+				state.lastNativeCameraAim)
+					.lengthSqr() >
+				0.0000000001f;
+
+		if (bCameraSampleChanged)
+		{
+			state.haveNativeCameraSample = true;
+			state.lastNativeCameraAim =
+				nativeCameraAim;
+			state.pendingYaw = 0.0f;
+			state.pendingPitch = 0.0f;
+		}
+
+		const float nativeYaw =
+			std::atan2(
+				nativeCameraAim.y,
+				nativeCameraAim.x);
+		const float trackedYaw =
+			std::atan2(
+				trackedAim.y,
+				trackedAim.x);
+		const float nativePitch =
+			std::atan2(
+				nativeCameraAim.z,
+				std::sqrt(
+					nativeCameraAim.x *
+						nativeCameraAim.x +
+					nativeCameraAim.y *
+						nativeCameraAim.y));
+		const float trackedPitch =
+			std::atan2(
+				trackedAim.z,
+				std::sqrt(
+					trackedAim.x *
+						trackedAim.x +
+					trackedAim.y *
+						trackedAim.y));
+
+		const float observedYawError =
+			NormalizeVehicleModelAimRadians(
+				trackedYaw -
+				nativeYaw);
+		const float observedPitchError =
+			NormalizeVehicleModelAimRadians(
+				trackedPitch -
+				nativePitch);
+
+		float linearTransition =
+			(seatedSeconds -
+				activationDelay) /
+			transitionSeconds;
+
+		if (linearTransition < 0.0f)
+		{
+			linearTransition = 0.0f;
+		}
+		else if (linearTransition > 1.0f)
+		{
+			linearTransition = 1.0f;
+		}
+
+		const float transitionBlend =
+			linearTransition *
+			linearTransition *
+			(3.0f -
+				2.0f *
+					linearTransition);
+
+		const float transitionYawError =
+			NormalizeVehicleModelAimRadians(
+				observedYawError *
+					transitionBlend);
+		const float transitionPitchError =
+			NormalizeVehicleModelAimRadians(
+				observedPitchError *
+					transitionBlend);
+		const float remainingYawError =
+			NormalizeVehicleModelAimRadians(
+				transitionYawError -
+					state.pendingYaw);
+		const float remainingPitchError =
+			NormalizeVehicleModelAimRadians(
+				transitionPitchError -
+					state.pendingPitch);
+
+		float frameSeconds =
+			Game::instance.lastDeltaTime;
+		if (!std::isfinite(frameSeconds) ||
+			frameSeconds <= 0.0f)
+		{
+			frameSeconds =
+				1.0f / 90.0f;
+		}
+		else if (frameSeconds > 0.05f)
+		{
+			frameSeconds = 0.05f;
+		}
+
+		const float maximumTurnSpeed =
+			VehicleReleasePolicy::MaximumTurnSpeedDegreesPerSecond;
+
+		const float maximumStep =
+			maximumTurnSpeed *
+			(3.14159265358979323846f /
+				180.0f) *
+			frameSeconds;
+
+		auto clampStep =
+			[maximumStep](float value)
+		{
+			if (value > maximumStep)
+			{
+				return maximumStep;
+			}
+			if (value < -maximumStep)
+			{
+				return -maximumStep;
+			}
+			return value;
+		};
+
+		outYaw =
+			clampStep(
+				remainingYawError);
+		outPitch =
+			clampStep(
+				remainingPitchError);
+
+		state.pendingYaw =
+			NormalizeVehicleModelAimRadians(
+				state.pendingYaw +
+				outYaw);
+		state.pendingPitch =
+			NormalizeVehicleModelAimRadians(
+				state.pendingPitch +
+				outPitch);
+
+		// Save the already-correct native camera only after the native first pass.
+		// The second original call may rotate the turret/vehicle and its temporary
+		// camera together; the camera is restored immediately afterward.
+		state.savedCamera =
+			Helpers::GetCamera();
+		state.savedLastLookDir =
+			Game::instance.LastLookDir;
+		state.cameraOverrideActive = true;
+
+		return true;
+	}
+
+	void FinishVehicleModelAimCommand()
+	{
+		RestoreVehicleModelAimCamera();
+	}
+
+	void ApplyVehicleMotionAim()
+	{
+		const bool bEnabled =
+			Game::instance.c_MotionControlledVehicles &&
+			Game::instance.c_MotionControlledVehicles->Value();
+
+		if (!bEnabled)
+		{
+			return;
+		}
+
+		UnitDynamicObject* localUnit =
+			static_cast<UnitDynamicObject*>(
+				Helpers::GetLocalPlayer());
+		if (!localUnit ||
+			localUnit->parent.id == 0xFFFF ||
+			localUnit->parent.index == 0xFFFF)
+		{
+			return;
+		}
+
+		BaseDynamicObject* parentVehicle =
+			Helpers::GetDynamicObject(
+				localUnit->parent);
+		if (!parentVehicle ||
+			parentVehicle->N0000027E !=
+				ObjectType::VEHICLE)
+		{
+			return;
+		}
+
+		Vector3 trackedPosition{};
+		Vector3 trackedAim{};
+		Vector3 trackedUp{};
+		if (!Game::instance.GetVehicleVRAim(
+				trackedPosition,
+				trackedAim,
+				trackedUp) ||
+			!(std::isfinite(trackedAim.x) &&
+				std::isfinite(trackedAim.y) &&
+				std::isfinite(trackedAim.z) &&
+				trackedAim.lengthSqr() >
+					0.000001f))
+		{
+			return;
+		}
+
+		trackedAim.normalize();
+
+		localUnit->desiredAim = trackedAim;
+		localUnit->aim = trackedAim;
+		localUnit->aim2 = trackedAim;
+		localUnit->aim3 = trackedAim;
+		localUnit->aimVelocity =
+			Vector3(
+				0.0f,
+				0.0f,
+				0.0f);
+	}
+
+	bool SamePassengerHaloID(const HaloID& a, const HaloID& b)
+	{
+		return a.index == b.index && a.id == b.id;
+	}
+
+	bool ValidPassengerHaloID(const HaloID& id)
+	{
+		return id.index != 0xFFFF && id.id != 0xFFFF;
+	}
+
+	bool FinitePassengerAim(const Vector3& aim)
+	{
+		return std::isfinite(aim.x) &&
+			std::isfinite(aim.y) &&
+			std::isfinite(aim.z) &&
+			aim.lengthSqr() > 0.000001f;
+	}
+
+	float NormalizePassengerRadians(float value)
+	{
+		constexpr float Pi = 3.14159265358979323846f;
+		constexpr float TwoPi = Pi * 2.0f;
+
+		while (value > Pi)
+		{
+			value -= TwoPi;
+		}
+		while (value < -Pi)
+		{
+			value += TwoPi;
+		}
+		return value;
+	}
+
+	bool ResolveExactLocalArmedPassenger(
+		HaloID& outBipedID,
+		UnitDynamicObject*& outUnit,
+		HaloID& outVehicleID,
+		HaloID& outWeaponID)
+	{
+		outBipedID = HaloID{ 0xFFFF, 0xFFFF };
+		outUnit = nullptr;
+		outVehicleID = HaloID{ 0xFFFF, 0xFFFF };
+		outWeaponID = HaloID{ 0xFFFF, 0xFFFF };
+
+		if (!Game::instance.IsMultiplayerSession() ||
+			!Helpers::GetLocalPlayerID(outBipedID))
+		{
+			return false;
+		}
+
+		BaseDynamicObject* localObject =
+			Helpers::GetDynamicObject(outBipedID);
+		if (!localObject ||
+			localObject->N0000027E != ObjectType::BIPED)
+		{
+			return false;
+		}
+
+		UnitDynamicObject* localUnit =
+			reinterpret_cast<UnitDynamicObject*>(localObject);
+		if (!ValidPassengerHaloID(localUnit->playerID) ||
+			!ValidPassengerHaloID(localUnit->parent) ||
+			!ValidPassengerHaloID(localUnit->weapon))
+		{
+			return false;
+		}
+
+		BaseDynamicObject* vehicle =
+			Helpers::GetDynamicObject(localUnit->parent);
+		BaseDynamicObject* weapon =
+			Helpers::GetDynamicObject(localUnit->weapon);
+
+		if (!vehicle ||
+			vehicle->N0000027E != ObjectType::VEHICLE ||
+			!weapon ||
+			weapon->N0000027E != ObjectType::WEAPON)
+		{
+			return false;
+		}
+
+		// Exact local armed passenger:
+		// local PlayerDatum biped -> vehicle parent
+		// local equipped weapon -> parent is that exact biped
+		//
+		// This excludes remote occupants and vehicle-owned gunner weapons.
+		if (!SamePassengerHaloID(weapon->parent, outBipedID))
+		{
+			return false;
+		}
+
+		outUnit = localUnit;
+		outVehicleID = localUnit->parent;
+		outWeaponID = localUnit->weapon;
+		return true;
+	}
+
+	void RestoreArmedPassengerOnFootTransportDefensively()
+	{
+		if (!g_armedPassengerOnFootTransport.active)
+		{
+			return;
+		}
+
+		const ArmedPassengerOnFootTransportState state =
+			g_armedPassengerOnFootTransport;
+		g_armedPassengerOnFootTransport.active = false;
+
+		BaseDynamicObject* object =
+			Helpers::GetDynamicObject(
+				const_cast<HaloID&>(state.localBipedID));
+		if (object &&
+			object->N0000027E == ObjectType::BIPED)
+		{
+			UnitDynamicObject* unit =
+				reinterpret_cast<UnitDynamicObject*>(object);
+			unit->parent = state.vehicleID;
+			unit->parentSeatIndex = state.seatIndex;
+		}
+
+		Helpers::GetCamera() = state.savedCamera;
+		Game::instance.LastLookDir =
+			state.savedLastLookDir;
+	}
+
+	void PrepareArmedPassengerOnFootTransport(
+		float& yaw,
+		float& pitch)
+	{
+		// Restore any interrupted transport before starting another update.
+		RestoreArmedPassengerOnFootTransportDefensively();
+
+		HaloID localBipedID{ 0xFFFF, 0xFFFF };
+		HaloID vehicleID{ 0xFFFF, 0xFFFF };
+		HaloID weaponID{ 0xFFFF, 0xFFFF };
+		UnitDynamicObject* localUnit = nullptr;
+
+		if (!ResolveExactLocalArmedPassenger(
+			localBipedID,
+			localUnit,
+			vehicleID,
+			weaponID))
+		{
+			return;
+		}
+
+		Vector3 trackedPosition{};
+		Vector3 trackedAim{};
+		Vector3 trackedUp{};
+		if (!Game::instance.GetWorldWeaponAim(
+			trackedPosition,
+			trackedAim,
+			trackedUp) ||
+			!FinitePassengerAim(trackedAim))
+		{
+			return;
+		}
+		trackedAim.normalize();
+
+		Vector3 commandBaseAim = localUnit->aim;
+		if (!FinitePassengerAim(commandBaseAim))
+		{
+			commandBaseAim =
+				Helpers::GetCamera().lookDir;
+		}
+		if (!FinitePassengerAim(commandBaseAim))
+		{
+			return;
+		}
+		commandBaseAim.normalize();
+
+		const float trackedYaw =
+			std::atan2(trackedAim.y, trackedAim.x);
+		const float baseYaw =
+			std::atan2(commandBaseAim.y, commandBaseAim.x);
+		const float trackedPitch =
+			std::atan2(
+				trackedAim.z,
+				std::sqrt(
+					trackedAim.x * trackedAim.x +
+					trackedAim.y * trackedAim.y));
+		const float basePitch =
+			std::atan2(
+				commandBaseAim.z,
+				std::sqrt(
+					commandBaseAim.x * commandBaseAim.x +
+					commandBaseAim.y * commandBaseAim.y));
+
+		const float networkYaw =
+			NormalizePassengerRadians(trackedYaw - baseYaw);
+		const float networkPitch =
+			NormalizePassengerRadians(trackedPitch - basePitch);
+
+		ArmedPassengerOnFootTransportState& state =
+			g_armedPassengerOnFootTransport;
+		state.active = true;
+		state.localBipedID = localBipedID;
+		state.localPlayerID = localUnit->playerID;
+		state.vehicleID = vehicleID;
+		state.weaponID = weaponID;
+		state.seatIndex = localUnit->parentSeatIndex;
+		state.trackedAim = trackedAim;
+		state.savedCamera = Helpers::GetCamera();
+		state.savedLastLookDir =
+			Game::instance.LastLookDir;
+
+		// Temporarily use the on-foot aim path so UpdatePitchYaw can submit the
+		// local controller direction without the passenger-seat camera path.
+		localUnit->parent = HaloID{ 0xFFFF, 0xFFFF };
+		localUnit->parentSeatIndex = 0xFFFFFFFF;
+
+		// Submit the controller delta through Halo's normal multiplayer aim update.
+		yaw = networkYaw;
+		pitch = networkPitch;
+	}
+
+	void FinishArmedPassengerOnFootTransport()
+	{
+		if (!g_armedPassengerOnFootTransport.active)
+		{
+			return;
+		}
+
+		const ArmedPassengerOnFootTransportState state =
+			g_armedPassengerOnFootTransport;
+		g_armedPassengerOnFootTransport.active = false;
+
+		BaseDynamicObject* object =
+			Helpers::GetDynamicObject(
+				const_cast<HaloID&>(state.localBipedID));
+		if (!object ||
+			object->N0000027E != ObjectType::BIPED)
+		{
+			Helpers::GetCamera() = state.savedCamera;
+			Game::instance.LastLookDir =
+				state.savedLastLookDir;
+			return;
+		}
+
+		UnitDynamicObject* currentUnit =
+			reinterpret_cast<UnitDynamicObject*>(object);
+		// Restore the passenger relationship immediately after UpdatePitchYaw.
+		currentUnit->parent = state.vehicleID;
+		currentUnit->parentSeatIndex =
+			state.seatIndex;
+
+		// Restore the saved passenger camera after the aim command is updated.
+		Helpers::GetCamera() = state.savedCamera;
+		Game::instance.LastLookDir =
+			state.savedLastLookDir;
+
+		const bool bIdentityStillExact =
+			SamePassengerHaloID(
+				currentUnit->playerID,
+				state.localPlayerID) &&
+			SamePassengerHaloID(
+				currentUnit->weapon,
+				state.weaponID);
+
+		if (bIdentityStillExact)
+		{
+			// Keep the local aim fields aligned with the submitted controller direction.
+			currentUnit->desiredAim = state.trackedAim;
+			currentUnit->aim = state.trackedAim;
+			currentUnit->aim2 = state.trackedAim;
+			currentUnit->aim3 = state.trackedAim;
+			currentUnit->aimVelocity =
+				Vector3(0.0f, 0.0f, 0.0f);
+		}
+	}
+}
 
 void Hooks::InitHooks()
 {
@@ -41,12 +1179,19 @@ void Hooks::InitHooks()
 	RESOLVEINDIRECT(CutsceneData);
 	RESOLVEINDIRECT(CampaignLoading);
 
+	const char* gameType = Helpers::GetGameTypeString();
+
 	CREATEHOOK(InitDirectX);
 	CREATEHOOK(DrawFrame);
 	CREATEHOOK(DrawHUD);
 	CREATEHOOK(DrawMenu);
 	CREATEHOOK(DrawLoadingScreen);
 	CREATEHOOK(DrawCrosshair);
+
+	// DrawCrosshair is now signature-resolved for whichever executable is
+	// running, allowing safe Custom Edition or retail indicator resolution.
+	CreateWorldSpaceIndicatorHooks(gameType);
+
 	CREATEHOOK(DrawImage);
 	CREATEHOOK(SetViewModelPosition);
 	CREATEHOOK(HandleInputs);
@@ -95,6 +1240,14 @@ void Hooks::EnableAllHooks()
 	InitDirectX.EnableHook();
 	DrawFrame.EnableHook();
 	DrawHUD.EnableHook();
+	if (g_bHudRenderPlayersHookCreated)
+	{
+		g_hudRenderPlayersHook.EnableHook();
+	}
+	if (g_bHudRenderNavPointsHookCreated)
+	{
+		g_hudRenderNavPointsHook.EnableHook();
+	}
 	DrawMenu.EnableHook();
 	DrawLoadingScreen.EnableHook();
 	DrawCrosshair.EnableHook();
@@ -336,7 +1489,7 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 	*/
 
 	bool bDrawMirror = Game::instance.GetDrawMirror();
-	
+
 	Camera trueCamera;
 
 	// Chimera does its own thing with camera interpolation, steal that for the camera position during rendering
@@ -350,6 +1503,7 @@ void Hooks::H_DrawFrame(Renderer* param1, short param2, short* param3, float tic
 	}
 
 
+	Game::instance.SetRenderTickProgress(tickProgress);
 	Game::instance.PreDrawFrame(param1, deltaTime);
 	reinterpret_cast<IDirect3DDevice9ExWrapper*>(Helpers::GetDirect3DDevice9())->bIgnoreNextEnd = true;
 
@@ -627,8 +1781,11 @@ void __declspec(naked) Hooks::H_UpdatePitchYaw()
 	static short playerId;
 	static float yaw;
 	static float pitch;
+	static float hiddenModelYaw;
+	static float hiddenModelPitch;
+	static bool bRunHiddenVehicleModelPass;
 
-	// Extract parameters
+	// Extract parameters.
 	_asm
 	{
 		mov playerId, ax
@@ -644,7 +1801,7 @@ void __declspec(naked) Hooks::H_UpdatePitchYaw()
 	0x0: ret address
 	0x4: yaw
 	0x8: pitch
-	
+
 	Post-hook stack:
 	0x0: hook ret address
 	0x4: ret address
@@ -665,14 +1822,22 @@ void __declspec(naked) Hooks::H_UpdatePitchYaw()
 		pushad
 	}
 
-	Game::instance.UpdateCamera(yaw, pitch);
+	// This pass produces Halo's native right-stick camera input.
+	Game::instance.UpdateCamera(
+		yaw,
+		pitch);
+	Game::instance.UpdateMPRoomScaleBodyOnNetworkTick();
+
+	PrepareArmedPassengerOnFootTransport(
+		yaw,
+		pitch);
 
 	_asm
 	{
 		popad
 	}
 
-	// Re-push parameters to fix stack for original call
+	// First pass: always allow Halo to complete its proper native camera update.
 	_asm
 	{
 		push pitch
@@ -681,7 +1846,62 @@ void __declspec(naked) Hooks::H_UpdatePitchYaw()
 
 	UpdatePitchYaw.Original();
 
-	// Cleanup and return
+	_asm
+	{
+		pushad
+	}
+
+	FinishArmedPassengerOnFootTransport();
+
+	// Prepare the model-aim command only after Halo's native camera/right-stick
+	// pass has finished.
+	bRunHiddenVehicleModelPass =
+		PrepareVehicleModelAimCommand(
+			hiddenModelYaw,
+			hiddenModelPitch);
+
+	if (!bRunHiddenVehicleModelPass)
+	{
+		ApplyVehicleMotionAim();
+	}
+
+	_asm
+	{
+		popad
+	}
+
+	if (bRunHiddenVehicleModelPass)
+	{
+		// Second pass: rotate Halo's authoritative turret/vehicle aim using the
+		// hand command while a copy of the already-correct native camera is held.
+		_asm
+		{
+			movsx eax, playerId
+			push hiddenModelPitch
+			push hiddenModelYaw
+		}
+
+		UpdatePitchYaw.Original();
+
+		_asm
+		{
+			add esp, 0x8
+			pushad
+		}
+
+		FinishVehicleModelAimCommand();
+
+		// Preserve the exact tracked direction used by the reticle/projectile
+		// after Halo has updated the physical turret/vehicle model.
+		ApplyVehicleMotionAim();
+
+		_asm
+		{
+			popad
+		}
+	}
+
+	// Remove the first pass's re-pushed arguments and return.
 	_asm
 	{
 		add esp, 0x8
@@ -934,10 +2154,10 @@ void __declspec(naked) Hooks::H_ReloadEnd()
 //================================//Patches//================================//
 
 void Hooks::P_FixTabOut()
-{	
+{
 	// There are 3 checks in the main loop for focus
 	// Attempting to patch this out with minhook would be painful
-	
+
 	// Always jump past the first check
 	SetByte(o.TabOutVideo.Address + 6, 0xEB);
 	// NOP a JNZ in the second check
@@ -991,7 +2211,7 @@ void Hooks::P_ForceCmdLineArgs()
 {
 	// While the game probably works fine in fullscreen or with bink videos, its easier to just force some known values
 	// and not have to debug issues that only occur on say a 4k fullscreen monitor during the splash screen
-	
+
 	CmdLineArgs& args = Helpers::GetCmdLineArgs();
 	args.NoVideo = 1;
 	args.Width640 = 1;

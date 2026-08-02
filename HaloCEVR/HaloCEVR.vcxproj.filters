@@ -173,6 +173,9 @@
     <ClInclude Include="DirectXWrappers\IDirect3DDevice9ExWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXWrappers\ManagedTexture9Compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Helpers\RenderTarget.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -2,6 +2,22 @@
 #include "IDirect3DDevice9ExWrapper.h"
 #include "../Logger.h"
 #include "../Game.h"
+#include <cstring>
+
+namespace
+{
+	bool SameGuid(REFIID left, const GUID& right)
+	{
+		return std::memcmp(&left, &right, sizeof(GUID)) == 0;
+	}
+
+	constexpr GUID IID_UnknownLocal =
+		{ 0x00000000, 0x0000, 0x0000, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
+	constexpr GUID IID_Direct3D9Local =
+		{ 0x81bdcbca, 0x64d4, 0x426d, { 0xae, 0x8d, 0xad, 0x01, 0x47, 0xf4, 0x27, 0x5c } };
+	constexpr GUID IID_Direct3D9ExLocal =
+		{ 0x02177241, 0x69fc, 0x400c, { 0x8f, 0xf1, 0x93, 0xa4, 0x4d, 0xf6, 0x86, 0x1d } };
+}
 
 HRESULT IDirect3D9ExWrapper::CreateDevice(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice9** ppReturnedDeviceInterface)
 {
@@ -35,6 +51,20 @@ HRESULT IDirect3D9ExWrapper::CreateDevice(UINT Adapter, D3DDEVTYPE DeviceType, H
 
 HRESULT __stdcall IDirect3D9ExWrapper::QueryInterface(REFIID riid, void** ppvObj)
 {
+	if (!ppvObj) return E_POINTER;
+	*ppvObj = nullptr;
+	if (SameGuid(riid, IID_UnknownLocal) || SameGuid(riid, IID_Direct3D9Local))
+	{
+		*ppvObj = static_cast<IDirect3D9*>(this);
+		AddRef();
+		return S_OK;
+	}
+	if (SameGuid(riid, IID_Direct3D9ExLocal))
+	{
+		*ppvObj = static_cast<IDirect3D9Ex*>(this);
+		AddRef();
+		return S_OK;
+	}
 	return Real->QueryInterface(riid, ppvObj);
 }
 

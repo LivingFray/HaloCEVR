@@ -49,7 +49,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -295,6 +295,7 @@
     <ClInclude Include="Hooking\SigScanner.h" />
     <ClInclude Include="DirectXWrappers\IDirect3D9ExWrapper.h" />
     <ClInclude Include="DirectXWrappers\IDirect3DDevice9ExWrapper.h" />
+    <ClInclude Include="DirectXWrappers\ManagedTexture9Compat.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Maths\Matrices.h" />

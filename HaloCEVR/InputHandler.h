@@ -8,7 +8,7 @@ public:
 	void RegisterInputs();
 	void UpdateRegisteredInputs();
 	void UpdateInputs(bool bInVehicle);
-	void UpdateCamera(float& yaw, float& pitch);
+	void UpdateCamera(float& yaw, float& pitch, bool bArmedVehicle);
 	void UpdateCameraForVehicles(float& yaw, float& pitch);
 	void SetMousePosition(int& x, int& y);
 	void UpdateMouseInfo(struct MouseInfo* mouseInfo);
@@ -20,6 +20,13 @@ public:
 	// Track previous yaw offset to detect snap turns for weapon position smoothing
 	float lastSmoothingYawOffset = 0.0f;
 	bool bLastYawInitialized = false;
+
+	// An armed vehicle seat keeps the normal multiplayer weapon-aim path, but
+	// Halo's base camera advances on a slower simulation cadence than the VR hook.
+	// Consume each distinct base-camera sample only once so the same absolute aim
+	// correction cannot be queued repeatedly while that sample is unchanged.
+	Vector3 armedVehicleCameraSample{};
+	bool bArmedVehicleCameraSampleValid = false;
 
 protected:
 

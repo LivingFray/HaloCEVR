@@ -4,12 +4,182 @@
 #include "Helpers/Camera.h"
 #include "Helpers/Menus.h"
 #include "Helpers/Maths.h"
+#include "Helpers/Objects.h"
+
+#include <chrono>
+#include <cmath>
 
 
 #define RegisterBoolInput(set, x) x = vr->RegisterBoolInput(set, #x);
 #define RegisterVector2Input(set, x) x = vr->RegisterVector2Input(set, #x);
 #define ApplyBoolInput(x) controls.##x = vr->GetBoolInput(x) ? 127 : 0;
 #define ApplyImpulseBoolInput(x) controls.##x = vr->GetBoolInput(x, bHasChanged) && bHasChanged ? 127 : 0;
+
+namespace
+{
+	constexpr float MP_MOVE_DEADZONE = 0.25f;
+
+	// DirectInput reads scan codes better than virtual keys in Halo CE.
+	constexpr WORD SC_W = 0x11;
+	constexpr WORD SC_A = 0x1E;
+	constexpr WORD SC_S = 0x1F;
+	constexpr WORD SC_D = 0x20;
+
+	bool g_mpWDown = false;
+	bool g_mpADown = false;
+	bool g_mpSDown = false;
+	bool g_mpDDown = false;
+
+	void SetScanCodeHeld(WORD scanCode, bool shouldBeDown, bool& isDown)
+	{
+		if (shouldBeDown == isDown)
+		{
+			return;
+		}
+
+		INPUT input{};
+		input.type = INPUT_KEYBOARD;
+		input.ki.dwFlags = KEYEVENTF_SCANCODE;
+		input.ki.wScan = scanCode;
+
+		if (!shouldBeDown)
+		{
+			input.ki.dwFlags |= KEYEVENTF_KEYUP;
+		}
+
+		SendInput(1, &input, sizeof(INPUT));
+		isDown = shouldBeDown;
+	}
+
+	void ReleaseMPDigitalMoveKeys()
+	{
+		SetScanCodeHeld(SC_W, false, g_mpWDown);
+		SetScanCodeHeld(SC_A, false, g_mpADown);
+		SetScanCodeHeld(SC_S, false, g_mpSDown);
+		SetScanCodeHeld(SC_D, false, g_mpDDown);
+	}
+
+	void ApplyMPDigitalMoveKeys(Vector2& moveInput)
+	{
+		// SteamVR Move axis: x = right, y = forward after any hand-relative rotation.
+		const bool wantForward = moveInput.y > MP_MOVE_DEADZONE;
+		const bool wantBack = moveInput.y < -MP_MOVE_DEADZONE;
+		const bool wantLeft = moveInput.x < -MP_MOVE_DEADZONE;
+		const bool wantRight = moveInput.x > MP_MOVE_DEADZONE;
+
+		// Allow diagonals by holding both axes at once, e.g. W + A.
+		SetScanCodeHeld(SC_W, wantForward, g_mpWDown);
+		SetScanCodeHeld(SC_S, wantBack, g_mpSDown);
+		SetScanCodeHeld(SC_A, wantLeft, g_mpADown);
+		SetScanCodeHeld(SC_D, wantRight, g_mpDDown);
+
+		// Feed full digital values into Halo's controls struct for consistency.
+		moveInput.x = (wantRight ? 1.0f : 0.0f) + (wantLeft ? -1.0f : 0.0f);
+		moveInput.y = (wantForward ? 1.0f : 0.0f) + (wantBack ? -1.0f : 0.0f);
+	}
+
+	bool IsValidHaloID(const HaloID& id)
+	{
+		return id.index != 0xFFFF && id.id != 0xFFFF;
+	}
+
+	constexpr float PI_F = 3.14159265358979323846f;
+	constexpr float TWO_PI_F = 6.28318530717958647692f;
+
+	float NormalizeRadians(float radians)
+	{
+		while (radians > PI_F)
+		{
+			radians -= TWO_PI_F;
+		}
+
+		while (radians < -PI_F)
+		{
+			radians += TWO_PI_F;
+		}
+
+		return radians;
+	}
+
+	UnitDynamicObject* ResolveMovementBiped()
+	{
+		HaloID selectedID;
+		if (!Helpers::GetLocalPlayerID(selectedID))
+		{
+			return nullptr;
+		}
+
+		BaseDynamicObject* selectedObj = Helpers::GetDynamicObject(selectedID);
+		if (!selectedObj || selectedObj->N0000027E != ObjectType::BIPED)
+		{
+			return nullptr;
+		}
+
+		UnitDynamicObject* selectedUnit = reinterpret_cast<UnitDynamicObject*>(selectedObj);
+
+		// Prefer the held weapon's parent biped. Multiplayer can expose a predicted
+		// local biped separately from the player-table entry.
+		HaloID weaponID = selectedUnit->weapon;
+		if (!IsValidHaloID(weaponID))
+		{
+			weaponID = selectedObj->weapon;
+		}
+
+		BaseDynamicObject* weaponObj = Helpers::GetDynamicObject(weaponID);
+		if (weaponObj)
+		{
+			BaseDynamicObject* parentObj = Helpers::GetDynamicObject(weaponObj->parent);
+			if (parentObj && parentObj->N0000027E == ObjectType::BIPED)
+			{
+				return reinterpret_cast<UnitDynamicObject*>(parentObj);
+			}
+		}
+
+		return selectedUnit;
+	}
+
+	void ApplyMPDirectBipedMovement(const Vector2& moveInput)
+	{
+		UnitDynamicObject* unit = ResolveMovementBiped();
+
+		if (!unit)
+		{
+			return;
+		}
+
+		// Same sign convention as the existing Controls write:
+		// controls.Left = -MoveInput.x; controls.Forwards = MoveInput.y
+		unit->run = moveInput.y;
+		unit->strafe = -moveInput.x;
+	}
+
+	void ApplySoloAnalogDiagonalMovement(Vector2& moveInput)
+	{
+		// Keep the solo path genuinely analog. SteamVR normally supplies a circular
+		// unit vector, but cap unusual square bindings without changing direction.
+		const float inputMagnitude = moveInput.length();
+		if (inputMagnitude > 1.0f)
+		{
+			moveInput /= inputMagnitude;
+		}
+
+		UnitDynamicObject* unit = ResolveMovementBiped();
+		if (!unit)
+		{
+			return;
+		}
+
+		// Hooks::H_HandleInputs calls Halo first, then the VR handler. Update all
+		// movement surfaces after Halo's original pass so neither axis is discarded.
+		// Unlike the MP workaround, this does not inject W/A/S/D or quantize values.
+		InputData& inputData = Helpers::GetInputData();
+		inputData.forward = moveInput.y;
+		inputData.left = -moveInput.x;
+		unit->run = moveInput.y;
+		unit->strafe = -moveInput.x;
+	}
+}
+
 
 void InputHandler::RegisterInputs()
 {
@@ -28,7 +198,7 @@ void InputHandler::UpdateRegisteredInputs()
 	IVR* vr = Game::instance.GetVR();
 
 	const char* actionSet = Game::instance.bLeftHanded ? "left handed" : "default";
-	
+
 	// These bindings will change depending on action sets
 	RegisterBoolInput(actionSet, Jump);
 	RegisterBoolInput(actionSet, SwitchGrenades);
@@ -65,6 +235,93 @@ Vector2 RotateVector2(const Vector2& v, float angle)
 	return rotated;
 }
 
+static bool GetConfiguredMovementForward(Vector3& outForward)
+{
+	IVR* vr = Game::instance.GetVR();
+	const int movementMode = Game::instance.c_HandRelativeMovement->Value();
+
+	if (movementMode == 1 || movementMode == 2)
+	{
+		const bool leftHand = movementMode == 1;
+		const ControllerRole role = leftHand ? ControllerRole::Left : ControllerRole::Right;
+		Matrix4 controllerTransform = vr->GetControllerTransform(role);
+		const float offset = Game::instance.c_HandRelativeOffsetRotation->Value();
+		controllerTransform.rotateZ(leftHand ? offset : -offset);
+		outForward = controllerTransform.getLeftAxis();
+	}
+	else
+	{
+		// Mode 0 is explicitly HMD-relative. Do not derive this direction from
+		// Halo's camera: multiplayer network aim intentionally points Halo's
+		// authoritative aim at the weapon for correct remote firing.
+		outForward = vr->GetHMDTransform().getLeftAxis();
+	}
+
+	outForward.z = 0.0f;
+	return outForward.lengthSqr() > 0.000001f;
+}
+
+static bool ApplyMultiplayerMovementBasis(Vector2& moveInput)
+{
+	Vector3 desiredForward;
+	if (!GetConfiguredMovementForward(desiredForward))
+	{
+		return false;
+	}
+
+	Vector3 weaponPosition;
+	Vector3 commandForward;
+	Vector3 weaponUp;
+	const bool bUsingWeaponAim = Game::instance.GetWorldWeaponAim(
+		weaponPosition, commandForward, weaponUp);
+	commandForward.z = 0.0f;
+
+	if (!bUsingWeaponAim || commandForward.lengthSqr() <= 0.000001f)
+	{
+		// Spawn/weapon transitions temporarily lack a weapon basis. During those
+		// frames UpdateCamera also falls back to the game camera/HMD path.
+		commandForward = Game::instance.bDetectedChimera
+			? Game::instance.LastLookDir
+			: Helpers::GetCamera().lookDir;
+		commandForward.z = 0.0f;
+	}
+
+	if (commandForward.lengthSqr() <= 0.000001f)
+	{
+		return false;
+	}
+
+	const Vector2 rawMoveInput = moveInput;
+	// Give the joined-client roomscale servo the user's locomotion before the
+	// weapon-command counter-rotation and digital W/A/S/D transport.
+	Vector3 manualWorldInput(0.0f, 0.0f, 0.0f);
+	Vector3 normalizedDesiredForward = desiredForward;
+	if (normalizedDesiredForward.lengthSqr() > 0.000001f)
+	{
+		normalizedDesiredForward.normalize();
+		const Vector3 desiredRight(
+			normalizedDesiredForward.y,
+			-normalizedDesiredForward.x,
+			0.0f);
+		manualWorldInput = normalizedDesiredForward * rawMoveInput.y +
+			desiredRight * rawMoveInput.x;
+	}
+	Game::instance.SetMPRoomScaleManualWorldInput(manualWorldInput);
+
+	const float angle = AngleBetweenVector2(
+		Vector2(commandForward.x, commandForward.y),
+		Vector2(desiredForward.x, desiredForward.y));
+
+	if (!std::isfinite(angle))
+	{
+		return false;
+	}
+
+	moveInput = RotateVector2(moveInput, angle);
+
+	return true;
+}
+
 #define DRAW_DEBUG_MOVE 0
 
 void InputHandler::UpdateInputs(bool bInVehicle)
@@ -92,6 +349,16 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 		ApplyImpulseBoolInput(Zoom);
 		ApplyBoolInput(Reload);
 
+		if (bInVehicle &&
+			Game::instance.c_UseJumpForVehicleSecondaryFire &&
+			Game::instance.c_UseJumpForVehicleSecondaryFire->Value())
+		{
+			// Halo reuses the grenade control as vehicle secondary fire. Replace it
+			// with the Jump binding while seated, rather than activating both.
+			controls.Grenade = controls.Jump;
+			controls.Jump = 0;
+		}
+
 		Game::instance.bIsFiring = controls.Fire;
 	}
 	else
@@ -110,6 +377,16 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 		ApplyBoolInput(Crouch);
 		ApplyImpulseBoolInput(Zoom);
 		ApplyBoolInput(Reload);
+
+		if (bInVehicle &&
+			Game::instance.c_UseJumpForVehicleSecondaryFire &&
+			Game::instance.c_UseJumpForVehicleSecondaryFire->Value())
+		{
+			// Halo reuses the grenade control as vehicle secondary fire. Replace it
+			// with the Jump binding while seated, rather than activating both.
+			controls.Grenade = controls.Jump;
+			controls.Jump = 0;
+		}
 
 		Game::instance.bIsFiring = controls.Fire;
 	}
@@ -173,6 +450,14 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 			Helpers::GetControls().Melee = MotionControlMelee;
 		}
 	}
+
+	// Use Halo's final melee control after button and gesture inputs are merged
+	// so either activation method starts the campaign weapon-aim latch.
+	const bool bMeleePressed =
+		Game::instance.bIsCustom
+			? Helpers::GetControlsCustom().Melee > 0
+			: Helpers::GetControls().Melee > 0;
+	Game::instance.UpdateSinglePlayerMeleeAim(bMeleePressed);
 
 	unsigned char MotionControlCrouch = UpdateCrouch();
 	if (MotionControlCrouch > 0)
@@ -249,9 +534,29 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 
 	UpdateHandsProximity();
 
+	// Clear the sample first so failed basis resolution, vehicles and non-client
+	// paths can never reuse a stick direction from an earlier frame.
+	Game::instance.SetMPRoomScaleManualWorldInput(Vector3(0.0f, 0.0f, 0.0f));
 	Vector2 MoveInput = vr->GetVector2Input(Move);
+	// Use Halo's actual network role for movement. A one-player lobby host reports
+	// multiplayer even though the player table contains only one entry, so a
+	// player-count gate cannot reliably select the digital diagonal transport.
+	// UpdateCamera uses this same role detector too. That matters in an empty lobby:
+	// the player table still has one entry, but Halo is already using its multiplayer
+	// command/aim basis and must not fall back to the campaign HMD camera path.
+	const bool bUseMPMovementPatch = !bInVehicle &&
+		Game::instance.IsMultiplayerSession();
+	const bool bUseMultiplayerMovementBasis = bUseMPMovementPatch;
 
-	if (!bInVehicle && (Game::instance.c_HandRelativeMovement->Value() != 0))
+	if (bUseMultiplayerMovementBasis)
+	{
+		// Both a local host and a joined client submit multiplayer movement in the
+		// controller/weapon aim basis used for hit registration. Convert the user's
+		// configured HMD/hand-relative stick into that command basis for either role.
+		// This changes locomotion only; UpdateCamera retains controller aiming.
+		ApplyMultiplayerMovementBasis(MoveInput);
+	}
+	else if (!bInVehicle && (Game::instance.c_HandRelativeMovement->Value() != 0))
 	{
 		Camera& cam = Helpers::GetCamera();
 		Vector3 camForward = cam.lookDir;
@@ -260,7 +565,7 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 		const ControllerRole role = leftHand ? ControllerRole::Left : ControllerRole::Right;
 		Matrix4 controllerTransform = vr->GetControllerTransform(role); // TODO: Not sure about bRenderPose bool param here. Doesn't seem to matter.
 		const float offset = Game::instance.c_HandRelativeOffsetRotation->Value();
-		controllerTransform.rotateZ(leftHand ? offset: -offset);
+		controllerTransform.rotateZ(leftHand ? offset : -offset);
 		Vector3 handForward = controllerTransform.getLeftAxis();
 
 #if DRAW_DEBUG_MOVE
@@ -286,6 +591,25 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 #endif
 	}
 
+	// Multiplayer uses digital diagonals; single-player keeps analog movement.
+	if (bUseMPMovementPatch)
+	{
+		// Apply basis compensation before quantizing both movement axes.
+		ApplyMPDigitalMoveKeys(MoveInput);
+		ApplyMPDirectBipedMovement(MoveInput);
+	}
+	else
+	{
+		ReleaseMPDigitalMoveKeys();
+
+		if (!bInVehicle)
+		{
+			// Campaign and non-network play retain the raw analog vector. A one-player
+			// multiplayer host takes the digital path above.
+			ApplySoloAnalogDiagonalMovement(MoveInput);
+		}
+	}
+
 	if (Game::instance.bIsCustom)
 	{
 		Controls_Custom& controls = Helpers::GetControlsCustom();
@@ -302,7 +626,7 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 	}
 }
 
-void InputHandler::UpdateCamera(float& yaw, float& pitch)
+void InputHandler::UpdateCamera(float& yaw, float& pitch, bool bArmedVehicle)
 {
 	IVR* vr = Game::instance.GetVR();
 
@@ -347,36 +671,251 @@ void InputHandler::UpdateCamera(float& yaw, float& pitch)
 
 	vr->SetYawOffset(yawOffset);
 
+	// Passenger camera updates occur on Halo's simulation cadence. Keep the base
+	// camera stable while the HMD renderer and WeaponHandler provide free-look and aim.
+	const bool bUseArmedVehicleSampleGate = bArmedVehicle;
+
+	// Ignore stale vehicle-camera state during the first on-foot exit frames.
+	static bool bWasUsingArmedVehicleSampleGate = false;
+	static float armedVehicleExitGuardRemaining = 0.0f;
+	static float armedVehicleExitPoseHoldRemaining = 0.0f;
+	static Camera lastStableArmedVehicleCamera{};
+	static Vector3 lastStableArmedVehicleLastLookDir{};
+	static bool bHaveStableArmedVehicleCamera = false;
+
+	float cameraDeltaTime = Game::instance.lastDeltaTime;
+	if (!std::isfinite(cameraDeltaTime) || cameraDeltaTime < 0.0f)
+	{
+		cameraDeltaTime = 0.0f;
+	}
+	else if (cameraDeltaTime > 0.1f)
+	{
+		cameraDeltaTime = 0.1f;
+	}
+
+	if (bUseArmedVehicleSampleGate)
+	{
+		const Camera& camera = Helpers::GetCamera();
+		const bool bFiniteCamera =
+			std::isfinite(camera.position.x) &&
+			std::isfinite(camera.position.y) &&
+			std::isfinite(camera.position.z) &&
+			std::isfinite(camera.lookDir.x) &&
+			std::isfinite(camera.lookDir.y) &&
+			std::isfinite(camera.lookDir.z) &&
+			camera.lookDir.lengthSqr() > 0.000001f;
+
+		if (bFiniteCamera)
+		{
+			lastStableArmedVehicleCamera = camera;
+			lastStableArmedVehicleLastLookDir =
+				Game::instance.LastLookDir;
+			bHaveStableArmedVehicleCamera = true;
+		}
+	}
+
+	if (bWasUsingArmedVehicleSampleGate && !bUseArmedVehicleSampleGate)
+	{
+		// Hold the last valid armed-seat camera briefly while the exit view settles.
+		armedVehicleExitGuardRemaining = 0.90f;
+		armedVehicleExitPoseHoldRemaining = 0.15f;
+	}
+
+	bWasUsingArmedVehicleSampleGate = bUseArmedVehicleSampleGate;
+
+	if (!bUseArmedVehicleSampleGate && armedVehicleExitGuardRemaining > 0.0f)
+	{
+		armedVehicleExitGuardRemaining -= cameraDeltaTime;
+		if (armedVehicleExitGuardRemaining < 0.0f)
+		{
+			armedVehicleExitGuardRemaining = 0.0f;
+		}
+
+		if (armedVehicleExitPoseHoldRemaining > 0.0f)
+		{
+			armedVehicleExitPoseHoldRemaining -= cameraDeltaTime;
+			if (armedVehicleExitPoseHoldRemaining < 0.0f)
+			{
+				armedVehicleExitPoseHoldRemaining = 0.0f;
+			}
+
+			if (bHaveStableArmedVehicleCamera)
+			{
+				Camera& camera = Helpers::GetCamera();
+
+				const bool bFinitePosition =
+					std::isfinite(camera.position.x) &&
+					std::isfinite(camera.position.y) &&
+					std::isfinite(camera.position.z);
+				const float positionJumpSqr = bFinitePosition
+					? (camera.position -
+						lastStableArmedVehicleCamera.position).lengthSqr()
+					: 99999999.0f;
+
+				// Do not freeze normal exit translation. Clamp only a clearly invalid
+				// position or a jump of more than three world units in these first frames.
+				if (!bFinitePosition || positionJumpSqr > 9.0f)
+				{
+					camera.position =
+						lastStableArmedVehicleCamera.position;
+				}
+
+				camera.lookDir =
+					lastStableArmedVehicleCamera.lookDir;
+				camera.lookDirUp =
+					lastStableArmedVehicleCamera.lookDirUp;
+				Game::instance.LastLookDir =
+					lastStableArmedVehicleLastLookDir;
+			}
+		}
+
+		bArmedVehicleCameraSampleValid = false;
+		yaw = 0.0f;
+		pitch = 0.0f;
+		return;
+	}
+
+	// Chimera's interpolated frustum is the best on-foot comparison direction.
+	// An armed vehicle seat is different: Halo updates its authoritative base
+	// camera only on the simulation cadence while this hook can run every rendered
+	// frame. Use the non-interpolated camera direction there so one sample can be
+	// recognized and consumed exactly once.
+	Vector3 lookGame = bUseArmedVehicleSampleGate
+		? Helpers::GetCamera().lookDir
+		: (Game::instance.bDetectedChimera
+			? Game::instance.LastLookDir
+			: Helpers::GetCamera().lookDir);
+
+	if (bUseArmedVehicleSampleGate)
+	{
+		const bool bFiniteSample =
+			std::isfinite(lookGame.x) &&
+			std::isfinite(lookGame.y) &&
+			std::isfinite(lookGame.z) &&
+			lookGame.lengthSqr() > 0.000001f;
+
+		if (!bFiniteSample)
+		{
+			// Never feed invalid vehicle-camera state into Halo's view controller.
+			bArmedVehicleCameraSampleValid = false;
+			yaw = 0.0f;
+			pitch = 0.0f;
+			return;
+		}
+
+		const bool bRepeatedSample = bArmedVehicleCameraSampleValid &&
+			(lookGame - armedVehicleCameraSample).lengthSqr() <= 0.0000000001f;
+		if (bRepeatedSample)
+		{
+			// The previous absolute correction is already queued for this simulation
+			// sample. Reapplying it two or three more times caused the passenger-seat
+			// camera and network projectile direction to diverge explosively.
+			yaw = 0.0f;
+			pitch = 0.0f;
+			return;
+		}
+
+		armedVehicleCameraSample = lookGame;
+		bArmedVehicleCameraSampleValid = true;
+	}
+	else
+	{
+		bArmedVehicleCameraSampleValid = false;
+	}
+
+	// The exact armed-passenger hook writes unrestricted controller aim after
+	// Halo's original UpdatePitchYaw has applied its desktop seat arc. Keep the
+	// passenger camera HMD-relative: the HMD renderer already supplies free-look,
+	// while feeding weapon deltas here makes the base camera repeatedly collide
+	// with that desktop arc and produces the stepped/jumping feel.
+	if (bUseArmedVehicleSampleGate)
+	{
+		yaw = 0.0f;
+		pitch = 0.0f;
+		return;
+	}
+
+	// Update multiplayer network aim continuously while on foot.
+	const bool bUseMPNetworkAim = Game::instance.IsMultiplayerSession();
+
+	if (bUseMPNetworkAim)
+	{
+		Vector3 weaponPosition;
+		Vector3 weaponAim;
+		Vector3 weaponUp;
+
+		if (Game::instance.GetWorldWeaponAim(weaponPosition, weaponAim, weaponUp) && weaponAim.lengthSqr() > 1e-8f)
+		{
+			weaponAim.normalize();
+
+			const float yawWeapon = atan2(weaponAim.y, weaponAim.x);
+			const float yawGame = atan2(lookGame.y, lookGame.x);
+			yaw = NormalizeRadians(yawWeapon - yawGame);
+
+			const float pitchWeapon = atan2(weaponAim.z, sqrt(weaponAim.x * weaponAim.x + weaponAim.y * weaponAim.y));
+			const float pitchGame = atan2(lookGame.z, sqrt(lookGame.x * lookGame.x + lookGame.y * lookGame.y));
+			pitch = NormalizeRadians(pitchWeapon - pitchGame);
+
+			// Do not mirror this aim into UnitDynamicObject fields. Doing so makes
+			// remote player models follow the local VR controller pose.
+
+			return;
+		}
+	}
+
 	Vector3 lookHMD = vr->GetHMDTransform().getLeftAxis();
-	// Get current camera angle
-	Vector3 lookGame = Game::instance.bDetectedChimera ? Game::instance.LastLookDir : Helpers::GetCamera().lookDir;
-	// Apply deltas
+
+	// During the campaign melee-impact window, drive Halo's hidden desktop aim
+	// from the weapon while per-eye rendering stays head-tracked. Multiplayer,
+	// vehicle and cutscene paths are rejected by the getter.
+	Vector3 singlePlayerMeleeAim;
+	if (Game::instance.GetSinglePlayerMeleeAim(singlePlayerMeleeAim))
+	{
+		lookHMD = singlePlayerMeleeAim;
+	}
+
+	// Apply deltas from the HMD in single player / fallback cases.
 	float yawHMD = atan2(lookHMD.y, lookHMD.x);
 	float yawGame = atan2(lookGame.y, lookGame.x);
-	yaw = (yawHMD - yawGame);
+	yaw = NormalizeRadians(yawHMD - yawGame);
 
 	float pitchHMD = atan2(lookHMD.z, sqrt(lookHMD.x * lookHMD.x + lookHMD.y * lookHMD.y));
 	float pitchGame = atan2(lookGame.z, sqrt(lookGame.x * lookGame.x + lookGame.y * lookGame.y));
-	pitch = (pitchHMD - pitchGame);
+	pitch = NormalizeRadians(pitchHMD - pitchGame);
 }
 
 void InputHandler::UpdateCameraForVehicles(float& yaw, float& pitch)
 {
 	IVR* vr = Game::instance.GetVR();
-
 	Vector2 lookInput = vr->GetVector2Input(Look);
 
 	const float DegToRad = 3.141593f / 180.0f;
 
-	const float YawDelta = lookInput.x * Game::instance.c_HorizontalVehicleTurnAmount->Value() * Game::instance.lastDeltaTime;
-	const float PitchDelta = lookInput.y * Game::instance.c_VerticalVehicleTurnAmount->Value() * Game::instance.lastDeltaTime;
+	float frameSeconds = Game::instance.lastDeltaTime;
+	if (!std::isfinite(frameSeconds) || frameSeconds <= 0.0f)
+	{
+		frameSeconds = 1.0f / 90.0f;
+	}
+	else if (frameSeconds > 0.05f)
+	{
+		frameSeconds = 0.05f;
+	}
+
+	const float YawDelta =
+		lookInput.x *
+		Game::instance.c_HorizontalVehicleTurnAmount->Value() *
+		frameSeconds;
+	const float PitchDelta =
+		lookInput.y *
+		Game::instance.c_VerticalVehicleTurnAmount->Value() *
+		frameSeconds;
 
 	float yawOffset = vr->GetYawOffset();
-	
 	yawOffset += YawDelta;
-
 	vr->SetYawOffset(yawOffset);
 
+	// The visible camera always receives Halo's native right-stick input.
+	// Motion-controller aim is applied separately after the native camera pass.
 	yaw = -DegToRad * YawDelta;
 	pitch = DegToRad * PitchDelta;
 }
@@ -392,7 +931,7 @@ unsigned char InputHandler::UpdateFlashlight()
 
 	bool offhandFlashlightEnabled = Game::instance.c_OffhandHandFlashlight->Value();
 
-	bool checkLeftHand = !offhandFlashlightEnabled || !Game::instance.bLeftHanded; 
+	bool checkLeftHand = !offhandFlashlightEnabled || !Game::instance.bLeftHanded;
 	if (checkLeftHand && leftDistance > 0.0f)
 	{
 		Vector3 handPos = vr->GetRawControllerTransform(ControllerRole::Left) * Vector3(0.0f, 0.0f, 0.0f);
@@ -403,7 +942,7 @@ unsigned char InputHandler::UpdateFlashlight()
 		}
 	}
 
-	bool checkRightHand = !offhandFlashlightEnabled || Game::instance.bLeftHanded; 
+	bool checkRightHand = !offhandFlashlightEnabled || Game::instance.bLeftHanded;
 	if (checkRightHand && rightDistance > 0.0f)
 	{
 		Vector3 handPos = vr->GetRawControllerTransform(ControllerRole::Right) * Vector3(0.0f, 0.0f, 0.0f);
@@ -437,7 +976,7 @@ unsigned char InputHandler::UpdateHolsterSwitchWeapons()
 		handPos = vr->GetRawControllerTransform(ControllerRole::Right) * Vector3(0.0f, 0.0f, 0.0f);
 	}
 
-	if (InputHandler::IsHandInHolster(handPos, leftShoulderPos, Game::instance.c_LeftShoulderHolsterActivationDistance->Value()) 
+	if (InputHandler::IsHandInHolster(handPos, leftShoulderPos, Game::instance.c_LeftShoulderHolsterActivationDistance->Value())
 		|| InputHandler::IsHandInHolster(handPos, rightShoulderPos, Game::instance.c_RightShoulderHolsterActivationDistance->Value()))
 	{
 		return 127;
@@ -474,7 +1013,7 @@ unsigned char InputHandler::UpdateMelee()
 		return 127;
 	}
 
-    return 0;
+	return 0;
 }
 
 unsigned char InputHandler::UpdateCrouch()
@@ -533,7 +1072,7 @@ bool InputHandler::GetCalculatedHandPositions(Matrix4& controllerTransform, Vect
 	Vector3 poseDirection;
 	bool bHasPoseData = Game::instance.GetVR()->TryGetControllerFacing(dominant, poseDirection);
 
-	// When 2h aiming point the main hand at the offhand 
+	// When 2h aiming point the main hand at the offhand
 	if (Game::instance.bUseTwoHandAim || bHasPoseData)
 	{
 		Matrix4 aimingTransform = Game::instance.GetVR()->GetRawControllerTransform(dominant, true);
@@ -551,13 +1090,13 @@ bool InputHandler::GetCalculatedHandPositions(Matrix4& controllerTransform, Vect
 		}
 
 		toOffHand.normalize();
-		dominantHandPos = actualControllerPos; 
-		offHand = toOffHand; 
+		dominantHandPos = actualControllerPos;
+		offHand = toOffHand;
 
-		return true; 
+		return true;
 	}
 
-	return false; 
+	return false;
 }
 
 void InputHandler::CalculateSmoothedInput()
@@ -623,7 +1162,7 @@ void InputHandler::CalculateSmoothedInput()
 void InputHandler::UpdateHandsProximity()
 {
 	float swapHandDistance = Game::instance.c_SwapHandDistance->Value();
-	
+
 	const Vector3 leftPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Left, true) * Vector3(0.0f, 0.0f, 0.0f);
 	const Vector3 rightPos = Game::instance.GetVR()->GetControllerTransform(ControllerRole::Right, true) * Vector3(0.0f, 0.0f, 0.0f);
 	float handDistance = (rightPos - leftPos).lengthSqr();
@@ -650,24 +1189,24 @@ void InputHandler::CheckSwapWeaponHand()
 	bool offHandGrabbedWeapon = false;
 	bool dominantHandReleasedWeapon = false;
 
-    if (!Game::instance.bLeftHanded)
-    {
+	if (!Game::instance.bLeftHanded)
+	{
 		offHandGrabbedWeapon = bIsSwitchHandsPressed && bWeaponHandChanged && !bIsOffhandSwitchHandsPressed;
 		dominantHandReleasedWeapon = bIsSwitchHandsPressed && !bIsOffhandSwitchHandsPressed && bOffhandWeaponHandChanged;
-    }
-    else
-    {
-        offHandGrabbedWeapon = bIsOffhandSwitchHandsPressed && bOffhandWeaponHandChanged && !bIsSwitchHandsPressed;
+	}
+	else
+	{
+		offHandGrabbedWeapon = bIsOffhandSwitchHandsPressed && bOffhandWeaponHandChanged && !bIsSwitchHandsPressed;
 		dominantHandReleasedWeapon = bIsOffhandSwitchHandsPressed && !bIsSwitchHandsPressed && bWeaponHandChanged;
-    }
+	}
 
 	if (offHandGrabbedWeapon || dominantHandReleasedWeapon)
-    {
+	{
 		// Enable left handed and update the bindings to use the relevant action set
-        Game::instance.bLeftHanded = !Game::instance.bLeftHanded;
-		
+		Game::instance.bLeftHanded = !Game::instance.bLeftHanded;
+
 		UpdateRegisteredInputs();
-    }
+	}
 }
 
 void InputHandler::UpdateTwoHandedHold(float handDistance, bool handsWithinSwapWeaponDistance)
@@ -686,41 +1225,41 @@ void InputHandler::UpdateTwoHandedHold(float handDistance, bool handsWithinSwapW
 	if (handsWithinSwapWeaponDistance)
 	{
 		if (!bIsGripping) {
-	        Game::instance.bUseTwoHandAim = false;
-	    }
+			Game::instance.bUseTwoHandAim = false;
+		}
 		return;
 	}
 
 	if (Game::instance.c_ToggleGrip->Value())
 	{
-	    if (bGripChanged && bIsGripping)
-	    {
-	        bWasGripping ^= true;
-	    }
-	    bIsGripping = bWasGripping;
+		if (bGripChanged && bIsGripping)
+		{
+			bWasGripping ^= true;
+		}
+		bIsGripping = bWasGripping;
 	}
 
 	float twoHandDistance = Game::instance.c_TwoHandDistance->Value();
 	if (twoHandDistance >= 0.0f)
 	{
-	    if (bGripChanged)
-	    {
-	        if (bIsGripping)
-	        {
+		if (bGripChanged)
+		{
+			if (bIsGripping)
+			{
 				if (handDistance < twoHandDistance * twoHandDistance)
-	            {
-	                Game::instance.bUseTwoHandAim = true;
-	            }
-	        }
-	        else
-	        {
-	            Game::instance.bUseTwoHandAim = false;
-	        }
-	    }
+				{
+					Game::instance.bUseTwoHandAim = true;
+				}
+			}
+			else
+			{
+				Game::instance.bUseTwoHandAim = false;
+			}
+		}
 	}
 	else
 	{
-	    Game::instance.bUseTwoHandAim = bIsGripping;
+		Game::instance.bUseTwoHandAim = bIsGripping;
 	}
 }
 
