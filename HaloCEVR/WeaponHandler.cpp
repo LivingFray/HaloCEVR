@@ -408,14 +408,9 @@ namespace
 		return false;
 	}
 
-
-	// The Banshee and Scorpion calculate their real weapon direction from Halo's
-	// vehicle crosshair. Relocating their temporary firing carrier to the tracked VR
-	// hand makes only the local visual projectile follow the controller while the
-	// authoritative hit remains on the crosshair. Keep those vehicle families on
-	// Halo's native firing position and aim for both primary and secondary triggers.
-	bool ShouldUseNativeVehicleProjectileVisuals(
-		const BaseDynamicObject* vehicleObject)
+	bool ReadVehicleTagPath(
+		const BaseDynamicObject* vehicleObject,
+		char (&vehiclePath)[260])
 	{
 		if (!vehicleObject ||
 			vehicleObject->N0000027E != ObjectType::VEHICLE)
@@ -433,8 +428,20 @@ namespace
 
 		const char* vehiclePathPointer = *reinterpret_cast<char* const*>(
 			reinterpret_cast<const uint8_t*>(vehicleTag) + 0x10);
+		return ReadTagPath(vehiclePathPointer, vehiclePath);
+	}
+
+
+	// The Banshee and Scorpion calculate their real weapon direction from Halo's
+	// vehicle crosshair. Relocating their temporary firing carrier to the tracked VR
+	// hand makes only the local visual projectile follow the controller while the
+	// authoritative hit remains on the crosshair. Keep those vehicle families on
+	// Halo's native firing position and aim for both primary and secondary triggers.
+	bool ShouldUseNativeVehicleProjectileVisuals(
+		const BaseDynamicObject* vehicleObject)
+	{
 		char vehiclePath[260]{};
-		if (!ReadTagPath(vehiclePathPointer, vehiclePath))
+		if (!ReadVehicleTagPath(vehicleObject, vehiclePath))
 		{
 			return false;
 		}
@@ -697,10 +704,16 @@ namespace
 	UnitDynamicObject* ResolveExactVehicleFireOwner(
 		const HaloID& vehicleID,
 		const HaloID& weaponID,
+		const BaseDynamicObject* vehicleObject,
 		const BaseDynamicObject* weaponObject,
 		HaloID& outOwnerID)
 	{
 		outOwnerID = HaloID{ 0xFFFF, 0xFFFF };
+
+		char vehiclePath[260]{};
+		const bool bWarthog =
+			ReadVehicleTagPath(vehicleObject, vehiclePath) &&
+			std::strstr(vehiclePath, "warthog") != nullptr;
 
 		ObjectTable& table = Helpers::GetObjectTable();
 		if (!table.elements || table.currentSize == 0)
@@ -715,6 +728,10 @@ namespace
 		UnitDynamicObject* seatMatch = nullptr;
 		HaloID seatMatchID{ 0xFFFF, 0xFFFF };
 		unsigned int seatMatchCount = 0;
+
+		UnitDynamicObject* warthogGunnerMatch = nullptr;
+		HaloID warthogGunnerMatchID{ 0xFFFF, 0xFFFF };
+		unsigned int warthogGunnerMatchCount = 0;
 
 		for (uint16_t i = 0; i < table.currentSize; ++i)
 		{
@@ -735,6 +752,17 @@ namespace
 
 			HaloID candidateID{ i, datum.id };
 
+			// Every stock Warthog-family vehicle weapon is operated from seat 1.
+			// The weapon object's attachment field can instead contain the driver
+			// attachment, so it is not an ownership key for these turrets.
+			if (bWarthog &&
+				(unit->parentSeatIndex & 0xFFu) == 1u)
+			{
+				warthogGunnerMatch = unit;
+				warthogGunnerMatchID = candidateID;
+				++warthogGunnerMatchCount;
+			}
+
 			// Strongest live relationship: this occupant reports the exact firing
 			// weapon as its equipped weapon.
 			if (FireGuardSameHaloID(unit->weapon, weaponID))
@@ -753,6 +781,19 @@ namespace
 				seatMatchID = candidateID;
 				++seatMatchCount;
 			}
+		}
+
+		// A Warthog has one firing seat. Never let its turret fall back to the
+		// weapon attachment value and attribute a gunner shot to the driver.
+		if (bWarthog)
+		{
+			if (warthogGunnerMatchCount == 1)
+			{
+				outOwnerID = warthogGunnerMatchID;
+				return warthogGunnerMatch;
+			}
+
+			return nullptr;
 		}
 
 		// Never guess between occupants.
@@ -2110,6 +2151,7 @@ void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 		fireOwnerUnit = ResolveExactVehicleFireOwner(
 			Object->parent,
 			WeaponID,
+			parentObj,
 			Object,
 			fireOwnerID);
 	}
