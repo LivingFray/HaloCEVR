@@ -1260,7 +1260,6 @@ bool Game::PreDrawHUD()
 	realZoom = *zoom;
 	*zoom = -1;
 
-	Helpers::GetDirect3DDevice9()->GetRenderTarget(0, &uiRealSurface);
 	Helpers::GetDirect3DDevice9()->SetRenderTarget(0, uiSurface);
 	uiRealSurface = Helpers::GetRenderTargets()[1].renderSurface;
 	Helpers::GetRenderTargets()[1].renderSurface = uiSurface;
@@ -1445,7 +1444,6 @@ bool Game::PreDrawMenu()
 		return GetRenderState() == ERenderState::GAME;
 	}
 
-	Helpers::GetDirect3DDevice9()->GetRenderTarget(0, &uiRealSurface);
 	Helpers::GetDirect3DDevice9()->SetRenderTarget(0, uiSurface);
 	uiRealSurface = Helpers::GetRenderTargets()[1].renderSurface;
 	Helpers::GetRenderTargets()[1].renderSurface = uiSurface;

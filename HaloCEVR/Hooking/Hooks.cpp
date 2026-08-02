@@ -299,7 +299,7 @@ namespace
 					playersOffset,
 					navPointsOffset))
 			{
-				Logger::err
+				Logger::log
 					<< "[Hook] Could not safely resolve Halo Retail "
 					<< "world-space indicator routines; skipping them"
 					<< std::endl;
