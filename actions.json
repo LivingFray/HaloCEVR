@@ -1,0 +1,295 @@
+{
+    "default_bindings": [
+        {
+            "controller_type": "oculus_touch",
+            "binding_url": "oculus_touch_right.json"
+        },
+        {
+            "controller_type": "knuckles",
+            "binding_url": "knuckles_right.json"
+        },
+        {
+            "controller_type": "oculus_touch",
+            "binding_url": "oculus_touch_left.json"
+        },
+        {
+            "controller_type": "knuckles",
+            "binding_url": "knuckles_left.json"
+        }
+    ],
+    "actions": [
+        {
+            "name": "/actions/default/in/Jump",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Jump",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/SwitchGrenades",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwitchGrenades",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Interact",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Interact",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/SwitchWeapons",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwitchWeapons",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Melee",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Melee",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Flashlight",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Flashlight",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Grenade",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Grenade",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Fire",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Fire",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/MenuForward",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/MenuForward",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/MenuBack",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/MenuBack",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Crouch",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Crouch",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Zoom",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Zoom",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Reload",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Reload",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Recentre",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/Recentre",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/TwoHandGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/TwoHandGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/SwapWeaponHand",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/left handed/in/SwapWeaponHand",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/Look",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
+            "name": "/actions/left handed/in/Look",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
+            "name": "/actions/default/in/Move",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
+            "name": "/actions/left handed/in/Move",
+            "requirement": "suggested",
+            "type": "vector2"
+        },
+        {
+            "name": "/actions/default/in/LeftTip",
+            "requirement": "suggested",
+            "type": "pose"
+        },
+        {
+            "name": "/actions/default/in/RightTip",
+            "requirement": "suggested",
+            "type": "pose"
+        },
+        {
+            "name": "/actions/default/out/RightFire",
+            "type": "vibration"
+        },
+        {
+            "name": "/actions/default/out/LeftFire",
+            "type": "vibration"
+        },
+        {
+            "name": "/actions/default/in/LeftHand",
+            "type": "skeleton",
+            "skeleton": "/skeleton/hand/left"
+        },
+        {
+            "name": "/actions/default/in/RightHand",
+            "type": "skeleton",
+            "skeleton": "/skeleton/hand/right"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLeftGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRightGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLeftTrigger",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRightTrigger",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalJump",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalGrenade",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalGrenadeCycle",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRecentre",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalInteract",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalMove",
+            "type": "vector2",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLook",
+            "type": "vector2",
+            "requirement": "optional"
+        }
+    ],
+    "action_sets": [
+        {
+            "name": "/actions/default",
+            "usage": "leftright"
+        },
+        {
+            "name": "/actions/left handed",
+            "usage": "left"
+        }
+    ]
+}
