@@ -197,7 +197,7 @@ By default you crouch in real life. If you do not prefer that, change the option
 ### I wish (insert action) was bound to a different key
 Use SteamVR input settings to change your bindings to whatever you want. You can also search for other peoples' bindings for your controller in the bindings menu.  You can learn how to use SteamVR input by watching this video by HoriZon, who also has bindings available for Quest controllers: https://www.youtube.com/watch?v=rdlCu7IjbGI.  It's useful in a bunch of games!
 ### I know C++ coding or will learn to help develop the mod.  How do I help?
-Thank you! See compiling source directions below and submit a Pull Request on Github explaining the changes you have made and impact on other files.  Be sure to thoroughly test any changes before submitting them. After others and I test the changes, they may be incorporated into the mod release.
+Thank you! See compiling source directions below and submit a Pull Request on Github explaining the changes you have made and impact on other files. Be sure to thoroughly test any changes before submitting them. After others and I test the changes, they may be incorporated into the mod release. Note that this project is an AI-free zone, if you can't be bothered writing the code I won't bother reviewing it.
 
 ## Compiling Source
 1. Clone this repository (`git clone --recurse-submodules https://github.com/LivingFray/HaloCEVR.git`)
