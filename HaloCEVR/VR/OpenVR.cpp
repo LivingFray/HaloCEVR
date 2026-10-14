@@ -80,7 +80,8 @@ void OpenVR::Init()
 
 
 	std::filesystem::path actions = std::filesystem::current_path() / "VR" / "OpenVR" / "actions.json";
-	vrInput->SetActionManifestPath(actions.string().c_str());
+	const auto manifestError=vrInput->SetActionManifestPath(actions.string().c_str());
+	Logger::log << "[OpenVR] Action manifest: " << actions.string() << " result=" << manifestError << std::endl;
 
 	vr::EVRInputError ActionSetError = vrInput->GetActionSetHandle("/actions/default", &actionSets[0].ulActionSet);
 
@@ -325,6 +326,7 @@ void OpenVR::UpdatePoses()
 		case vr::VREvent_MouseMove:
 			mousePos.x = vrEvent.data.mouse.x;
 			mousePos.y = 1.0f - vrEvent.data.mouse.y;
+			bMousePositionValid = true;
 			break;
 		case vr::VREvent_MouseButtonDown:
 			bMouseDown = true;
@@ -334,17 +336,52 @@ void OpenVR::UpdatePoses()
 			break;
 		case vr::VREvent_KeyboardClosed_Global:
 		case vr::VREvent_KeyboardDone:
-			Game::instance.uiRenderer->UpdateActiveButton(nullptr);
+			if (Game::instance.uiRenderer) Game::instance.uiRenderer->UpdateActiveButton(nullptr);
 			break;
 		default:
 			break;
 		}
 	}
+	// Recovery build: retain SteamVR's established overlay event path. Do not
+	// poll action state again from rendering or call the new intersection path.
+}
+
+void OpenVR::UpdateMenuPointer()
+{
+	if (!vrSystem || !vrInput || !vrOverlay || !bMouseVisible) return;
+	std::array<Immersion::MenuRay,2> rays{};
+	for (unsigned h=0; h<2; ++h) {
+		auto& ray = rays[h];
+		const auto index = vrSystem->GetTrackedDeviceIndexForControllerRole(h == 0 ?
+			vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+		if (index >= vr::k_unMaxTrackedDeviceCount || !renderPoses[index].bDeviceIsConnected ||
+			!renderPoses[index].bPoseIsValid) continue;
+		ray.valid = TryGetBoolInput(physicalBindings[h+2].id,ray.down);
+		if (!ray.valid) continue;
+		// Overlay intersection consumes standing-space poses, without Halo's
+		// recenter/yaw/weapon offsets. -Z is the controller's pointing axis.
+		const auto& pose = renderPoses[index].mDeviceToAbsoluteTracking;
+		vr::VROverlayIntersectionParams_t params{};
+		params.eOrigin = vr::TrackingUniverseStanding;
+		for (unsigned axis=0; axis<3; ++axis) {
+			params.vSource.v[axis] = pose.m[axis][3];
+			params.vDirection.v[axis] = -pose.m[axis][2];
+		}
+		vr::VROverlayIntersectionResults_t result{};
+		ray.hit = vrOverlay->ComputeOverlayIntersection(uiOverlay,&params,&result);
+		ray.u = result.vUVs.v[0]; ray.v = result.vUVs.v[1];
+	}
+	const auto point = menuPointer.Update(rays);
+	bMousePositionValid = point.positioned;
+	if (point.positioned) mousePos = Vector2(point.x,point.y);
+	// Do not let a lost controller/overlay leave a mouse button stuck down.
+	bMouseDown = point.down;
 }
 
 void OpenVR::UpdateSkeleton(ControllerRole hand)
 {
 	VR_PROFILE_SCOPE(OpenVR_UpdateSkeleton);
+	skeletonValid[hand == ControllerRole::Left ? 0 : 1] = false;
 
 	if (!vrInput)
 	{
@@ -381,6 +418,7 @@ void OpenVR::UpdateSkeleton(ControllerRole hand)
 	}
 	
 	const int h = hand == ControllerRole::Left ? 0 : 1;
+	skeletonValid[h] = true;
 
 	if (!bHasCachedWrists[h])
 	{
@@ -514,12 +552,13 @@ void OpenVR::UpdateCameraFrustum(CameraFrustum* frustum, int eye)
 	// Yaw should follow cutscene camera
 	CutsceneData* cutscene = Helpers::GetCutsceneData();
 
-	if (cutscene->bInCutscene)
+	if (cutscene->bInCutscene && !Game::instance.interactions.ViewOverrideActive())
 	{
 		float cameraYaw = atan2(frustum->facingDirection.y, frustum->facingDirection.x) * (180.0f / 3.1415926f);
 		headMatrix.rotateZ(cameraYaw);
 	}
 
+    Game::instance.interactions.ApplyViewRotation(headMatrix);
 	Matrix4 viewMatrix = (headMatrix * eyeMatrix.invert()).scale(Game::instance.MetresToWorld(1.0f));
 
 	Matrix3 rotationMatrix = GetRotationMatrix(headMatrix);
@@ -668,10 +707,29 @@ Matrix4 OpenVR::GetHMDTransform(bool bRenderPose)
 	}
 }
 
+bool OpenVR::IsHMDTracked() const
+{
+	const auto& head = gamePoses[vr::k_unTrackedDeviceIndex_Hmd];
+	return vrSystem && head.bDeviceIsConnected && head.bPoseIsValid;
+}
+
+bool OpenVR::IsControllerTracked(ControllerRole role) const
+{
+	if (!vrSystem) return false;
+	const auto index = vrSystem->GetTrackedDeviceIndexForControllerRole(
+		role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+	if (index >= vr::k_unMaxTrackedDeviceCount) return false;
+	const auto& head = gamePoses[vr::k_unTrackedDeviceIndex_Hmd];
+	const auto& hand = gamePoses[index];
+	return head.bDeviceIsConnected && head.bPoseIsValid && hand.bDeviceIsConnected && hand.bPoseIsValid;
+}
+
 Matrix4 OpenVR::GetRawControllerTransform(ControllerRole role, bool bRenderPose)
 {
 	VR_PROFILE_SCOPE(OpenVR_GetRawControllerTransform);
+	if (!vrSystem) return Matrix4();
 	vr::TrackedDeviceIndex_t controllerIndex = vrSystem->GetTrackedDeviceIndexForControllerRole(role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+	if (controllerIndex >= vr::k_unMaxTrackedDeviceCount) return Matrix4();
 
 	Matrix4 outMatrix;
 
@@ -696,6 +754,8 @@ Matrix4 OpenVR::GetControllerTransformInternal(ControllerRole role, int bone, bo
 	vr::TrackedDeviceIndex_t controllerIndex = vrSystem->GetTrackedDeviceIndexForControllerRole(role == ControllerRole::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
 
 	const int roleId = role == ControllerRole::Left ? 0 : 1;
+	if ((bone < 0 && !bHasCachedWrists[roleId]) || bone >= 31 ||
+		(bone >= 0 && !skeletonValid[roleId])) return GetRawControllerTransform(role,bRenderPose);
 
 	vr::VRBoneTransform_t boneTransform = bone < 0 ? cachedWrists[roleId] : bones[roleId][bone];
 
@@ -838,6 +898,9 @@ void OpenVR::SetMouseVisibility(bool bIsVisible)
 	}
 
 	bMouseVisible = bIsVisible;
+	bMousePositionValid = false;
+	menuPointer.Reset();
+	Logger::log << "[VRMenu] " << (bIsVisible ? "Native overlay events; right A confirms focused buttons." : "Closed.") << std::endl;
 
 	if (!bMouseVisible)
 	{
@@ -857,7 +920,7 @@ void OpenVR::SetCrosshairTransform(Matrix4& newTransform)
 	Vector3 pos = (newTransform * Vector3(0.0f, 0.0f, 0.0f)) * Game::instance.MetresToWorld(1.0f) + Helpers::GetCamera().position;
 	Matrix3 rot;
 	Vector2 size(1.33f, 1.0f);
-	size *= Game::instance.MetresToWorld(Game::instance.c_CrosshairScale->Value());
+	size *= Game::instance.MetresToWorld(Game::instance.c_CrosshairScale->Value()) * Game::instance.AccuracyReticleScale();
 
 	newTransform.translate(-pos);
 	newTransform.rotate(90.0f, newTransform.getLeftAxis());
@@ -882,13 +945,15 @@ void OpenVR::SetActiveActionSet(int index, const std::string& actionSetName)
 }
 
 void OpenVR::UpdateInputs()
-{	
+{
+	for (auto& binding : physicalBindings) binding.rebaseline = false;
 	SetActiveActionSet(0, "/actions/default");
 	SetActiveActionSet(1, "/actions/left handed");
 
 	VR_PROFILE_SCOPE(OpenVR_UpdateInputs);
 
 	vr::EVRInputError error = vrInput->UpdateActionState(actionSets, sizeof(vr::VRActiveActionSet_t), 2);
+	inputStateValid = error == vr::VRInputError_None;
 
 	if (error != vr::VRInputError_None)
 	{
@@ -898,8 +963,28 @@ void OpenVR::UpdateInputs()
 
 InputBindingID OpenVR::RegisterBoolInput(std::string set, std::string action)
 {
-	InputBindingID id;
+	InputBindingID id = 0;
 	vr::EVRInputError err = vrInput->GetActionHandle(("/actions/" + set + "/in/" + action).c_str(), &id);
+	// Existing SteamVR personal bindings may omit newly added optional actions.
+	// Their old grip/fire actions remain usable. Keep these aliases tied to a
+	// physical input source, never to the current firing hand or saved layout.
+	const char* names[] = {"PhysicalLeftGrip","PhysicalRightGrip","PhysicalLeftTrigger","PhysicalRightTrigger",
+		"PhysicalJump","PhysicalGrenade","PhysicalGrenadeCycle","PhysicalRecentre","PhysicalInteract"};
+	const char* aliases[] = {"/actions/default/in/SwapWeaponHand","/actions/left handed/in/SwapWeaponHand",
+		"/actions/left handed/in/Fire","/actions/default/in/Fire",
+		"/actions/default/in/Grenade","/actions/default/in/Jump","/actions/default/in/SwitchGrenades","/actions/default/in/MenuBack","/actions/default/in/Interact"};
+	const bool leftSource[] = {true,false,true,false,false,false,true,true,false};
+	if (set == "default") for (unsigned slot=0; slot<physicalBindings.size(); ++slot) if (action == names[slot]) {
+		auto& binding = physicalBindings[slot];
+		binding = {}; binding.name = action;
+		binding.primary = err == vr::VRInputError_None ? id : 0;
+		if (vrInput->GetActionHandle(aliases[slot],&binding.fallback) != vr::VRInputError_None) binding.fallback = 0;
+		if (vrInput->GetInputSourceHandle(leftSource[slot] ? "/user/hand/left" : "/user/hand/right",&binding.source)
+			!= vr::VRInputError_None) binding.source = vr::k_ulInvalidInputValueHandle;
+		binding.id = binding.primary ? binding.primary : binding.fallback;
+		Logger::log << "[PhysicalInput] Registered " << action << " with fixed-hand fallback " << aliases[slot] << std::endl;
+		return binding.id;
+	}
 	if (err != vr::VRInputError_None)
 	{
 		Logger::log << "[OpenVR] Could not register bool input /actions/" << set << "/in/" << action << ": " << err << std::endl;
@@ -913,7 +998,24 @@ InputBindingID OpenVR::RegisterBoolInput(std::string set, std::string action)
 
 InputBindingID OpenVR::RegisterVector2Input(std::string set, std::string action)
 {
-	InputBindingID id;
+	if(set=="default" && (action=="PhysicalMove" || action=="PhysicalLook")){
+		const unsigned hand=action=="PhysicalMove"?0u:1u;
+		auto& binding=physicalSticks[hand];binding={};binding.name=action;
+		// Keep this ID distinct from all aliases so registering an old Move/Look
+		// action for on-foot controls cannot accidentally restrict it to one hand.
+		binding.id=(~InputBindingID(0))-hand;
+		const std::string paths[]={"/actions/default/in/"+action,
+			"/actions/default/in/Move","/actions/left handed/in/Move",
+			"/actions/default/in/Look","/actions/left handed/in/Look"};
+		for(unsigned i=0;i<binding.actions.size();++i)
+			if(vrInput->GetActionHandle(paths[i].c_str(),&binding.actions[i])!=vr::VRInputError_None)binding.actions[i]=0;
+		if(vrInput->GetInputSourceHandle(hand==0?"/user/hand/left":"/user/hand/right",&binding.source)!=vr::VRInputError_None)
+			binding.source=vr::k_ulInvalidInputValueHandle;
+		Logger::log<<"[PhysicalStick] Registered "<<action<<" with original Move/Look fallbacks on "
+			<<(hand==0?"left":"right")<<" controller"<<std::endl;
+		return binding.id;
+	}
+	InputBindingID id=0;
 	vr::EVRInputError err = vrInput->GetActionHandle(("/actions/" + set + "/in/" + action).c_str(), &id);
 	if (err != vr::VRInputError_None)
 	{
@@ -934,12 +1036,16 @@ bool OpenVR::GetBoolInput(InputBindingID id)
 
 bool OpenVR::GetBoolInput(InputBindingID id, bool& bHasChanged)
 {
-	static vr::InputDigitalActionData_t digital;
+	bHasChanged = false;
+	if (!vrInput || id == 0 || !inputStateValid) return false;
+	vr::InputDigitalActionData_t digital{};
 	vr::EVRInputError err = vrInput->GetDigitalActionData(id, &digital, sizeof(vr::InputDigitalActionData_t), vr::k_ulInvalidInputValueHandle);
 	if (err != vr::VRInputError_None)
 	{
 		Logger::log << "[OpenVR] Could not get digital action: " << err << std::endl;
+		return false;
 	}
+	if (!digital.bActive) return false;
 
 	bHasChanged = digital.bChanged;
 
@@ -951,15 +1057,68 @@ bool OpenVR::GetBoolInput(InputBindingID id, bool& bHasChanged)
 	return digital.bState;
 }
 
+bool OpenVR::TryGetBoolInput(InputBindingID id, bool& down)
+{
+	down = false;
+	if (!vrInput || !inputStateValid || id == 0) return false;
+	for (auto& binding : physicalBindings) if (binding.id == id) {
+		auto read = [&](InputBindingID action) {
+			vr::InputDigitalActionData_t sample{};
+			if (!action || binding.source == vr::k_ulInvalidInputValueHandle ||
+				vrInput->GetDigitalActionData(action,&sample,sizeof(sample),binding.source) != vr::VRInputError_None || !sample.bActive)
+				return false;
+			down = sample.bState;
+			return true;
+		};
+		const int route = read(binding.primary) ? 1 : (read(binding.fallback) ? 2 : 0);
+		binding.rebaseline = binding.rebaseline || (binding.route >= 0 && route != binding.route);
+		if (route != binding.route) {
+			Logger::log << "[PhysicalInput] " << binding.name << ": " <<
+				(route == 1 ? "physical action active" : route == 2 ? "using original fixed-hand binding" : "no active binding on its physical hand") << std::endl;
+			binding.route = route;
+		}
+		// A changed source must not synthesize a grip release or trigger press.
+		return route != 0 && !binding.rebaseline;
+	}
+	vr::InputDigitalActionData_t digital{};
+	if (vrInput->GetDigitalActionData(id, &digital, sizeof(digital), vr::k_ulInvalidInputValueHandle)
+		!= vr::VRInputError_None || !digital.bActive) return false;
+	down = digital.bState;
+	return true;
+}
+
 Vector2 OpenVR::GetVector2Input(InputBindingID id)
 {
-	static vr::InputAnalogActionData_t Analog;
+	if(!vrInput || !inputStateValid || !id)return {};
+	for(auto& binding:physicalSticks)if(binding.id==id){
+		Vector2 value{};int route=0;
+		if(binding.source!=vr::k_ulInvalidInputValueHandle)for(unsigned i=0;i<binding.actions.size();++i){
+			vr::InputAnalogActionData_t sample{};
+			// GetActionHandle may succeed for an action missing from the active
+			// manifest. Check the actual read, then try the original bindings.
+			if(!binding.actions[i] || vrInput->GetAnalogActionData(binding.actions[i],&sample,sizeof(sample),binding.source)!=vr::VRInputError_None ||
+				!sample.bActive || !std::isfinite(sample.x) || !std::isfinite(sample.y))continue;
+			value={sample.x,sample.y};route=static_cast<int>(i)+1;break;
+		}
+		if(route!=binding.route){
+			const char* labels[]={"no active binding on its physical hand","physical action active",
+				"using original default Move","using original left-handed Move",
+				"using original default Look","using original left-handed Look"};
+			Logger::log<<"[PhysicalStick] "<<binding.name<<": "<<labels[route]<<std::endl;
+			binding.route=route;
+		}
+		// An active centered stick wins. Never add aliases or substitute the
+		// opposite hand, even when it is moving and this hand is centered.
+		return value;
+	}
+	vr::InputAnalogActionData_t Analog{};
 	vr::EVRInputError err = vrInput->GetAnalogActionData(id, &Analog, sizeof(vr::InputAnalogActionData_t), vr::k_ulInvalidInputValueHandle);
-	if (err != vr::VRInputError_None)
-	{
-		Logger::log << "[OpenVR] Could not get analog action: " << err << std::endl;
+	if(analogErrors[id]!=static_cast<int>(err)){
+		Logger::log<<"[OpenVR] Analog action "<<id<<" result="<<err<<std::endl;
+		analogErrors[id]=static_cast<int>(err);
 	}
 
+	if(err!=vr::VRInputError_None || !Analog.bActive || !std::isfinite(Analog.x) || !std::isfinite(Analog.y))return {};
 	return Vector2(Analog.x, Analog.y);
 }
 

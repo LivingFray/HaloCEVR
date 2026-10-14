@@ -22,6 +22,8 @@ public:
 
 	int basicSettingsPage = 0;
 	std::vector<class UIPanel*> basicSettingsPages;
+	int guidePage = 0;
+	std::vector<class UIPanel*> guidePages;
 	int allSettingsPage = 0;
 	std::vector<class UIPanel*> allSettingsPages;
 
@@ -54,6 +56,7 @@ protected:
 	
 	void PopulateBasicSettingsTab();
 	void PopulateAllSettingsTab();
+	void PopulateGuideTab(class UIPanel* guidePanel);
 	void PopulateAboutTab(class UIPanel* aboutPanel);
 };
 

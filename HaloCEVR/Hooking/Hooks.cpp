@@ -8,6 +8,7 @@
 #include "../Helpers/Maths.h"
 
 #include <tlhelp32.h>
+#include <cstring>
 #include "../DirectXWrappers/IDirect3DDevice9ExWrapper.h"
 #include "../Helpers/CmdLineArgs.h"
 
@@ -796,6 +797,7 @@ void __declspec(naked) Hooks::H_UpdateMouseInfo()
 
 void Hooks::H_FireWeapon(HaloID param1, short param2)
 {
+	if (Game::instance.ShouldBlockPhysicalFire(param1)) return;
 	VR_PROFILE_SCOPE(Hooks_FireWeapon);
 
 	Game::instance.PreFireWeapon(param1, param2);
@@ -878,6 +880,9 @@ void Hooks::H_DrawViewModel()
 		return;
 	}
 
+    Game::instance.DrawPhysicalBodyModels();
+    if (Game::instance.ShouldHidePhysicalViewModel()) return;
+
 	if (Game::instance.bLeftHanded)
 	{
 		Helpers::GetDirect3DDevice9()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -898,6 +903,7 @@ void Hooks::H_DrawViewModel()
 
 void Hooks::H_ReloadStart(HaloID param1, short param2, bool param3)
 {
+	if (Game::instance.ShouldBlockNativeReload(param1)) return;
 	VR_PROFILE_SCOPE(Hooks_ReloadStart);
 
 	ReloadStart.Original(param1, param2, param3);
@@ -905,10 +911,36 @@ void Hooks::H_ReloadStart(HaloID param1, short param2, bool param3)
 	Game::instance.ReloadStart(param1, param2, param3);
 }
 
+static bool __cdecl BlockManualReloadEnd(HaloID weapon)
+{
+    return Game::instance.ShouldBlockNativeReload(weapon);
+}
+
 void __declspec(naked) Hooks::H_ReloadEnd()
 {
 	static short param1;
 	static HaloID param2;
+
+    // Retail ABI: magazine in CX, weapon at entry [ESP+4], caller cleanup.
+    // Preserve flags and every register on the stock path. The guard consumes
+    // no arguments on an early return; it never invokes the ammo-transfer code.
+    _asm
+    {
+        pushfd
+        pushad
+        mov eax, [esp + 40]
+        push eax
+        call BlockManualReloadEnd
+        add esp, 4
+        test al, al
+        jz native_reload_end
+        popad
+        popfd
+        ret
+    native_reload_end:
+        popad
+        popfd
+    }
 
 	_asm
 	{
@@ -981,7 +1013,7 @@ void Hooks::P_DisableCrouchCamera()
 		// Uses a "0.0" constant from later in the function
 		byte bytes[6] = { 0xd9, 0x05, 0x0, 0x0, 0x0, 0x0 };
 
-		*(uint32_t*)(&bytes[2]) = *reinterpret_cast<uint32_t*>(o.CrouchHeight.Address + 0x11);
+		std::memcpy(&bytes[2], reinterpret_cast<const void*>(o.CrouchHeight.Address + 0x11), sizeof(uint32_t));
 
 		SetBytes(o.CrouchHeight.Address, 6, bytes);
 	}

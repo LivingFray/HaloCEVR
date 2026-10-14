@@ -39,6 +39,11 @@ public:
 	virtual Matrix4 GetControllerBoneTransform(ControllerRole role, int bone, bool bRenderPose = false) = 0;
 	virtual Vector3 GetControllerVelocity(ControllerRole role, bool bRenderPose = false) = 0;
 	virtual bool TryGetControllerFacing(ControllerRole role, Vector3& outDirection) = 0;
+	// Pose validity for deliberate physical interactions. Never infer validity
+	// from a zero/identity transform or the optional skeletal tip pose.
+	virtual bool IsControllerTracked(ControllerRole role) const = 0;
+	virtual bool IsHMDTracked() const = 0;
+	virtual bool IsHandSkeletonValid(ControllerRole role) const { return false; }
 	virtual struct IDirect3DSurface9* GetRenderSurface(int eye) = 0;
 	virtual struct IDirect3DTexture9* GetRenderTexture(int eye) = 0;
 	virtual struct IDirect3DSurface9* GetUISurface() = 0;
@@ -53,8 +58,11 @@ public:
 	virtual InputBindingID RegisterVector2Input(std::string set, std::string action) = 0;
 	virtual bool GetBoolInput(InputBindingID id) = 0;
 	virtual bool GetBoolInput(InputBindingID id, bool &bHasChanged) = 0;
+	// False means unavailable input, NOT a released physical button.
+	virtual bool TryGetBoolInput(InputBindingID id, bool& down) = 0;
 	virtual Vector2 GetVector2Input(InputBindingID id) = 0;
 	virtual Vector2 GetMousePos() = 0;
+	virtual bool HasMousePointer() const { return true; }
 	virtual bool GetMouseDown() = 0;
 	virtual void ShowKeyboard(const std::string& textBuffer) = 0;
 	virtual bool IsKeyboardVisible() = 0;

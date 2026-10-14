@@ -75,7 +75,9 @@ struct AssetData_Weapon
 {
 	char pad_0000[1128]; //0x0000
 	HaloID ViewModelID; //0x0468
-	char pad_046C[152]; //0x046C
+	char pad_046C[12]; //0x046C
+	HaloID ViewAnimationID; //0x0478
+	char pad_047C[136];
 };
 
 struct Asset_Weapon : public Asset_Base
@@ -125,7 +127,7 @@ namespace Helpers
 	template<typename T>
 	T* GetTypedAsset(HaloID ID)
 	{
-		if (ID.id == -1 || ID.index == -1)
+		if (ID.id == 0xffff || ID.index == 0xffff)
 		{
 			return nullptr;
 		}

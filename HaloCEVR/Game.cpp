@@ -8,6 +8,7 @@
 #include "Helpers/Menus.h"
 #include "Helpers/Objects.h"
 #include "Helpers/Maths.h"
+#include "CrashDiagnostics.h"
 
 #ifdef EMULATE_VR
 #include "VR/VREmulator.h"
@@ -26,6 +27,9 @@
 void Game::Init()
 {
 	Logger::log << "[Game] HaloCEVR initialising..." << std::endl;
+	Logger::log << "[Stylish Restart R1.31b] mirrored flashlight zone; R1.31a steering, reload and camera changes retained" << std::endl;
+	Logger::log << "[CrashDiagnostics] " << (CrashDiagnostics::Start() ?
+		"Armed: VR/StylishCrash.log" : "Could not arm crash logging.") << std::endl;
 
 #if USE_PROFILER
 	profiler.Init();
@@ -53,6 +57,7 @@ void Game::Init()
 	Game::instance.bLeftHanded = Game::instance.c_LeftHanded->Value();
 	Game::instance.bUse3DOFAiming = Game::instance.c_Use3DOFAiming->Value();
 	inputHandler.RegisterInputs();
+	inputHandler.InitializePhysicalWeapons();
 
 	backBufferWidth = vr->GetViewWidth();
 	backBufferHeight = vr->GetViewHeight();
@@ -72,7 +77,8 @@ void Game::Shutdown()
 
 	Logger::log << "[Game] HaloCEVR shutting down..." << std::endl;
 
-	vr->Shutdown();
+    reloadHandler.Suspend();
+	if (vr) vr->Shutdown();
 
 #if USE_PROFILER
 	profiler.Shutdown();
@@ -100,6 +106,7 @@ void Game::Shutdown()
 		}
 		FreeConsole();
 	}
+	CrashDiagnostics::Stop();
 }
 
 void Game::OnInitDirectX()
@@ -164,8 +171,9 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 
 	vr->SetMouseVisibility(Helpers::IsMouseVisible());
 	vr->UpdatePoses();
+    inputHandler.UpdateTutorialLook();
 
-	UpdateCrosshairAndScope();
+	weaponHandler.UpdateRecoil(); // Once per frame, shared by both eyes and scope.
 
 	StoreRenderTargets();
 
@@ -196,6 +204,8 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 	{
 		bNeedsRecentre = false;
 		vr->Recentre();
+        interactions.OnRecentre();
+        vehicleExit.Reset();
 	}
 
 	UnitDynamicObject* Player = static_cast<UnitDynamicObject*>(Helpers::GetLocalPlayer());
@@ -212,8 +222,14 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 		}
 		bInVehicle = bNewShowViewModel;
 		bHasWeapon = Player->weapon.id != 0xffff;
+        if(Player->zoom==-1 && !bInVehicle && std::isfinite(frustum2.fov) && frustum2.fov>.1f && frustum2.fov<3.f)
+            unzoomedScopeFov=frustum2.fov;
 	}
 
+    vehicleExit.Observe(Player && Player->parent.id != 0xffff, Player && !Helpers::IsCampaignLoading());
+    vehicleExit.Advance(deltaTime); // Once per rendered frame, never once per eye/input callback.
+    interactions.BeginView(frustum1,frustum2);
+    UpdateCrosshairAndScope();
 	if (c_ShowRoomCentre->Value())
 	{
 		VR_PROFILE_SCOPE(Game_PreDrawFrame_DrawRoomCentre);
@@ -263,7 +279,88 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 	inGameRenderer.DrawCoordinate(controller * Vector3(0.0f, 0.0f, 0.0f) * MetresToWorld(1.0f) + worldPos, handRotation3, 0.05f, false);
 #endif
 
+    QueuePhysicalHolsterLabels();
+    reloadHandler.Draw();
+    interactions.Draw();
 	vr->PreDrawFrame(renderer, deltaTime);
+}
+
+void Game::QueuePhysicalHolsterLabels()
+{
+    if (!vr || !uiRenderer || bUse3DOFAiming || !c_PhysicalHolsterMarkers->Value() ||
+        !inputHandler.PhysicalVisualsActive() || !vr->IsHMDTracked()) return;
+    const auto* scene=Helpers::GetCutsceneData();
+    if (Helpers::IsCampaignLoading() || (scene && scene->bInCutscene)) return;
+    const auto head=vr->GetHMDTransform()*Vector3();
+    const auto origin=Helpers::GetCamera().position;
+    const float scale=MetresToWorld(1), yaw=inputHandler.HolsterYaw();
+    const Vector3 forward(std::cos(yaw),std::sin(yaw),0), right(forward.y,-forward.x,0);
+    const bool left=c_LeftHanded->Value();
+    const auto markers=inputHandler.HolsterMarkers();
+    const auto* font=uiRenderer->GetSmallFont();
+    if (!font) return;
+    for (unsigned home=0;home<2;++home) {
+        const auto anchor=Immersion::HolsterMarkerAnchor(home,Immersion::Layout{left},
+            {head.x,head.y,head.z},yaw);
+        const auto pos=origin+Vector3(anchor.x,anchor.y,anchor.z)*scale;
+        // Face upward so labels read naturally when looking down at the belt.
+        // Put the caption on the body side of the model, with a little clearance.
+        const auto caption=pos-forward*(0.07f*scale)+Vector3(0,0,0.018f*scale);
+        inGameRenderer.DrawLabel3D(*font,Immersion::HolsterLabel(home,left),caption,
+            right,forward,0.010f*scale,0,true);
+        if (markers[home].weapon==Immersion::None)
+            inGameRenderer.DrawLabel3D(*font,"EMPTY",pos,right,forward,0.013f*scale,0.070f*scale,true);
+    }
+}
+
+void Game::DrawPhysicalBodyModels()
+{
+    // Called in Halo's native view-model pass for each eye, with its depth and
+    // material state. No procedural overlay or saved animation from another gun.
+    interactions.DrawNative();
+    if (!vr || bUse3DOFAiming || !inputHandler.PhysicalVisualsActive() || !vr->IsHMDTracked()) return;
+    const auto* scene=Helpers::GetCutsceneData();
+    if (Helpers::IsCampaignLoading() || (scene && scene->bInCutscene)) return;
+    if(c_OnFootLegs->Value() && !bNeedsRecentre && !Helpers::IsMouseVisible() && !interactions.VehicleActive())inputHandler.DrawOnFootBody();
+    const auto origin=Helpers::GetCamera().position;
+    const float scale=MetresToWorld(1);
+    Matrix4 hands[2];
+    bool tracked=true;
+    for (unsigned h=0;h<2;++h) {
+        const auto role=h==0 ? ControllerRole::Left : ControllerRole::Right;
+        tracked=tracked && vr->IsControllerTracked(role);
+        hands[h]=vr->GetControllerTransform(role,true);
+        const auto pos=hands[h]*Vector3();
+        hands[h].translate(-pos);
+        const auto rot=c_ControllerRotation->Value();
+        hands[h].rotateZ(rot.z); hands[h].rotateY(rot.y); hands[h].rotateX(rot.x);
+        const auto offset=hands[h]*c_ControllerOffset->Value();
+        hands[h].translate(origin+pos*scale+offset);
+    }
+    const auto head=vr->GetHMDTransform()*Vector3();
+    const float yaw=inputHandler.HolsterYaw(), c=std::cos(yaw), s=std::sin(yaw);
+    const Immersion::Layout layout{c_LeftHanded->Value()};
+    Matrix4 poses[2];
+    for (unsigned home=0; home<2; ++home) {
+        const auto anchor=Immersion::HolsterMarkerAnchor(home,layout,{head.x,head.y,head.z},yaw);
+        auto& pose=poses[home];
+        // Halo weapon models point along +X: rotate that axis straight down.
+        pose[0]=0; pose[1]=0; pose[2]=-1;
+        pose[4]=-s; pose[5]=c; pose[6]=0;
+        pose[8]=c; pose[9]=s; pose[10]=0;
+        if (home==0) {
+            // Roll the center indicator 90 degrees in its display plane:
+            // barrel across the belt, broad side facing forward. Hip stays down.
+            pose[0]=-s; pose[1]=c; pose[2]=0;
+            pose[4]=0; pose[5]=0; pose[6]=1;
+        }
+        pose.translate(origin+Vector3(anchor.x,anchor.y,anchor.z)*scale);
+    }
+    const auto markers=c_PhysicalHolsterMarkers->Value() ? inputHandler.HolsterMarkers() :
+        std::array<Immersion::HolsterMarker,2>{};
+    for(unsigned h=0;h<2;++h)if(interactions.GrenadeHandMask()&(1u<<h))hands[h]*=Matrix4().scale(0.f);
+    inputHandler.DrawBodyModels(inputHandler.CanRenderEmptyHands() && tracked,markers,hands,poses);
+    reloadHandler.DrawNativePieces();
 }
 
 void Game::PreDrawEye(Renderer* renderer, float deltaTime, int eye)
@@ -277,6 +374,7 @@ void Game::PreDrawEye(Renderer* renderer, float deltaTime, int eye)
 
 	vr->UpdateCameraFrustum(&renderer->frustum, eye);
 	vr->UpdateCameraFrustum(&renderer->frustum2, eye);
+    interactions.PrepareVehicleEye(renderer->frustum,renderer->frustum2);
 
 	RenderTarget* primaryRenderTarget = Helpers::GetRenderTargets();
 
@@ -303,6 +401,7 @@ void Game::PostDrawEye(struct Renderer* renderer, float deltaTime, int eye)
 
 bool Game::PreDrawScope(Renderer* renderer, float deltaTime)
 {
+	if (PhysicalWeaponsStowed() || PhysicalSupportOnly() || interactions.VehicleActive()) return false;
 	VR_PROFILE_SCOPE(Game_PreDrawScope);
 
 	UnitDynamicObject* player = static_cast<UnitDynamicObject*>(Helpers::GetLocalPlayer());
@@ -334,6 +433,9 @@ bool Game::PreDrawScope(Renderer* renderer, float deltaTime)
 	renderer->frustum2.facingDirection = aimDir;
 	renderer->frustum.upDirection = upDir;
 	renderer->frustum2.upDirection = upDir;
+    const float unzoomed=unzoomedScopeFov;
+    renderer->frustum.fov=Immersion::ComfortableScopeFov(renderer->frustum.fov,unzoomed,c_ScopeMagnification->Value());
+    renderer->frustum2.fov=Immersion::ComfortableScopeFov(renderer->frustum2.fov,unzoomed,c_ScopeMagnification->Value());
 
 	RenderTarget* primaryRenderTarget = Helpers::GetRenderTargets();
 
@@ -509,6 +611,8 @@ void Game::PostDrawFrame(struct Renderer* renderer, float deltaTime)
 		Helpers::GetDirect3DDevice9()->StretchRect(vr->GetRenderSurface(eye), nullptr, Helpers::GetRenderTargets()[0].renderSurface, &destRect, D3DTEXF_LINEAR);
 	}
 
+    interactions.EndView();
+    renderer->frustum=frustum1;renderer->frustum2=frustum2;
 	VR_PROFILE_STOP(Game_PostDrawFrame);
 
 #if USE_PROFILER
@@ -661,6 +765,7 @@ void Game::PostDrawLoading(int param1, struct Renderer* renderer)
 
 bool Game::PreDrawCrosshair(short* anchorLocation)
 {
+	if (anchorLocation && *anchorLocation == 4 && (PhysicalWeaponsStowed() || PhysicalSupportOnly() || interactions.HideDrivingReticle())) return false;
 	VR_PROFILE_SCOPE(Game_PreDrawCrosshair);
 
 	// Draw things normally for the scope
@@ -746,25 +851,32 @@ void Game::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* u
 void Game::PreFireWeapon(HaloID& weaponID, short param2)
 {
 	VR_PROFILE_SCOPE(Game_PreFireWeapon);
+    inputHandler.BeginAccuracyShot(weaponID.index|(static_cast<Immersion::Object>(weaponID.id)<<16),param2,
+        !bUse3DOFAiming && vr && vr->IsHMDTracked()?c_ARSpreadScale->Value():1.f);
+    reloadHandler.BeforeShot(weaponID.index|(static_cast<Immersion::Object>(weaponID.id)<<16));
 	weaponHandler.PreFireWeapon(weaponID, param2);
 }
 
 void Game::PostFireWeapon(HaloID& weaponID, short param2)
 {
 	VR_PROFILE_SCOPE(Game_PostFireWeapon);
+    inputHandler.EndAccuracyShot();
 	weaponHandler.PostFireWeapon(weaponID, param2);
+    reloadHandler.AfterShot(weaponID.index|(static_cast<Immersion::Object>(weaponID.id)<<16));
 }
 
 void Game::PreThrowGrenade(HaloID& playerID)
 {
 	VR_PROFILE_SCOPE(Game_PreThrowGrenade);
-	weaponHandler.PreThrowGrenade(playerID);
+	if(!interactions.BeforeThrow(playerID.index|(static_cast<Immersion::Object>(playerID.id)<<16)))
+        weaponHandler.PreThrowGrenade(playerID);
 }
 
 void Game::PostThrowGrenade(HaloID& playerID)
 {
 	VR_PROFILE_SCOPE(Game_PostThrowGrenade);
 	weaponHandler.PostThrowGrenade(playerID);
+    interactions.AfterThrow(playerID.index|(static_cast<Immersion::Object>(playerID.id)<<16));
 }
 
 void Game::UpdateInputs()
@@ -914,7 +1026,14 @@ void Game::UpdateCamera(float& yaw, float& pitch)
 	return;
 #endif
 
-	if (bInVehicle && !bHasWeapon)
+    // Read current ownership here too: detachment can precede the next draw.
+    const auto* player=static_cast<UnitDynamicObject*>(Helpers::GetLocalPlayer());
+    const bool attached=player && player->parent.id!=0xffff;
+    vehicleExit.Observe(attached,player && !Helpers::IsCampaignLoading());
+    const auto* scene=Helpers::GetCutsceneData();
+    if(scene && scene->bInCutscene){yaw=pitch=0;return;}
+    if(vehicleExit.Suppressing()){inputHandler.UpdateCamera(yaw,pitch);return;}
+	if (interactions.VehicleActive() || (bInVehicle && !bHasWeapon))
 	{
 		inputHandler.UpdateCameraForVehicles(yaw, pitch);
 	}
@@ -927,6 +1046,7 @@ void Game::UpdateCamera(float& yaw, float& pitch)
 void Game::SetMousePosition(int& x, int& y)
 {
 	VR_PROFILE_SCOPE(Game_SetMousePosition);
+	if (!vr || !uiRenderer || !settingsMenu) return;
 	// Don't bother simulating inputs if we aren't actually in vr
 #ifndef EMULATE_VR
 	inputHandler.SetMousePosition(x, y);
@@ -948,6 +1068,7 @@ void Game::SetMousePosition(int& x, int& y)
 void Game::UpdateMouseInfo(MouseInfo* mouseInfo)
 {
 	VR_PROFILE_SCOPE(Game_UpdateMouseInfo);
+	if (!mouseInfo || !vr || !uiRenderer || !settingsMenu) return;
 
 	static char realLeftClickValue = 0;
 
@@ -992,14 +1113,20 @@ void Game::SetViewportScale(Viewport* viewport)
 	viewport->bottom = c_TEMPViewportBottom->Value();
 }
 
+float Game::WorldScale() const
+{
+    const float value=c_WorldScale?c_WorldScale->Value():1.f;
+    return std::isfinite(value)?(std::max)(.75f,(std::min)(value,1.25f)):1.f;
+}
+
 float Game::MetresToWorld(float m) const
 {
-	return m / 3.048f;
+	return m / (3.048f * WorldScale());
 }
 
 float Game::WorldToMetres(float w) const
 {
-	return w * 3.048f;
+	return w * (3.048f * WorldScale());
 }
 
 void Game::CreateConsole()
@@ -1064,6 +1191,38 @@ void Game::SetupConfigs()
 	c_TwoHandDistance = config.RegisterFloat("TwoHandDistance", "Maximum distance between both hands where the off hand grip action will enable two handed aiming (<0 for any distance)", 0.8f);
 	c_SwapHandDistance = config.RegisterFloat("SwapHandDistance", "Maximum distance between both hands where the swap weapon hand grip action will swap your weapon into the opposite hand (<0 to disable)", 0.2f);
 	c_OffhandHandFlashlight = config.RegisterBool("OffhandHandFlashlight", "Use your offhand for toggling the flashlight, your offhand hand is the hand not holding a weapon", true);
+	c_GripHeadFlashlight = config.RegisterBool("StylishGripHeadFlashlight", "Fresh grip with either hand toggles the flashlight: LEFT temple in right-handed mode, RIGHT temple in left-handed mode. Works while holding a weapon. Release before repeating. False restores stock head touch.", true);
+	c_PhysicalWeapons = config.RegisterBool("StylishPhysicalWeapons", "Campaign: hold grip, shoulder/hip holsters, grip pickup and world drops. One held weapon; independent dual wielding pending. Requires restart and updated bindings.", true);
+	c_PhysicalHolsterMarkers = config.RegisterBool("StylishHolsterMarkers", "Show the 3D weapon hip holster", true);
+	c_PhysicalShoulderRadius = config.RegisterFloat("StylishShoulderRadius", "Shoulder holster activation radius in metres (0.10 to 0.28)", 0.20f);
+	c_PhysicalHipRadius = config.RegisterFloat("StylishHipRadius", "Weapon hip holster activation radius in metres (0.08 to 0.24)", 0.16f);
+	c_GripHeadFlashlightRadius = config.RegisterFloat("StylishGripHeadFlashlightRadius", "Radius in metres of the temple touch zone (0.06 to 0.22). The side mirrors with the Left Handed setting.", 0.14f);
+    c_RecoilScale = config.RegisterFloat("StylishRecoilScale", "Campaign physical weapon kick: 1 = normal, 0 = off, maximum 3. Affects weapon and aim, never the headset.", 1.0f);
+    c_SupportedRecoilFraction = config.RegisterFloat("StylishSupportedRecoilFraction", "Fraction of kick with BOTH hands gripping the same weapon: 0.35 = 65 percent reduction. Range 0 to 1.", 0.35f);
+    c_PhysicalGrenades=config.RegisterBool("StylishPhysicalGrenades", "Campaign: plasma left chest, frag right chest; either grip, release to throw or return over its holster. No arming button. Disables right-stick-up throwing.", true);
+    c_GrenadeThrowStrength=config.RegisterFloat("StylishGrenadeThrowStrength", "Physical grenade throw strength (0.25 to 3). Higher values give longer throws; launch speed capped at 24 metres/second, plus player motion.", 1.3f);
+    c_FirstPersonVehicles=config.RegisterBool("StylishFirstPersonVehicles", "Verified retail campaign: seated first-person Warthog driver/turret, Ghost, Shade and opening Pelican rides. Warthog passenger keeps its native view.", true);
+    c_VehicleEyeHeight=config.RegisterFloat("StylishVehicleEyeHeight", "Extra seated eye height in metres (0 to 0.40). Seat position settles after climbing in; small idle head movement does not shake the camera.", .18f);
+    c_ManualReload = config.RegisterBool("StylishManualReload", "Campaign: manual magazines, shells and rockets; free Magnum slide. AR/sniper charging and shotgun pumping only when required. Needler reloads only on B (tap Y in left-handed mode). Plasma batteries unchanged.", true);
+    c_ReloadSoundVolume = config.RegisterFloat("StylishReloadSoundVolume", "Native Halo manual reload sound volume (0 to 1, 0 mutes). Uses the game audio output.", 0.6f);
+    c_ShotgunShellRatio = config.RegisterInt("StylishShotgunShellRatio", "Rounds inserted per physical shotgun shell (1 to 4). Consumes that many rounds from reserve; default 1.", 1);
+    c_GhostEyeLift=config.RegisterFloat("StylishGhostEyeLift", "Additional Ghost eye height in metres (0 to 0.45), above Vehicle Eye Height. Raise for a clearer view over the cowling.", .18f);
+    c_TurretSensitivity=config.RegisterFloat("StylishTurretSensitivity", "Warthog and Shade thumbstick aim speed (0.1 to 1.5). Ghost has its own setting. Default 0.55.", .55f);
+    c_GhostSensitivity=config.RegisterFloat("GhostAimSensitivity", "Ghost-only right-stick aim/turn speed (0.1 to 2.5). Default 1.0 is faster than the old shared 0.55 setting. Left stick moves and strafes.", 1.f);
+    c_ScopeMagnification=config.RegisterFloat("StylishScopeMagnification", "Scope magnification strength (0.15 to 1). 0.5 reduces excess zoom for easier aiming; 1 restores native magnification. Headset FOV stays unchanged.", .5f);
+    c_OnFootLegs=config.RegisterBool("OnFootLegs", "Show only Chief's animated legs on foot. Torso, head and arms are hidden. Off by default, including upgrades from the old body option.", false);
+    c_ShadeEyeLift=config.RegisterFloat("StylishShadeEyeLift", "Additional Shade turret eye height in metres (0 to 0.45), above Vehicle Eye Height. Follows the seated head as the turret turns.", .18f);
+    c_GrenadeGripHeightOffset=config.RegisterFloat("StylishGrenadeGripHeightOffset", "Raise both chest grenade grab/return centers in metres (0 to 0.15); default 0.06 aligns the grip with the visible model. Does not move the meshes.", .06f);
+    c_WorldScale = config.RegisterFloat("StylishWorldScale", "Perceived world size (0.75 to 1.25). 1 = original; 0.80 is the recommended starting point from Quest 3 testing (about 20% smaller). Scales stereo/physical tracking consistently, not headset FOV. Recenter after adjusting on foot.", 1.f);
+    c_ARSpreadScale = config.RegisterFloat("StylishARSpreadScale", "Local campaign AR spread and reticle multiplier (0.35 to 1). 0.65 = 35% tighter; 1 = native. Improves effective range by reducing misses; damage, fire rate and projectile range unchanged.", .65f);
+    c_MagazineZoneRadius = config.RegisterFloat("StylishMagazineZoneRadius", "Magazine Zone radius in metres (0.08 to 0.25). On the supply hip; mirrors the saved LeftHanded layout.", 0.17f);
+    c_ReloadGrabRadius = config.RegisterFloat("StylishReloadGrabRadius", "Manual reload port and action grab radius in metres (0.06 to 0.24).", 0.14f);
+    c_ReloadStroke = config.RegisterFloat("StylishReloadStroke", "Distance in metres to pull the slide or charging handle (0.04 to 0.20). Return the shotgun pump forward. Magazine-fed actions also spring forward when released after a full pull.", 0.09f);
+    const char* recoilNames[] = {"Unknown","Pistol","AssaultRifle","Shotgun","RocketLauncher","Sniper",
+        "Flamethrower","PlasmaPistol","PlasmaRifle","PlasmaCannon","Needler","FuelRod"};
+    static_assert(sizeof(recoilNames)/sizeof(*recoilNames) == static_cast<unsigned>(WeaponType::FuelRod)+1, "Update recoil names for weapon types");
+    for (unsigned i=0; i<c_WeaponRecoilScales.size(); ++i)
+        c_WeaponRecoilScales[i] = config.RegisterFloat(std::string("StylishRecoil")+recoilNames[i], "Per-weapon kick multiplier (0 to 3); stacks with Recoil Scale. Two-handed fraction still applies.", 1.0f);
 	c_LeftHandFlashlightDistance = config.RegisterFloat("LeftHandFlashlight", "Bringing the left hand within this distance of the head will toggle the flashlight (<0 to disable)", 0.2f);
 	c_RightHandFlashlightDistance = config.RegisterFloat("RightHandFlashlight", "Bringing the right hand within this distance of the head will toggle the flashlight (<0 to disable)", 0.2f);
 	c_LeftHandMeleeSwingSpeed = config.RegisterFloat("LeftHandMeleeSwingSpeed", "Minimum vertical velocity of left hand required to initiate a melee attack in m/s (<0 to disable)", 2.5f);
@@ -1247,6 +1406,11 @@ void Game::DumpProfilerData()
 void Game::UpdateCrosshairAndScope()
 {
 	VR_PROFILE_SCOPE(Game_UpdateCrosshairAndScope);
+    if(interactions.HideDrivingReticle()){
+        Matrix4 hiddenScope;
+        SetScopeTransform(hiddenScope,false);
+        return;
+    }
 
 	auto fixupRotation = [](Matrix4& m, Vector3& pos) {
 		m.translate(-pos);
@@ -1257,10 +1421,10 @@ void Game::UpdateCrosshairAndScope()
 
 	Vector3 aimPos, aimDir, upDir;
 
-	if (bInVehicle && !bHasWeapon)
+	if (interactions.VehicleActive() || (bInVehicle && !bHasWeapon))
 	{
 		aimPos = Vector3();
-		aimDir = Helpers::GetCamera().lookDir;
+		aimDir = interactions.VehicleActive()?interactions.VehicleAim():Helpers::GetCamera().lookDir;
 	}
 	else
 	{
@@ -1278,7 +1442,7 @@ void Game::UpdateCrosshairAndScope()
 
 	// In 3DOF mode, crosshair projects from HMD position (matching bullet origin)
 	// In 6DOF mode, crosshair projects from controller/weapon position
-	Vector3 crosshairOrigin = bUse3DOFAiming ? hmdPos : aimPos;
+	Vector3 crosshairOrigin = (bUse3DOFAiming || interactions.VehicleActive()) ? hmdPos : aimPos;
 	Vector3 targetPos = crosshairOrigin + aimDir * c_CrosshairDistance->Value();
 
 	overlayTransform.translate(targetPos);
@@ -1291,6 +1455,7 @@ void Game::UpdateCrosshairAndScope()
 		vr->SetCrosshairTransform(overlayTransform);
 	}
 	overlayTransform.identity();
+    if(interactions.VehicleActive())return; // No stale hand-weapon scope on a vehicle reticle.
 
 	short zoom = Helpers::GetInputData().zoomLevel;
 

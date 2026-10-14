@@ -9,6 +9,7 @@ public:
 	bool bIgnoreNextEnd = false;
 
 	bool bSkipWinding = false;
+    bool bGreyHolsterMarker = false;
 
 	// Inherited via IDirect3DDevice9Ex
 	virtual __declspec(nothrow) HRESULT __stdcall QueryInterface(REFIID riid, void** ppvObj) override;
@@ -148,5 +149,9 @@ public:
 
 protected:
 	IDirect3DDevice9Ex* Real;
+    IDirect3DPixelShader9* markerShader=nullptr;
+    bool markerShaderAttempted=false;
+    IDirect3DPixelShader9* MarkerShader();
+    void ReleaseMarkerShader();
 };
 

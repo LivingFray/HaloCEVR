@@ -13,9 +13,11 @@ PlayerTable& Helpers::GetPlayerTable()
 
 BaseDynamicObject* Helpers::GetDynamicObject(HaloID& id)
 {
+	if (id.index == 0xffff || id.id == 0xffff) return nullptr;
 	ObjectTable& table = GetObjectTable();
-
-	if (id.index > table.currentSize)
+	// Dropping/picking up can recycle an index for a different object. The salt
+	// is part of the identity; a stale index must never resolve to that new gun.
+	if (!table.elements || id.index >= table.maxElements || table.elements[id.index].id != id.id)
 	{
 		return nullptr;
 	}

@@ -1,6 +1,29 @@
 #include "IDirect3DDevice9ExWrapper.h"
 #include "../Logger.h"
 #include "../Game.h"
+#include "../Immersion/GreyMarkerDraw.h"
+
+IDirect3DPixelShader9* IDirect3DDevice9ExWrapper::MarkerShader()
+{
+    if (!bGreyHolsterMarker) return nullptr;
+    if (!markerShaderAttempted) {
+        markerShaderAttempted=true;
+        // ps_2_0; def c0, .2, .2, .2, 1; mov oC0, c0; end.
+        // A dark opaque silhouette needs no texture/vertex semantics and no
+        // runtime HLSL compiler DLL. In particular it does not alter map shaders.
+        const DWORD code[]={0xffff0200,0x05000051,0xa00f0000,
+            0x3e4ccccd,0x3e4ccccd,0x3e4ccccd,0x3f800000,
+            0x02000001,0x800f0800,0xa0e40000,0x0000ffff};
+        const auto result=Real->CreatePixelShader(code,&markerShader);
+        Logger::log << "[PhysicalVisuals] grey marker shader result=" << result << std::endl;
+    }
+    return markerShader;
+}
+void IDirect3DDevice9ExWrapper::ReleaseMarkerShader()
+{
+    if (markerShader) { markerShader->Release(); markerShader=nullptr; }
+    markerShaderAttempted=false;
+}
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::QueryInterface(REFIID riid, void** ppvObj)
 {
@@ -14,6 +37,8 @@ ULONG __stdcall IDirect3DDevice9ExWrapper::AddRef(void)
 
 ULONG __stdcall IDirect3DDevice9ExWrapper::Release(void)
 {
+    // Avoid keeping the device alive through our own shader reference.
+    ReleaseMarkerShader();
 	return Real->Release();
 }
 
@@ -84,6 +109,7 @@ UINT __stdcall IDirect3DDevice9ExWrapper::GetNumberOfSwapChains(void)
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
+    ReleaseMarkerShader();
 	if (pPresentationParameters->BackBufferWidth != 1200 || pPresentationParameters->BackBufferHeight != 600)
 	{
 		pPresentationParameters->BackBufferWidth = Game::instance.backBufferWidth;
@@ -453,21 +479,25 @@ float __stdcall IDirect3DDevice9ExWrapper::GetNPatchMode(void)
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
 {
+    GreyMarkerDraw<IDirect3DDevice9Ex,IDirect3DPixelShader9> marker(Real,MarkerShader());
 	return Real->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
 {
+    GreyMarkerDraw<IDirect3DDevice9Ex,IDirect3DPixelShader9> marker(Real,MarkerShader());
 	return Real->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
+    GreyMarkerDraw<IDirect3DDevice9Ex,IDirect3DPixelShader9> marker(Real,MarkerShader());
 	return Real->DrawPrimitiveUP(PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::DrawIndexedPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
+    GreyMarkerDraw<IDirect3DDevice9Ex,IDirect3DPixelShader9> marker(Real,MarkerShader());
     return Real->DrawIndexedPrimitiveUP(PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
@@ -709,6 +739,7 @@ HRESULT __stdcall IDirect3DDevice9ExWrapper::CreateDepthStencilSurfaceEx(UINT Wi
 
 HRESULT __stdcall IDirect3DDevice9ExWrapper::ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pFullscreenDisplayMode)
 {
+    ReleaseMarkerShader();
 	return Real->ResetEx(pPresentationParameters, pFullscreenDisplayMode);
 }
 

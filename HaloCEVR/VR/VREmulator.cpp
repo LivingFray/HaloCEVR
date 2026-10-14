@@ -323,12 +323,21 @@ bool VREmulator::GetBoolInput(InputBindingID id)
 
 bool VREmulator::GetBoolInput(InputBindingID id, bool& bHasChanged)
 {
+	bHasChanged = false;
 	if (id < arraySize(bindings))
 	{
 		bHasChanged = bindings[id].bHasChanged;
 		return bindings[id].bPressed;
 	}
 	return false;
+}
+
+bool VREmulator::TryGetBoolInput(InputBindingID id, bool& down)
+{
+	down = false;
+	if (id >= arraySize(bindings)) return false;
+	down = bindings[id].bPressed;
+	return true;
 }
 
 Vector2 VREmulator::GetVector2Input(InputBindingID id)

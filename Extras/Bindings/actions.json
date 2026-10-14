@@ -225,6 +225,61 @@
             "name": "/actions/default/in/RightHand",
             "type": "skeleton",
             "skeleton": "/skeleton/hand/right"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLeftGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRightGrip",
+            "requirement": "suggested",
+            "type": "boolean"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLeftTrigger",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRightTrigger",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalJump",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalGrenade",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalGrenadeCycle",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalRecentre",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalInteract",
+            "type": "boolean",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalMove",
+            "type": "vector2",
+            "requirement": "optional"
+        },
+        {
+            "name": "/actions/default/in/PhysicalLook",
+            "type": "vector2",
+            "requirement": "optional"
         }
     ],
     "action_sets": [

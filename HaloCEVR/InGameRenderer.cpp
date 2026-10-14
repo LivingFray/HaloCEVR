@@ -1,8 +1,10 @@
 #include "InGameRenderer.h"
+#include "Immersion/RenderProjection.h"
 #include "Helpers/Renderer.h"
 #include "Helpers/Maths.h"
 #include "Game.h"
 #include "Hooking/Hooks.h"
+#include "UI/UIRenderer.h"
 
 //================================//Debug API//================================//
 
@@ -170,7 +172,7 @@ void InGameRenderer::DrawLine3D(const Vector3& start, const Vector3& end, D3DCOL
 
 void InGameRenderer::DrawPolygon(const Vector3& centre, const Vector3& facing, const Vector3& upVector, int sides, float radius, D3DCOLOR color, bool bRespectDepth, float angleAmount)
 {
-	Polygon newPoly;
+	Polygon newPoly{};
 
 	VertexData3D vertex{};
 
@@ -272,7 +274,7 @@ void InGameRenderer::ExtractMatrices(Renderer* playerRenderer)
 	CameraRenderMatrices& cameraMatrices = *Helpers::GetActiveCameraMatrices();
 	Game::instance.SetViewportScale(&cameraMatrices.viewport);
 
-	Hooks::SetCameraMatrices(&cameraMatrices.viewport, &playerRenderer->frustum, &cameraMatrices, true);
+	Hooks::SetCameraMatrices(&cameraMatrices.viewport, &playerRenderer->frustum2, &cameraMatrices, true);
 
 
 	view._11 = cameraMatrices.viewMatrix.rotation[0];
@@ -308,6 +310,9 @@ void InGameRenderer::ExtractMatrices(Renderer* playerRenderer)
 	world._22 = 1.0;
 	world._11 = 1.0;
 	projection = cameraMatrices.projectionMatrix;
+    // Procedural held pieces and the supply outline share the native
+    // first-person model pass's depth range, not its world/scenery projection.
+    meshProjection = Immersion::FirstPersonDepth(projection);
 
 	// Extract the near/far clipping planes then bring them in close to prevent clipping on scopes and such
 
@@ -325,7 +330,7 @@ void InGameRenderer::ExtractMatrices(Renderer* playerRenderer)
 void InGameRenderer::Render(IDirect3DDevice9* pDevice)
 {
 	LPDIRECT3DSTATEBLOCK9 pStateBlock = NULL;
-	pDevice->CreateStateBlock(D3DSBT_ALL, &pStateBlock);
+	if (FAILED(pDevice->CreateStateBlock(D3DSBT_ALL, &pStateBlock)) || !pStateBlock) return;
 
 	pDevice->Clear(0, NULL, D3DCLEAR_STENCIL, D3DCOLOR_XRGB(0, 0, 0), 0.0f, 0);
 
@@ -338,6 +343,8 @@ void InGameRenderer::Render(IDirect3DDevice9* pDevice)
 	DrawPolygons(pDevice);
 
 	DrawRenderTargets(pDevice);
+	DrawMeshes(pDevice);
+    DrawLabels(pDevice);
 
 	pStateBlock->Apply();
 	pStateBlock->Release();
@@ -349,6 +356,8 @@ void InGameRenderer::PostRender()
 	polygons2D.clear();
 	lines3D.clear();
 	depthLines3D.clear();
+	meshVertices.clear();
+    labels.clear();
 	renderTargets.clear();
 	polygons.clear();
 	depthPolygons.clear();
@@ -357,6 +366,156 @@ void InGameRenderer::PostRender()
 void InGameRenderer::ClearRenderTargets()
 {
 	renderTargets.clear();
+}
+
+void InGameRenderer::DrawMeshTriangle(const Vector3 (&p)[3], const D3DCOLOR (&colors)[3])
+{
+	for (unsigned i=0; i<3; ++i) meshVertices.push_back({p[i].x,p[i].y,p[i].z,colors[i]});
+}
+
+void InGameRenderer::DrawMeshes(IDirect3DDevice9* device)
+{
+	if (meshVertices.empty()) return;
+    // A native HUD/view-model pass may leave a compressed depth range. Using
+    // its viewport with our first-person projection puts the surface at a false depth.
+    D3DVIEWPORT9 viewport{};
+    if (FAILED(device->GetViewport(&viewport))) return;
+    viewport.MinZ=0.f;viewport.MaxZ=1.f;device->SetViewport(&viewport);
+	// Explicit state: Halo can leave a weapon clip plane, scissor, vertex
+    // blending and color masks active. Empty hands have no native weapon pass
+    // to reset them. Render() restores the complete previous device state.
+    device->SetRenderState(D3DRS_CLIPPLANEENABLE,0);
+    device->SetRenderState(D3DRS_SCISSORTESTENABLE,FALSE);
+    device->SetRenderState(D3DRS_FILLMODE,D3DFILL_SOLID);
+    device->SetRenderState(D3DRS_VERTEXBLEND,D3DVBF_DISABLE);
+    device->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE,FALSE);
+    device->SetRenderState(D3DRS_COLORWRITEENABLE,15);
+    device->SetRenderState(D3DRS_DEPTHBIAS,0);
+    device->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,0);
+    device->SetVertexShader(nullptr);
+	device->SetPixelShader(nullptr);
+	device->SetTexture(0,nullptr);
+	device->SetTextureStageState(0,D3DTSS_COLOROP,D3DTOP_SELECTARG1);
+	device->SetTextureStageState(0,D3DTSS_COLORARG1,D3DTA_DIFFUSE);
+	device->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
+	device->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_DIFFUSE);
+	device->SetTextureStageState(1,D3DTSS_COLOROP,D3DTOP_DISABLE);
+	device->SetRenderState(D3DRS_LIGHTING,FALSE);
+	device->SetRenderState(D3DRS_FOGENABLE,FALSE);
+	device->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
+	device->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+	device->SetRenderState(D3DRS_STENCILENABLE,FALSE);
+	device->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+	device->SetRenderState(D3DRS_ZENABLE,TRUE);
+	device->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+	device->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESSEQUAL);
+	device->SetRenderState(D3DRS_SHADEMODE,D3DSHADE_GOURAUD);
+	device->SetFVF(D3DFVF_XYZ|D3DFVF_DIFFUSE);
+	device->SetTransform(D3DTS_WORLD,&world);
+	device->SetTransform(D3DTS_VIEW,&view);
+	device->SetTransform(D3DTS_PROJECTION,&meshProjection);
+	device->DrawPrimitiveUP(D3DPT_TRIANGLELIST,static_cast<UINT>(meshVertices.size()/3),meshVertices.data(),sizeof(VertexData3D));
+}
+
+void InGameRenderer::DrawLabel3D(const Font& font, const char* text, const Vector3& center,
+    const Vector3& right, const Vector3& up, float height, float minimumWidth, bool respectDepth)
+{
+    if (!font.fontBitmap || font.lineHeight<=0 || !text || !*text || height<=0) return;
+    float width=0;
+    unsigned count=0;
+    for (; count<64 && text[count]; ++count) {
+        const unsigned ch=static_cast<unsigned char>(text[count]);
+        width+=font.cdata[(ch>=32 && ch<=127 ? ch : '?')-32].xadvance;
+    }
+    const float unit=height/font.lineHeight;
+    Label3D label; label.texture=font.fontBitmap;label.respectDepth=respectDepth;
+    auto quad=[&](std::vector<LabelVertex>& vertices, float x0,float y0,float x1,float y1,
+        DWORD color,float u0=0,float v0=0,float u1=0,float v1=0) {
+        const Vector3 p[4]={center+right*x0+up*y0,center+right*x0+up*y1,
+            center+right*x1+up*y0,center+right*x1+up*y1};
+        const LabelVertex v[4]={{p[0].x,p[0].y,p[0].z,color,u0,v0},
+            {p[1].x,p[1].y,p[1].z,color,u0,v1},{p[2].x,p[2].y,p[2].z,color,u1,v0},
+            {p[3].x,p[3].y,p[3].z,color,u1,v1}};
+        for (unsigned i:{0u,1u,2u,2u,1u,3u}) vertices.push_back(v[i]);
+    };
+    const float contentWidth=width*unit+height*0.8f;
+    const float halfWidth=(contentWidth>minimumWidth ? contentWidth : minimumWidth)*0.5f;
+    const float halfHeight=height*0.8f, edge=height*0.06f;
+    quad(label.background,-halfWidth,halfHeight,halfWidth,-halfHeight,D3DCOLOR_ARGB(215,12,21,26));
+    // A subdued frame remains visible around the EMPTY badge in dark rooms.
+    const auto border=D3DCOLOR_ARGB(170,112,157,165);
+    quad(label.background,-halfWidth,halfHeight,halfWidth,halfHeight-edge,border);
+    quad(label.background,-halfWidth,-halfHeight+edge,halfWidth,-halfHeight,border);
+    quad(label.background,-halfWidth,halfHeight-edge,-halfWidth+edge,-halfHeight+edge,border);
+    quad(label.background,halfWidth-edge,halfHeight-edge,halfWidth,-halfHeight+edge,border);
+    float x=-width*0.5f;
+    for (unsigned i=0;i<count;++i) {
+        const unsigned ch=static_cast<unsigned char>(text[i]);
+        const auto& glyph=font.cdata[(ch>=32 && ch<=127 ? ch : '?')-32];
+        const float y=font.offset+glyph.yoff;
+        quad(label.glyphs,(x+glyph.xoff)*unit,(font.lineHeight*0.5f-y)*unit,
+            (x+glyph.xoff+glyph.x1-glyph.x0)*unit,
+            (font.lineHeight*0.5f-y-glyph.y1+glyph.y0)*unit,D3DCOLOR_ARGB(245,222,234,238),
+            glyph.x0/512.0f,glyph.y0/512.0f,glyph.x1/512.0f,glyph.y1/512.0f);
+        x+=glyph.xadvance;
+    }
+    labels.push_back(std::move(label));
+}
+
+void InGameRenderer::DrawLabels(IDirect3DDevice9* device)
+{
+    if (labels.empty()) return;
+    // All state is restored by Render's enclosing state block, for each eye.
+    device->SetVertexShader(nullptr); device->SetPixelShader(nullptr);
+    device->SetRenderState(D3DRS_CLIPPLANEENABLE,0);
+    device->SetRenderState(D3DRS_SCISSORTESTENABLE,FALSE);
+    device->SetRenderState(D3DRS_VERTEXBLEND,D3DVBF_DISABLE);
+    device->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE,FALSE);
+    device->SetRenderState(D3DRS_FILLMODE,D3DFILL_SOLID);
+    device->SetRenderState(D3DRS_COLORWRITEENABLE,15);
+    device->SetRenderState(D3DRS_LIGHTING,FALSE); device->SetRenderState(D3DRS_FOGENABLE,FALSE);
+    device->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+    device->SetRenderState(D3DRS_ZENABLE,FALSE); device->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+    device->SetRenderState(D3DRS_STENCILENABLE,FALSE); device->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+    device->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
+    device->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
+    device->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+    device->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+    device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE,FALSE);
+    device->SetRenderState(D3DRS_SRGBWRITEENABLE,FALSE);
+    device->SetTextureStageState(0,D3DTSS_COLOROP,D3DTOP_SELECTARG1);
+    device->SetTextureStageState(0,D3DTSS_COLORARG1,D3DTA_DIFFUSE);
+    device->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_TEXTURE);
+    device->SetTextureStageState(0,D3DTSS_ALPHAARG2,D3DTA_DIFFUSE);
+    device->SetTextureStageState(0,D3DTSS_TEXCOORDINDEX,0);
+    device->SetTextureStageState(0,D3DTSS_TEXTURETRANSFORMFLAGS,D3DTTFF_DISABLE);
+    device->SetTextureStageState(1,D3DTSS_COLOROP,D3DTOP_DISABLE);
+    device->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_LINEAR);
+    device->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_LINEAR);
+    device->SetSamplerState(0,D3DSAMP_MIPFILTER,D3DTEXF_NONE);
+    device->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
+    device->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
+    device->SetFVF(D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1);
+    device->SetTransform(D3DTS_WORLD,&world); device->SetTransform(D3DTS_VIEW,&view);
+    device->SetTransform(D3DTS_PROJECTION,&projection);
+    for (const auto& label:labels) {
+        if(label.respectDepth){
+            D3DVIEWPORT9 viewport{};
+            if(FAILED(device->GetViewport(&viewport)))continue;
+            viewport.MinZ=0.f;viewport.MaxZ=1.f;device->SetViewport(&viewport);
+        }
+        device->SetRenderState(D3DRS_ZENABLE,label.respectDepth?TRUE:FALSE);
+        device->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESSEQUAL);
+        device->SetTransform(D3DTS_PROJECTION,label.respectDepth?&meshProjection:&projection);
+        device->SetTexture(0,nullptr);
+        device->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_SELECTARG2);
+        device->DrawPrimitiveUP(D3DPT_TRIANGLELIST,static_cast<UINT>(label.background.size()/3),
+            label.background.data(),sizeof(LabelVertex));
+        device->SetTexture(0,label.texture);
+        device->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_MODULATE);
+        device->DrawPrimitiveUP(D3DPT_TRIANGLELIST,static_cast<UINT>(label.glyphs.size()/3),
+            label.glyphs.data(),sizeof(LabelVertex));
+    }
 }
 
 //================================//Internal Functions//================================//

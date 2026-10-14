@@ -6,6 +6,7 @@
 class VREmulator : public IVR
 {
 public:
+	bool IsHMDTracked() const override { return false; }
 	// Start Interface IVR
 	void Init();
 	void OnGameFinishInit();
@@ -34,6 +35,7 @@ public:
 	Matrix4 GetControllerBoneTransform(ControllerRole role, int bone, bool bRenderPose = false);
 	Vector3 GetControllerVelocity(ControllerRole role, bool bRenderPose = false);
 	bool TryGetControllerFacing(ControllerRole role, Vector3& outDirection);
+	bool IsControllerTracked(ControllerRole) const override { return true; }
 	struct IDirect3DSurface9* GetRenderSurface(int eye);
 	struct IDirect3DTexture9* GetRenderTexture(int eye);
 	struct IDirect3DSurface9* GetUISurface();
@@ -47,6 +49,7 @@ public:
 	InputBindingID RegisterVector2Input(std::string set, std::string action);
 	bool GetBoolInput(InputBindingID id);
 	bool GetBoolInput(InputBindingID id, bool& bHasChanged);
+	bool TryGetBoolInput(InputBindingID id, bool& down) override;
 	Vector2 GetVector2Input(InputBindingID id);
 	Vector2 GetMousePos() { return Vector2(0.0f, 0.0f); }
 	bool GetMouseDown() { return false; }

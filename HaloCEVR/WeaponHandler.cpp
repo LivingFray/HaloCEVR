@@ -1,21 +1,26 @@
 #include "WeaponHandler.h"
+#include "Immersion/HandGripPose.h"
+#include <chrono>
 #include "Helpers/Objects.h"
 #include "Helpers/Camera.h"
 #include "Helpers/Assets.h"
 #include "Helpers/Maths.h"
+#include "Helpers/Menus.h"
+#include "Helpers/Cutscene.h"
 #include "Logger.h"
 #include "Game.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 // This is a working decomp of the game's original logic for updating the view model's skeleton
-// Only kept here for reference when working on the replacement function below
+// Also used as a temporary fallback when no matching weapon has been resolved.
 static void ReferenceUpdateViewModelImpl(HaloID& id, Vector3* pos, Vector3* facing, Vector3* up, TransformQuat* boneTransforms, Transform* outBoneTransforms)
 {
 	Asset_ModelAnimations* viewModel = Helpers::GetTypedAsset<Asset_ModelAnimations>(id);
 	AssetData_ModelAnimations* animationData = viewModel->Data;
+    if (!animationData || !animationData->BoneArray || animationData->NumBones <= 0 || animationData->NumBones > 64) return;
 	Bone* boneArray = animationData->BoneArray;
-
 	Transform root;
 	Helpers::MakeTransformFromXZ(up, facing, &root);
 	root.translation = *pos;
@@ -59,6 +64,44 @@ static void ReferenceUpdateViewModelImpl(HaloID& id, Vector3* pos, Vector3* faci
 
 void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, Vector3* up, TransformQuat* boneTransforms, Transform* outBoneTransforms)
 {
+	Asset_ModelAnimations* viewModel = Helpers::GetTypedAsset<Asset_ModelAnimations>(id);
+	if (!viewModel)
+	{
+		Logger::log << "[UpdateViewModel] Can't get view model asset" << std::endl;
+		return;
+	}
+
+	AssetData_ModelAnimations* animationData = viewModel->Data;
+    if (!animationData || !animationData->BoneArray || animationData->NumBones <= 0 || animationData->NumBones > 64) return;
+	Bone* boneArray = animationData->BoneArray;
+
+    HaloID weaponID{0xffff,0xffff}, tag{0xffff,0xffff}, animations{0xffff,0xffff};
+    Asset_Weapon* weapon = nullptr;
+    if (Game::instance.PhysicalVisualsActive()) {
+        if (Game::instance.PhysicalViewModelWeapon(weaponID,tag,animations) && animations == id)
+            weapon = Helpers::GetTypedAsset<Asset_Weapon>(tag);
+    } else {
+        const auto* player = Helpers::GetLocalPlayer();
+        if (player) {
+            weaponID = player->weapon;
+            const auto* object = Helpers::GetDynamicObject(weaponID);
+            if (object) weapon = Helpers::GetTypedAsset<Asset_Weapon>(object->tagID);
+        }
+    }
+    if (!weapon || !weapon->WeaponData || weapon->WeaponData->ViewAnimationID != id) {
+        cachedViewModel = {};
+        ReferenceUpdateViewModelImpl(id,pos,facing,up,boneTransforms,outBoneTransforms);
+        return;
+    }
+    if (!cachedViewModel.valid || cachedViewModel.currentAsset != id || cachedViewModel.currentWeapon != weaponID) {
+        if (!UpdateCache(id,weaponID,weapon,animationData)) {
+            cachedViewModel = {};
+            // A rejected graph must not be traversed by the native fallback.
+            for (int bone=0;bone<animationData->NumBones;++bone) outBoneTransforms[bone]={};
+            return;
+        }
+    }
+
 	Vector3& camPos = Helpers::GetCamera().position;
 
 	pos->x = camPos.x;
@@ -165,25 +208,9 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 		up->z = 1.0f;
 	}
 
-	Asset_ModelAnimations* viewModel = Helpers::GetTypedAsset<Asset_ModelAnimations>(id);
-	if (!viewModel)
-	{
-		Logger::log << "[UpdateViewModel] Can't get view model asset" << std::endl;
-		return;
-	}
-
-	AssetData_ModelAnimations* animationData = viewModel->Data;
-	Bone* boneArray = animationData->BoneArray;
-
 	Transform root;
 	Helpers::MakeTransformFromXZ(up, facing, &root);
 	root.translation = *pos;
-
-	const bool bShouldUpdateCache = cachedViewModel.currentAsset != id;
-	if (bShouldUpdateCache)
-	{
-		UpdateCache(id, animationData);
-	}
 
 	Transform unmodifiedHandTransform;
 	CalculateBoneTransform(cachedViewModel.rightWristIndex, boneArray, root, boneTransforms, unmodifiedHandTransform);
@@ -243,7 +270,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 			}
 			// Cache the calculated transform for this bone
 			realTransforms[boneIndex] = outBoneTransforms[boneIndex];
-			if (currentBone.Parent == 0 || boneArray[currentBone.Parent].Parent == 0)
+			if (boneIndex > 0 && (currentBone.Parent == 0 || boneArray[currentBone.Parent].Parent == 0))
 			{
 				// Hide arms/root in 6DOF mode only
 				if (!Game::instance.bUse3DOFAiming)
@@ -360,7 +387,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 				if (!Game::instance.bUse3DOFAiming)
 				{
 					// 6DOF MODE: Calculate gun position/rotation relative to hand
-					Vector3& gunPos = outBoneTransforms[boneIndex].translation;
+					Vector3 gunPos = outBoneTransforms[boneIndex].translation;
 					Matrix3 gunRot = outBoneTransforms[boneIndex].rotation;
 
 					if (Game::instance.bLeftHanded)
@@ -372,25 +399,7 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 						);
 					}
 
-					Vector3 handPos = handTransform * Vector3(0.0f, 0.0f, 0.0f);
-					Matrix4 handRotation = handTransform.translate(-handPos);
-					Matrix3 handRotation3;
-
-					for (int i = 0; i < 3; i++)
-					{
-						handRotation3.setColumn(i, &handRotation.get()[i * 4]);
-					}
-
-					Matrix3 inverseHand = handRotation3;
-					inverseHand.invert();
-
-					cachedViewModel.fireOffset = (gunPos - handPos) + (gunRot * cachedViewModel.cookedFireOffset);
-					cachedViewModel.fireOffset = inverseHand * cachedViewModel.fireOffset;
-
-					cachedViewModel.gunOffset = (gunPos - handPos);
-					cachedViewModel.gunOffset = inverseHand * cachedViewModel.gunOffset;
-
-					cachedViewModel.fireRotation = cachedViewModel.cookedFireRotation * gunRot * inverseHand;
+                    CacheFireAlignment(handTransform,gunPos,gunRot);
 				}				
 			}
 
@@ -414,6 +423,67 @@ void WeaponHandler::UpdateViewModel(HaloID& id, Vector3* pos, Vector3* facing, V
 
 		} while (i != lastIndex);
 	}
+	// In a support-only hold, keep the gun transform attached to the supporting
+	// hand, but move the empty firing hand away independently. Do not move the
+	// gun (or its descendants) with the firing-hand skin bones.
+	const int wrist = cachedViewModel.rightWristIndex;
+	const int count = animationData->NumBones;
+	if (Game::instance.PhysicalSupportOnly() && wrist >= 0 && wrist < count && count <= 64 &&
+		cachedViewModel.gunIndex >= 0 && cachedViewModel.gunIndex < count && cachedViewModel.gunIndex != wrist) {
+		Matrix4 oldWrist;
+		TransformToMatrix4(outBoneTransforms[wrist],oldWrist);
+		Matrix4 freeHand = Game::instance.GetVR()->GetControllerTransform(
+			Game::instance.bLeftHanded ? ControllerRole::Left : ControllerRole::Right,true);
+		Vector3 translation = freeHand*Vector3();
+		freeHand.translate(-translation);
+		freeHand.translate(*pos+translation*Game::instance.MetresToWorld(1));
+		MoveBoneToTransform(wrist,freeHand,realTransforms,outBoneTransforms);
+		Matrix4 newWrist;
+		TransformToMatrix4(outBoneTransforms[wrist],newWrist);
+		const Matrix4 delta = newWrist*oldWrist.invertAffine();
+		for (int bone=0; bone<count; ++bone) {
+			if (bone == wrist) continue;
+			int ancestor = bone;
+			bool handBone = false;
+			for (int depth=0; depth<count && ancestor>=0 && ancestor<count; ++depth) {
+				if (ancestor == cachedViewModel.gunIndex) break;
+				if (ancestor == wrist) { handBone = true; break; }
+				ancestor = boneArray[ancestor].Parent;
+			}
+			if (!handBone) continue;
+			Matrix4 original;
+			TransformToMatrix4(outBoneTransforms[bone],original);
+			const Matrix4 moved = delta*original;
+			outBoneTransforms[bone].translation = moved*Vector3();
+			for (int column=0; column<3; ++column) for (int row=0; row<3; ++row)
+				outBoneTransforms[bone].rotation[column*3+row] = moved[column*4+row];
+		}
+		if (boneArray[wrist].Parent >= 0 && boneArray[wrist].Parent < count)
+			CreateEndCap(wrist,boneArray[wrist],outBoneTransforms);
+	}
+    // Reload hit testing samples the tracked palm before support skin snaps.
+    Game::instance.ApplyManualReloadPose(cachedViewModel.currentWeapon,boneArray,outBoneTransforms,
+        static_cast<unsigned>(count),cachedViewModel.gunIndex,cachedViewModel.leftWristIndex);
+    // Compact weapons use a cupped support grip beside the firing hand.
+    // This is a skin-only adjustment after gun/aim caching: the support hand
+    // cannot rotate the weapon or change its bullet direction.
+    const int support=cachedViewModel.leftWristIndex;
+    if(Game::instance.bCompactSupportGrip && !Game::instance.bUse3DOFAiming &&
+        count>0 && count<=64 && support>=0 && support<count && wrist>=0 && wrist<count &&
+        cachedViewModel.gunIndex>=0 && cachedViewModel.gunIndex<count){
+        Matrix4 basis=Immersion::GripRotation(handTransform);
+        if(Game::instance.bLeftHanded)basis=basis*Matrix4().scale(1,-1,1);
+        const bool pistol=cachedViewModel.weaponType==WeaponType::Pistol;
+        // Magnum support cups beneath and in front of the firing hand, as
+        // when the firing controller rests on the offhand palm.
+        Matrix4 desired=basis*(pistol?Immersion::GripAxes({0,-1,0},{-1,0,0},{0,0,-1}):Immersion::GripAxes({1,0,0},{0,0,-1},{0,1,0}));
+        const Vector3 gripOffset=pistol?Vector3(.10f,.015f,-.04f):Vector3(.115f,.025f,-.025f);
+        const Vector3 center=outBoneTransforms[wrist].translation+(basis*gripOffset)*Game::instance.MetresToWorld(1);
+        desired.translate(center);
+        Matrix4 fallback=basis;fallback.translate(center-(basis*Vector3(.045f,0,0))*Game::instance.MetresToWorld(1));
+        Immersion::PlacePalmGrip(boneArray,count,outBoneTransforms,support,cachedViewModel.gunIndex,nullptr,0,desired,fallback);
+        Immersion::CloseGripHand(boneArray,count,outBoneTransforms,support,cachedViewModel.gunIndex,nullptr,0,.65f);
+    }
 }
 
 inline void WeaponHandler::CalculateBoneTransform(int boneIndex, Bone* boneArray, Transform& root, TransformQuat* boneTransforms, Transform& outTransform) const
@@ -509,57 +579,81 @@ void WeaponHandler::MoveBoneToTransform(int boneIndex, const Matrix4& newTransfo
 	realTransforms[boneIndex] = outBoneTransforms[boneIndex]; // Re-cache value to use updated position
 }
 
-void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animationData)
+bool WeaponHandler::UpdateCache(HaloID& id, HaloID& weaponID, Asset_Weapon* weapon, AssetData_ModelAnimations* animationData)
 {
 #if DRAW_DEBUG_AIM
 	Logger::log << "[UpdateCache] Swapped weapons, recaching " << id << std::endl;
 #endif
-	cachedViewModel.currentAsset = id;
-	cachedViewModel.leftWristIndex = -1;
-	cachedViewModel.rightWristIndex = -1;
-	cachedViewModel.gunIndex = -1;
-	cachedViewModel.displayIndex = -1;
+    ViewModelCache candidate;
+    candidate.currentAsset = id;
+    candidate.currentWeapon = weaponID;
+	candidate.leftWristIndex = -1;
+	candidate.rightWristIndex = -1;
+	candidate.gunIndex = -1;
+	candidate.displayIndex = -1;
 
+    if (!animationData || !animationData->BoneArray || animationData->NumBones <= 0 || animationData->NumBones > 64) return false;
 	Bone* boneArray = animationData->BoneArray;
+    bool visited[64]{};
+    int pending[64]{}, size=1;
+    visited[0]=true;
+    for (int step=0; step<size; ++step) {
+        const int index=pending[step];
+        const auto& bone=boneArray[index];
+        if (index && (bone.Parent < 0 || bone.Parent >= animationData->NumBones || !visited[bone.Parent])) return false;
+        for (int child : {bone.LeftLeaf,bone.RightLeaf}) {
+            if (child == -1) continue;
+            if (child < 0 || child >= animationData->NumBones || visited[child] || size >= 64) return false;
+            visited[child]=true; pending[size++]=child;
+        }
+        int ancestor=index;
+        for (int depth=0; ancestor != 0; ++depth) {
+            if (depth >= animationData->NumBones || ancestor < 0 || ancestor >= animationData->NumBones) return false;
+            ancestor=boneArray[ancestor].Parent;
+        }
+    }
+    if (size != animationData->NumBones) return false;
 
 	for (int i = 0; i < animationData->NumBones; i++)
 	{
 		Bone& CurrentBone = boneArray[i];
+        char name[33]{};
+        std::memcpy(name,CurrentBone.BoneName,32);
 
-		if (cachedViewModel.leftWristIndex == -1 && strstr(CurrentBone.BoneName, "l wrist"))
+		if (candidate.leftWristIndex == -1 && strstr(name, "l wrist"))
 		{
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Found Left Wrist @ " << i << std::endl;
 #endif
-			cachedViewModel.leftWristIndex = i;
+			candidate.leftWristIndex = i;
 		}
-		else if (cachedViewModel.rightWristIndex == -1 && strstr(CurrentBone.BoneName, "r wrist"))
+		else if (candidate.rightWristIndex == -1 && strstr(name, "r wrist"))
 		{
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Found Right Wrist @ " << i << std::endl;
 #endif
-			cachedViewModel.rightWristIndex = i;
+			candidate.rightWristIndex = i;
 		}
-		else if (cachedViewModel.gunIndex == -1 && strstr(CurrentBone.BoneName, "gun"))
+		else if (candidate.gunIndex == -1 && strstr(name, "gun"))
 		{
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Found Gun @ " << i << std::endl;
 #endif
-			cachedViewModel.gunIndex = i;
+			candidate.gunIndex = i;
 		}
-		else if (cachedViewModel.gunIndex == -1 && strstr(CurrentBone.BoneName, "body"))
+		else if (candidate.gunIndex == -1 && strstr(name, "body"))
 		{
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Found Gun @ " << i << std::endl;
 #endif
-			cachedViewModel.gunIndex = i;
+			candidate.gunIndex = i;
 		}
-		else if (cachedViewModel.displayIndex == -1 && strstr(CurrentBone.BoneName, "display"))
+		else if (candidate.displayIndex == -1 && strstr(name, "display"))
 		{
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Found Display @ " << i << std::endl;
 #endif
-			cachedViewModel.displayIndex = i;
+			candidate.displayIndex = i;
 		}
 #if DRAW_DEBUG_AIM
 		else
@@ -569,53 +663,21 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 #endif
 	}
 
-	cachedViewModel.fireOffset = Vector3();
-	cachedViewModel.cookedFireOffset = Vector3();
-	cachedViewModel.cookedFireRotation = Matrix3();
-	cachedViewModel.gunOffset = Vector3();
+	candidate.fireOffset = Vector3();
+	candidate.cookedFireOffset = Vector3();
+	candidate.cookedFireRotation = Matrix3();
+	candidate.gunOffset = Vector3();
 
-	// weapon model can be found from this chain:
-	// player->WeaponID (DynamicObject)->WeaponID (weapon Asset)->WeaponData->ViewModelID (GBX Asset)
-	// The local offset of the fire VFX (i.e. end of the barrel) is found in the "primary trigger" socket
-
-	BaseDynamicObject* player = Helpers::GetLocalPlayer();
-	if (!player)
-	{
-		Logger::log << "[UpdateCache] Can't find local player" << std::endl;
-		return;
-	}
-
-	BaseDynamicObject* weaponObj = Helpers::GetDynamicObject(player->weapon);
-	if (!weaponObj)
-	{
-		Logger::log << "[UpdateCache] Can't find weapon from WeaponID " << player->weapon << std::endl;
-		Logger::log << "[UpdateCache] Player Tag = " << player->tagID << std::endl;
-		return;
-	}
-
-	Asset_Weapon* weapon = Helpers::GetTypedAsset<Asset_Weapon>(weaponObj->tagID);
-	if (!weapon)
-	{
-		Logger::log << "[UpdateCache] Can't find weapon asset from TagID " << weaponObj->tagID << std::endl;
-		return;
-	}
-
-	cachedViewModel.weaponType = GetWeaponType(weapon);
-
-	if (!weapon->WeaponData)
-	{
-		Logger::log << "[UpdateCache] Can't find weapon data in weapon asset " << weaponObj->tagID << std::endl;
-		Logger::log << "[UpdateCache] Weapon Type = " << weapon->GroupID << std::endl;
-		Logger::log << "[UpdateCache] Weapon Path = " << weapon->WeaponAsset << std::endl;
-		return;
-	}
+    if (candidate.leftWristIndex <= 0 || candidate.rightWristIndex <= 0 || candidate.gunIndex < 0 ||
+        !weapon || !weapon->WeaponData || !weapon->WeaponAsset) return false;
+	candidate.weaponType = GetWeaponType(weapon);
 
 
 	Asset_GBXModel* model = Helpers::GetTypedAsset<Asset_GBXModel>(weapon->WeaponData->ViewModelID);
 	if (!model)
 	{
 		Logger::log << "[UpdateCache] Can't find GBX model from ViewModelID = " << weapon->WeaponData->ViewModelID << std::endl;
-		return;
+		return false;
 	}
 
 #if DRAW_DEBUG_AIM
@@ -626,9 +688,10 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 	Logger::log << "[UpdateCache] GBXModelPath = " << model->ModelPath << std::endl;
 #endif
 
-	if (!model->ModelData)
+	if (!model->ModelData || model->ModelData->NumSockets < 0 || model->ModelData->NumSockets > 256 ||
+        (model->ModelData->NumSockets && !model->ModelData->Sockets))
 	{
-		return;
+		return false;
 	}
 
 #if DRAW_DEBUG_AIM
@@ -648,16 +711,16 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 			Logger::log << "[UpdateCache] Found Effects location, Num Transforms = " << socket.NumTransforms << std::endl;
 #endif
 
-			if (socket.NumTransforms == 0)
+			if (socket.NumTransforms <= 0 || !socket.Transforms)
 			{
 				Logger::log << "[UpdateCache] " << socket.SocketName << " has no transforms" << std::endl;
 				break;
 			}
 
-			cachedViewModel.cookedFireOffset = socket.Transforms[0].Position;
+			candidate.cookedFireOffset = socket.Transforms[0].Position;
 			Transform rotation;
 			Helpers::MakeTransformFromQuat(&socket.Transforms[0].QRotation, &rotation);
-			cachedViewModel.cookedFireRotation = rotation.rotation;
+			candidate.cookedFireRotation = rotation.rotation;
 
 #if DRAW_DEBUG_AIM
 			Logger::log << "[UpdateCache] Position = " << socket.Transforms[0].Position << std::endl;
@@ -666,6 +729,9 @@ void WeaponHandler::UpdateCache(HaloID& id, AssetData_ModelAnimations* animation
 			break;
 		}
 	}
+    candidate.valid = true;
+    cachedViewModel = candidate;
+    return true;
 }
 
 inline WeaponType WeaponHandler::GetWeaponType(Asset_Weapon* weapon) const
@@ -750,13 +816,132 @@ Vector3 WeaponHandler::GetScopeLocation(WeaponType type) const
 	case WeaponType::Unknown:
 	case WeaponType::Pistol:
 		return Game::instance.c_ScopeOffsetPistol->Value() * Scale;
+	default:
+		return Vector3(0.0f, 0.0f, 0.0f);
 	}
-	return Vector3(0.0f, 0.0f, 0.0f);
+}
+
+namespace {
+double RecoilTime() {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+Immersion::Object RecoilObject(const HaloID& id) {
+    return static_cast<Immersion::Object>(id.index) | (static_cast<Immersion::Object>(id.id)<<16);
+}
+Immersion::RecoilProfile WeaponRecoilProfile(WeaponType type, short trigger) {
+    // Degrees, backward metres, exponential recovery seconds, pitch limit.
+    switch (type) {
+    case WeaponType::Pistol: return {3.4f,0.025f,0.20f,12.0f};
+    case WeaponType::AssaultRifle: return {1.5f,0.014f,0.24f,14.0f};
+    case WeaponType::Shotgun: return {7.0f,0.055f,0.25f,15.0f};
+    case WeaponType::RocketLauncher: return {5.0f,0.045f,0.28f,14.0f};
+    case WeaponType::Sniper: return {5.5f,0.040f,0.23f,14.0f};
+    case WeaponType::Flamethrower: return {0.45f,0.005f,0.18f,8.0f};
+    case WeaponType::PlasmaPistol: return trigger == 1 ? Immersion::RecoilProfile{3.0f,0.025f,0.22f,10.0f} : Immersion::RecoilProfile{1.2f,0.012f,0.20f,10.0f};
+    case WeaponType::PlasmaRifle: return {1.1f,0.012f,0.22f,12.0f};
+    case WeaponType::PlasmaCannon: return {1.5f,0.015f,0.22f,12.0f};
+    case WeaponType::Needler: return {0.9f,0.009f,0.21f,10.0f};
+    case WeaponType::FuelRod: return {4.5f,0.040f,0.25f,14.0f};
+    default: return {2.0f,0.020f,0.20f,12.0f};
+    }
+}
+}
+
+void WeaponHandler::UpdateRecoil()
+{
+    Immersion::FireState state; bool supported=false;
+    auto& game=Game::instance;
+    if (!cachedViewModel.valid || game.bUse3DOFAiming || game.bNeedsRecentre ||
+        Helpers::IsMouseVisible() || Helpers::IsCampaignLoading() || Helpers::GetCutsceneData()->bInCutscene ||
+        !game.c_RecoilScale || game.c_RecoilScale->Value() <= 0 ||
+        !game.PhysicalRecoilState(cachedViewModel.currentWeapon,state,supported)) {
+        recoil.Reset(); return;
+    }
+    recoil.Context(state.unit,state.weapon);
+    recoil.Advance(RecoilTime());
+}
+
+void WeaponHandler::BeginRecoilShot(const HaloID& weapon)
+{
+    recoilPending=false;
+    UpdateRecoil();
+    auto& game=Game::instance;
+    if (!cachedViewModel.valid || RecoilObject(weapon) != RecoilObject(cachedViewModel.currentWeapon) ||
+        game.bUse3DOFAiming || game.bNeedsRecentre || Helpers::IsMouseVisible() ||
+        Helpers::IsCampaignLoading() || Helpers::GetCutsceneData()->bInCutscene ||
+        !game.c_RecoilScale || game.c_RecoilScale->Value() <= 0) return;
+    recoilPending=game.PhysicalRecoilState(weapon,recoilBefore,recoilSupported);
+}
+
+void WeaponHandler::EndRecoilShot(const HaloID& weapon, short trigger)
+{
+    const bool pending=recoilPending; recoilPending=false;
+    if (!pending || RecoilObject(weapon)!=recoilBefore.weapon) return;
+    Immersion::FireState after; bool supported=false;
+    auto& game=Game::instance;
+    if (!game.PhysicalRecoilState(weapon,after,supported) || !Immersion::FiredBetween(recoilBefore,after)) return;
+    recoil.Context(after.unit,after.weapon);
+    const unsigned type=static_cast<unsigned>(cachedViewModel.weaponType);
+    float perWeapon=1.0f;
+    if (type < game.c_WeaponRecoilScales.size() && game.c_WeaponRecoilScales[type])
+        perWeapon=game.c_WeaponRecoilScales[type]->Value();
+    if (!std::isfinite(perWeapon)) perWeapon=1.0f;
+    perWeapon=(std::max)(0.0f,(std::min)(3.0f,perWeapon));
+    auto profile=WeaponRecoilProfile(cachedViewModel.weaponType,trigger);
+    profile.pitchDegrees*=perWeapon; profile.backMetres*=perWeapon;
+    recoil.Shot(profile,recoilSupported,game.c_RecoilScale->Value(),
+        game.c_SupportedRecoilFraction->Value(),RecoilTime());
+}
+
+Matrix4 WeaponHandler::RecoilKick(float metresToWorld) const
+{
+    const auto pose=recoil.Pose(RecoilObject(cachedViewModel.currentWeapon));
+    Matrix4 kick;
+    kick.rotateY(-pose.pitch); // Halo-local +X muzzle rises toward +Z.
+    kick.translate(-pose.back*metresToWorld,0,0);
+    return kick;
+}
+
+void WeaponHandler::RemoveRecoilFromCache(Matrix4& hand, Vector3& gunPosition, Matrix3& gunRotation) const
+{
+    const auto pose=recoil.Pose(RecoilObject(cachedViewModel.currentWeapon));
+    if (pose.pitch == 0 && pose.back == 0) return;
+    Matrix4 inverseKick=RecoilKick(Game::instance.MetresToWorld(1.0f));
+    inverseKick.invertAffine();
+    Matrix4 inverseHand=hand; inverseHand.invertAffine();
+    const Matrix4 original=hand*inverseKick;
+    const Matrix4 undo=original*inverseHand;
+    gunPosition=undo*gunPosition;
+    Matrix3 rotation;
+    for (int i=0;i<3;++i) rotation.setColumn(i,&undo.get()[i*4]);
+    gunRotation=rotation*gunRotation;
+    hand=original;
+}
+
+void WeaponHandler::CacheFireAlignment(Matrix4 hand, Vector3 gunPosition, Matrix3 gunRotation)
+{
+    // Cache the muzzle relative to the firing hand, never relative to world
+    // axes. A world-space conjugate feeds turning back into the next two-hand
+    // correction (especially on the launcher's rotated gun/trigger bones).
+    RemoveRecoilFromCache(hand,gunPosition,gunRotation);
+    const Vector3 handPosition=hand*Vector3();
+    Matrix3 inverseHand;
+    for(int i=0;i<3;++i)inverseHand.setColumn(i,&hand.get()[i*4]);
+    inverseHand.invert();
+    cachedViewModel.gunOffset=inverseHand*(gunPosition-handPosition);
+    cachedViewModel.fireOffset=inverseHand*(gunPosition-handPosition+gunRotation*cachedViewModel.cookedFireOffset);
+    cachedViewModel.fireRotation=inverseHand*gunRotation*cachedViewModel.cookedFireRotation;
 }
 
 Matrix4 WeaponHandler::GetDominantHandTransform() const
 {
+    return GetUnrecoiledHandTransform()*RecoilKick();
+}
+
+Matrix4 WeaponHandler::GetUnrecoiledHandTransform() const
+{
 	Matrix4 controllerTransform;
+	if (Game::instance.GetPhysicalSupportTransform(controllerTransform)) return controllerTransform;
 	Vector3 actualControllerPos;
 	Vector3 toOffHand;
 	Vector3 smoothedPosition; 
@@ -766,22 +951,19 @@ Matrix4 WeaponHandler::GetDominantHandTransform() const
 		return controllerTransform;
 	}
 
-	Vector3 upVector = controllerTransform.getForwardAxis();
-
-	// In the unlikely event the player decides to put their hand directly above their other hand, avoid a DIV/0 error when doing the lookat
-	if (upVector.dot(toOffHand) == 1.0f)
-	{
-		upVector += controllerTransform.getUpAxis() * 0.001f;
-	}
-
-	/*
-	Matrix3 rot;
-	for (int i = 0; i < 3; i++)
-	{
-		offHandTransform.setColumn(i, &rot.get()[i * 4]);
-	}
-	*/
-	smoothedPosition = Game::instance.GetSmoothedInput();
+    smoothedPosition = Game::instance.GetSmoothedInput();
+    Vector3 direction=smoothedPosition-actualControllerPos;
+    if(!std::isfinite(direction.lengthSqr()) || direction.lengthSqr()<1e-8f) {
+        // First acquisition/stale smoothing must not collapse the look-at basis.
+        smoothedPosition=actualControllerPos+toOffHand;
+        direction=toOffHand;
+    }
+    if(!std::isfinite(direction.lengthSqr()) || direction.lengthSqr()<1e-8f)return controllerTransform;
+    direction.normalize();
+    Vector3 upVector=controllerTransform.getForwardAxis();
+    if(upVector.cross(direction).lengthSqr()<1e-4f) {
+        upVector=controllerTransform.getUpAxis();
+    }
 	controllerTransform.lookAt(smoothedPosition, upVector);
 
 	controllerTransform.translate(-actualControllerPos);
@@ -803,6 +985,7 @@ Matrix4 WeaponHandler::GetDominantHandTransform() const
 
 bool WeaponHandler::GetLocalWeaponAim(Vector3& outPosition, Vector3& outAim, Vector3& upDir) const
 {
+    if (!cachedViewModel.valid || Game::instance.PhysicalWeaponsStowed()) return false;
 	HaloID playerID;
 	if (!Helpers::GetLocalPlayerID(playerID))
 	{
@@ -843,8 +1026,8 @@ bool WeaponHandler::GetLocalWeaponAim(Vector3& outPosition, Vector3& outAim, Vec
 	}
 	else
 	{
-		// 6DOF MODE: Use fireRotation offset (existing behavior)
-		finalRot = cachedViewModel.fireRotation * handRotation3;
+		// Compose the hand-local muzzle rotation into the tracked hand frame.
+		finalRot = handRotation3 * cachedViewModel.fireRotation;
 		outPosition = handPos + handRotation * cachedViewModel.fireOffset * Game::instance.WorldToMetres(1.0f);
 	}
 
@@ -879,6 +1062,7 @@ bool WeaponHandler::GetWorldWeaponAim(Vector3& outPosition, Vector3& outAim, Vec
 
 bool WeaponHandler::GetLocalWeaponScope(Vector3& outPosition, Vector3& outAim, Vector3& upDir) const
 {
+    if (!cachedViewModel.valid || Game::instance.PhysicalWeaponsStowed()) return false;
 	HaloID playerID;
 	if (!Helpers::GetLocalPlayerID(playerID))
 	{
@@ -919,8 +1103,8 @@ bool WeaponHandler::GetLocalWeaponScope(Vector3& outPosition, Vector3& outAim, V
 	}
 	else
 	{
-		// 6DOF MODE: Use fireRotation offset and scope position (existing behavior)
-		finalRot = cachedViewModel.fireRotation * handRotation3;
+		// Scope and shots share the same hand-local muzzle correction.
+		finalRot = handRotation3 * cachedViewModel.fireRotation;
 
 		Vector3 scopeOffset = GetScopeLocation(cachedViewModel.weaponType);
 		Vector3 gunOffset = handPos + handRotation * cachedViewModel.gunOffset * Game::instance.WorldToMetres(1.0f);
@@ -1009,7 +1193,7 @@ void WeaponHandler::RelocatePlayer(HaloID& PlayerID)
 		{
 			// 6DOF MODE: Bullets originate from hand/gun barrel (existing behavior)
 			weaponFiredPlayer->position = handPos + handRotation * cachedViewModel.fireOffset;
-			weaponFiredPlayer->aim = (cachedViewModel.fireRotation * handRotation3) * Vector3(1.0f, 0.0f, 0.0f);
+			weaponFiredPlayer->aim = (handRotation3 * cachedViewModel.fireRotation) * Vector3(1.0f, 0.0f, 0.0f);
 		}
 
 #if DRAW_DEBUG_AIM
@@ -1026,6 +1210,7 @@ void WeaponHandler::RelocatePlayer(HaloID& PlayerID)
 
 void WeaponHandler::PreFireWeapon(HaloID& WeaponID, short param2)
 {
+    BeginRecoilShot(WeaponID); // Sample BEFORE relocating the native muzzle.
 	BaseDynamicObject* Object = Helpers::GetDynamicObject(WeaponID);
 
 	weaponFiredPlayer = nullptr;
@@ -1099,7 +1284,7 @@ inline void WeaponHandler::HandleWeaponHaptics() const
 #endif
 		}
 
-		if (Game::instance.bUseTwoHandAim)
+		if (Game::instance.bUseTwoHandAim || Game::instance.bCompactSupportGrip)
 		{
 #if HAPTICS_DEBUG
 			Logger::log << "[Weapon Haptics] Gun is in two handed mode. " << haptic.Description << std::endl;
@@ -1133,6 +1318,7 @@ void WeaponHandler::PostFireWeapon(HaloID& weaponID, short param2)
 		weaponFiredPlayer->aim = realPlayerAim;
 		weaponFiredPlayer = nullptr;
 	}
+    EndRecoilShot(weaponID,param2); // Kick only after the native firing attempt.
 }
 
 void WeaponHandler::PreThrowGrenade(HaloID& playerID)

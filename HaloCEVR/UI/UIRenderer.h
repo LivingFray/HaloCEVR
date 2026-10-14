@@ -6,11 +6,11 @@
 
 struct Font
 {
-	IDirect3DTexture9* fontBitmap;
+	IDirect3DTexture9* fontBitmap = nullptr;
 	stbtt_bakedchar cdata[96];
 	float offset;
 	float fontSize;
-	float lineHeight;
+	float lineHeight = 0;
 };
 
 class UIRenderer

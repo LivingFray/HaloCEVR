@@ -1,6 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="PhysicalInteractionHandler.cpp" />
+    <ClInclude Include="PhysicalInteractionHandler.h" />
+    <ClInclude Include="Immersion\PhysicalInteractions.h" />
+    <ClInclude Include="Immersion\SolidZone.h" />
+    <ClInclude Include="Immersion\OutlineZone.h" />
+    <ClInclude Include="Immersion\RenderProjection.h" />
+    <ClInclude Include="Immersion\ARAccuracy.h" />
+    <ClInclude Include="Immersion\RetailInteractions.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ReloadAudio.cpp" />
+    <ClCompile Include="ReloadSamples.cpp" />
+    <ClInclude Include="ReloadAudio.h" />
+    <ClInclude Include="Immersion\ReloadCue.h" />
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
@@ -31,6 +45,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Helpers\DX9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CrashDiagnostics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Game.cpp">
@@ -76,6 +93,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InputHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Immersion\RetailWeaponEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InGameRenderer.cpp">
@@ -164,6 +184,9 @@
     <ClInclude Include="Helpers\DX9.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CrashDiagnostics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -242,6 +265,12 @@
     <ClInclude Include="UI\SettingsMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UI\PlayerGuide.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\SettingsPresentation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="UI\UITabPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -270,6 +299,39 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WeaponHapticsConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\HolsterMarker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\GreyMarkerDraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\NativeModelPose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\HandGripPose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\HandMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\MenuPointer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\InteractionModel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\LookHistory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\WeaponSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\RetailWeaponEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Immersion\RetailProfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

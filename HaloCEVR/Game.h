@@ -11,6 +11,8 @@
 #include "Maths/Vectors.h"
 #include "WeaponHandler.h"
 #include "InputHandler.h"
+#include "ReloadHandler.h"
+#include "PhysicalInteractionHandler.h"
 #include "InGameRenderer.h"
 #include "WeaponHapticsConfig.h"
 #include "Profiler.h"
@@ -59,6 +61,51 @@ public:
 	void PreThrowGrenade(HaloID& playerID);
 	void PostThrowGrenade(HaloID& playerID);
 	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand); 
+	Matrix4 GetHeldWeaponTransform() const { return weaponHandler.GetUnrecoiledHandTransform(); }
+    float SupportGripForgiveness(Immersion::Object weapon) const { return weaponHandler.SupportGripForgiveness(weapon); }
+    float SupportGripLift(Immersion::Object weapon) const { return weaponHandler.SupportGripLift(weapon); }
+    float SupportGripAdvance(Immersion::Object weapon) const { return weaponHandler.SupportGripAdvance(weapon); }
+    bool UsesLongSupportGrip(Immersion::Object weapon) const { return weaponHandler.UsesLongSupportGrip(weapon); }
+    bool PhysicalRecoilState(const HaloID& weapon, Immersion::FireState& state, bool& supported) const {
+        return inputHandler.PhysicalRecoilState(weapon,state,supported);
+    }
+	bool GetPhysicalSupportTransform(Matrix4& transform) const { return inputHandler.GetSupportOnlyTransform(transform); }
+	bool PhysicalSupportOnly() const { return inputHandler.PhysicalSupportOnly(); }
+	bool PhysicalWeaponsStowed() const { return inputHandler.PhysicalWeaponsStowed(); }
+    void DrawPhysicalBodyModels();
+    void QueuePhysicalHolsterLabels();
+    bool ShouldHidePhysicalViewModel() const { return interactions.VehicleActive() || inputHandler.ShouldHidePhysicalViewModel(); }
+    float AccuracyReticleScale() const {
+        return !bUse3DOFAiming && vr && vr->IsHMDTracked() && c_ARSpreadScale?
+            inputHandler.AccuracyReticleScale(c_ARSpreadScale->Value()):1.f;
+    }
+    bool PhysicalVisualsActive() const { return inputHandler.PhysicalVisualsActive(); }
+    bool PhysicalViewModelWeapon(HaloID& weapon, HaloID& tag, HaloID& animations) const {
+        return inputHandler.PhysicalViewModelWeapon(weapon,tag,animations);
+    }
+	bool ShouldBlockPhysicalFire(const HaloID& weapon) const {
+        return inputHandler.ShouldBlockPhysicalFire(weapon) || reloadHandler.BlocksNativeFire(weapon.index|(static_cast<Immersion::Object>(weapon.id)<<16));
+    }
+    bool ShouldBlockNativeReload(const HaloID& weapon) const {return reloadHandler.BlocksNative(weapon.index|(static_cast<Immersion::Object>(weapon.id)<<16));}
+    bool ProcessManualReload(Immersion::RetailWeaponEngine& engine, Immersion::WeaponSession& session,
+        Immersion::WeaponFrame& frame,const Matrix4* hands,Immersion::Point head,float yaw,bool reload,bool valid) {
+        return reloadHandler.Process(engine,session,frame,hands,head,yaw,reload,valid);
+    }
+    PhysicalInteractionHandler interactions;
+    bool ReloadHandBusy(Immersion::Hand hand)const{return reloadHandler.HandBusy(hand);}
+    bool ManualPumpSupportsWeapon() const { return reloadHandler.PumpSupportsWeapon(); }
+    bool ShouldDeferManualPumpSound(Immersion::Object weapon, Immersion::Object sound) const {
+        return reloadHandler.DeferPumpSound(weapon,sound);
+    }
+    bool ShouldDeferManualPumpEffect(Immersion::Object weapon, Immersion::Object effect) const {
+        return reloadHandler.DeferPumpEffect(weapon,effect);
+    }
+    void SuspendManualReload(){reloadHandler.Suspend();}
+    void DeactivateManualReload(){reloadHandler.Deactivate();}
+    void ApplyManualReloadPose(const HaloID& weapon,const Bone* bones,Transform* out,unsigned count,int gun,int wrist) {
+        reloadHandler.Pose(weapon.index|(static_cast<Immersion::Object>(weapon.id)<<16),bones,out,count,gun,wrist);
+        interactions.HideGrenadeHand(bones,out,count,gun,wrist);
+    }
 	void ReloadStart(HaloID param1, short param2, bool param3);
 	void ReloadEnd(short param1, HaloID param2);
 
@@ -80,6 +127,7 @@ public:
 
 	float GetScopeSize() const { return ShouldUseOriginalScope() ? c_3DOFScopeScale->Value() : c_ScopeScale->Value(); }
 
+    float WorldScale() const;
 	float MetresToWorld(float m) const;
 	float WorldToMetres(float w) const;
 
@@ -92,8 +140,11 @@ public:
 	// Using the last known delta time should be good enough
 	float lastDeltaTime = 0.0f;
 
-	bool bNeedsRecentre = true;
+	Immersion::VehicleExitGuard vehicleExit;
+    Vector2 VehicleLookInput() { return inputHandler.VehicleLookInput(); }
+    bool bNeedsRecentre = true;
 	bool bUseTwoHandAim = false;
+    bool bCompactSupportGrip = false; // Support/recoil without offhand aim steering.
 	bool bLeftHanded = false;
 	bool bUse3DOFAiming = false;
 
@@ -144,6 +195,7 @@ protected:
 
 	WeaponHandler weaponHandler;
 	InputHandler inputHandler;
+    ReloadHandler reloadHandler;
 
 	struct FPSTracker
 	{
@@ -170,6 +222,7 @@ protected:
 	ERenderState renderState = ERenderState::UNKNOWN;
 
 	CameraFrustum frustum1;
+    float unzoomedScopeFov=1.22173048f;
 	CameraFrustum frustum2;
 
 	short realZoom = -1;
@@ -219,6 +272,34 @@ public:
 	FloatProperty* c_HorizontalVehicleTurnAmount = nullptr;
 	FloatProperty* c_VerticalVehicleTurnAmount = nullptr;
 	BoolProperty* c_OffhandHandFlashlight = nullptr;
+	BoolProperty* c_GripHeadFlashlight = nullptr;
+	BoolProperty* c_PhysicalWeapons = nullptr;
+	BoolProperty* c_PhysicalHolsterMarkers = nullptr;
+    BoolProperty* c_OnFootLegs = nullptr;
+	FloatProperty* c_PhysicalShoulderRadius = nullptr;
+	FloatProperty* c_PhysicalHipRadius = nullptr;
+    FloatProperty* c_WorldScale = nullptr;
+    FloatProperty* c_ARSpreadScale = nullptr;
+    FloatProperty* c_RecoilScale = nullptr;
+    FloatProperty* c_SupportedRecoilFraction = nullptr;
+    std::array<FloatProperty*,12> c_WeaponRecoilScales{};
+    BoolProperty* c_PhysicalGrenades=nullptr;
+    FloatProperty* c_GrenadeThrowStrength=nullptr;
+    BoolProperty* c_FirstPersonVehicles=nullptr;
+    FloatProperty* c_VehicleEyeHeight=nullptr;
+    FloatProperty* c_GhostEyeLift=nullptr;
+    FloatProperty* c_TurretSensitivity=nullptr;
+    FloatProperty* c_GhostSensitivity=nullptr;
+    FloatProperty* c_ScopeMagnification=nullptr;
+    FloatProperty* c_ShadeEyeLift=nullptr;
+    FloatProperty* c_GrenadeGripHeightOffset=nullptr;
+    BoolProperty* c_ManualReload=nullptr;
+    FloatProperty* c_ReloadSoundVolume=nullptr;
+    IntProperty* c_ShotgunShellRatio=nullptr;
+    FloatProperty* c_MagazineZoneRadius=nullptr;
+    FloatProperty* c_ReloadGrabRadius=nullptr;
+    FloatProperty* c_ReloadStroke=nullptr;
+	FloatProperty* c_GripHeadFlashlightRadius = nullptr;
 	FloatProperty* c_LeftHandFlashlightDistance = nullptr;
 	FloatProperty* c_RightHandFlashlightDistance = nullptr;
 	BoolProperty* c_EnableWeaponHolsters = nullptr;

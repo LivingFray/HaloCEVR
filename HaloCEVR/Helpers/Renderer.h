@@ -27,16 +27,16 @@ struct CameraFrustum
 	Vector3 position;
 	Vector3 facingDirection;
 	Vector3 upDirection;
-	// Maybe meant to control first vs third person?
+	// Native render visibility permits drawing the local player body.
 	bool drawPlayer;
 	std::uint8_t unk0[3];
 	float fov;
 	sRect WindowViewport;
 	sRect InnerViewport;
-	// Not sure if these are the znear/far values, but they have values in the correct range
+	// zNear == 0 selects the explicit world clip plane below in the native builder.
 	float zNear;
 	float zFar;
-	Vector4 unk1;
+	Vector4 unk1; // Explicit/oblique near plane when zNear == 0.
 };
 static_assert(sizeof(CameraFrustum) == 0x54);
 
@@ -46,8 +46,8 @@ struct Renderer
 	bool unk1;
 	// Possibly just padding
 	std::uint8_t unk2;
-	// For reasons I've yet to decipher there are 2 nearly identical structs that both need setting
-	// Maybe one does culling and one does rendering? Setting one of them doesn't seem to work
+	// Native render_scene uses the first for visibility/culling, the second for
+	// rasterization. Normally they match; cockpit culling adds a bounded margin.
 	CameraFrustum frustum;
 	CameraFrustum frustum2;
 };

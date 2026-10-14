@@ -237,6 +237,7 @@
     <ClCompile Include="InGameRenderer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="CrashDiagnostics.cpp" />
     <ClCompile Include="Helpers\Assets.cpp" />
     <ClCompile Include="Helpers\Camera.cpp" />
     <ClCompile Include="Helpers\Controls.cpp" />
@@ -252,6 +253,7 @@
     <ClCompile Include="DirectXWrappers\IDirect3D9ExWrapper.cpp" />
     <ClCompile Include="DirectXWrappers\IDirect3DDevice9ExWrapper.cpp" />
     <ClCompile Include="InputHandler.cpp" />
+    <ClCompile Include="Immersion\RetailWeaponEngine.cpp" />
     <ClCompile Include="Maths\Matrices.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="UI\UIFloatBox.cpp" />
@@ -270,6 +272,10 @@
     <ClCompile Include="VR\OpenVR.cpp" />
     <ClCompile Include="VR\VREmulator.cpp" />
     <ClCompile Include="WeaponHandler.cpp" />
+    <ClCompile Include="ReloadHandler.cpp" />
+    <ClCompile Include="PhysicalInteractionHandler.cpp" />
+    <ClCompile Include="ReloadAudio.cpp" />
+    <ClCompile Include="ReloadSamples.cpp" />
     <ClCompile Include="WeaponHapticsConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -279,6 +285,7 @@
     <ClInclude Include="Helpers\Version.h" />
     <ClInclude Include="InGameRenderer.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="CrashDiagnostics.h" />
     <ClInclude Include="Helpers\Assets.h" />
     <ClInclude Include="Helpers\Camera.h" />
     <ClInclude Include="Helpers\Controls.h" />
@@ -296,6 +303,19 @@
     <ClInclude Include="DirectXWrappers\IDirect3D9ExWrapper.h" />
     <ClInclude Include="DirectXWrappers\IDirect3DDevice9ExWrapper.h" />
     <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="Immersion\HandMesh.h" />
+    <ClInclude Include="Immersion\HolsterMesh.h" />
+    <ClInclude Include="Immersion\MenuPointer.h" />
+    <ClInclude Include="Immersion\InteractionModel.h" />
+    <ClInclude Include="Immersion\LookHistory.h" />
+    <ClInclude Include="Immersion\WeaponSession.h" />
+    <ClInclude Include="Immersion\RetailWeaponEngine.h" />
+    <ClInclude Include="Immersion\HolsterMarker.h" />
+    <ClInclude Include="Immersion\Recoil.h" />
+    <ClInclude Include="Immersion\GreyMarkerDraw.h" />
+    <ClInclude Include="Immersion\NativeModelPose.h" />
+    <ClInclude Include="Immersion\HandGripPose.h" />
+    <ClInclude Include="Immersion\RetailProfile.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Maths\Matrices.h" />
     <ClInclude Include="Profiler.h" />
@@ -303,6 +323,8 @@
     <ClInclude Include="UI\UIIntBox.h" />
     <ClInclude Include="UI\UITextBox.h" />
     <ClInclude Include="UI\SettingsMenu.h" />
+    <ClInclude Include="UI\PlayerGuide.h" />
+    <ClInclude Include="UI\SettingsPresentation.h" />
     <ClInclude Include="UI\UIButton.h" />
     <ClInclude Include="UI\UICheckbox.h" />
     <ClInclude Include="UI\UIElement.h" />
@@ -317,6 +339,17 @@
     <ClInclude Include="VR\VREmulator.h" />
     <ClInclude Include="VR\IVR.h" />
     <ClInclude Include="WeaponHandler.h" />
+    <ClInclude Include="ReloadHandler.h" />
+    <ClInclude Include="PhysicalInteractionHandler.h" />
+    <ClInclude Include="Immersion\PhysicalInteractions.h" />
+    <ClInclude Include="Immersion\SolidZone.h" />
+    <ClInclude Include="Immersion\OutlineZone.h" />
+    <ClInclude Include="Immersion\RenderProjection.h" />
+    <ClInclude Include="Immersion\ARAccuracy.h" />
+    <ClInclude Include="Immersion\RetailInteractions.inl" />
+    <ClInclude Include="ReloadAudio.h" />
+    <ClInclude Include="Immersion\ReloadCue.h" />
+    <ClInclude Include="Immersion\ManualReload.h" />
     <ClInclude Include="WeaponHapticsConfig.h" />
   </ItemGroup>
   <ItemGroup>

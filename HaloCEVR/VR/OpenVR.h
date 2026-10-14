@@ -1,5 +1,9 @@
 #pragma once
 #include "IVR.h"
+#include "../Immersion/MenuPointer.h"
+#include <array>
+#include <map>
+#include <string>
 #include <wtypes.h>
 #include <d3d9.h>
 #include <d3d11.h>
@@ -34,6 +38,9 @@ public:
 	Matrix4 GetControllerBoneTransform(ControllerRole Role, int bone, bool bRenderPose = false) override;
 	Vector3 GetControllerVelocity(ControllerRole Role, bool bRenderPose = false) override;
 	bool TryGetControllerFacing(ControllerRole role, Vector3& outDirection) override;
+	bool IsControllerTracked(ControllerRole role) const override;
+	bool IsHMDTracked() const override;
+	bool IsHandSkeletonValid(ControllerRole role) const override { return skeletonValid[role == ControllerRole::Left ? 0 : 1]; }
 	IDirect3DSurface9* GetRenderSurface(int eye) override;
 	IDirect3DTexture9* GetRenderTexture(int eye) override;
 	IDirect3DSurface9* GetUISurface() override;
@@ -47,8 +54,10 @@ public:
 	InputBindingID RegisterVector2Input(std::string set, std::string action) override;
 	bool GetBoolInput(InputBindingID id) override;
 	bool GetBoolInput(InputBindingID id, bool& bHasChanged) override;
+	bool TryGetBoolInput(InputBindingID id, bool& down) override;
 	Vector2 GetVector2Input(InputBindingID id) override;
 	Vector2 GetMousePos() override;
+	bool HasMousePointer() const override { return bMouseVisible && bMousePositionValid; }
 	bool GetMouseDown() override;
 	void ShowKeyboard(const std::string& textBuffer) override;
 	bool IsKeyboardVisible() override;
@@ -65,12 +74,32 @@ protected:
 	void PositionOverlay();
 	void UpdateSkeleton(ControllerRole hand);
 	void UpdatePose(ControllerRole hand);
+	void UpdateMenuPointer();
 
 	Matrix4 GetControllerTransformInternal(ControllerRole role, int bone, bool bRenderPose);
 
 	vr::IVRSystem* vrSystem;
 	vr::IVRCompositor* vrCompositor;
 	vr::IVRInput* vrInput;
+	bool inputStateValid = false;
+	struct PhysicalBinding {
+		InputBindingID id = 0, primary = 0, fallback = 0;
+		vr::VRInputValueHandle_t source = vr::k_ulInvalidInputValueHandle;
+		std::string name;
+		int route = -1;
+		bool rebaseline = false;
+	};
+	std::array<PhysicalBinding,9> physicalBindings{};
+	struct PhysicalStickBinding {
+		// Local routing token, never submitted as an OpenVR action handle.
+		InputBindingID id = 0;
+		std::array<InputBindingID,5> actions{};
+		vr::VRInputValueHandle_t source = vr::k_ulInvalidInputValueHandle;
+		std::string name;
+		int route = -1;
+	};
+	std::array<PhysicalStickBinding,2> physicalSticks{};
+	std::map<InputBindingID,int> analogErrors;
 	vr::IVROverlay* vrOverlay;
 
 	vr::VRTextureBounds_t textureBounds[2];
@@ -86,22 +115,25 @@ protected:
 	Vector3 positionOffset;
 	float yawOffset;
 
-	bool bMouseVisible;
+	bool bMouseVisible = false;
 	Vector2 mousePos;
-	bool bMouseDown;
+	bool bMouseDown = false;
+	bool bMousePositionValid = false;
+	Immersion::MenuPointer menuPointer;
 
 	vr::VRActiveActionSet_t actionSets[2];
 	void SetActiveActionSet(int index, const std::string& actionSetName);
 	
 	vr::VROverlayHandle_t uiOverlay;
 
-	vr::TrackedDevicePose_t gamePoses[vr::k_unMaxTrackedDeviceCount];
-	vr::TrackedDevicePose_t renderPoses[vr::k_unMaxTrackedDeviceCount];
+	vr::TrackedDevicePose_t gamePoses[vr::k_unMaxTrackedDeviceCount]{};
+	vr::TrackedDevicePose_t renderPoses[vr::k_unMaxTrackedDeviceCount]{};
 
 	// Most recent skeletal data for hand pose
-	vr::VRBoneTransform_t bones[2][31];
+	vr::VRBoneTransform_t bones[2][31]{};
+	bool skeletonValid[2]{};
 	// Cached wrist offset for automatic hand offset calculation (known good location)
-	vr::VRBoneTransform_t cachedWrists[2];
+	vr::VRBoneTransform_t cachedWrists[2]{};
 	bool bHasCachedWrists[2] = { false, false };
 
 	static constexpr int uiSurface = 2;
