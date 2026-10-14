@@ -1,0 +1,33 @@
+R1.31a - 14 October 2026
+Baseline source: a4cac2d927d5f7e9235cc01cd36b45e54b96f05d
+Baseline package: aa8edf8431b37434670fb2bfdeb3c62de4bf901a314724612eca97ed9af8a59b
+
+User log inject(20261014-100419).log identifies the R1.31 DLL and contains
+71,446 occurrences of [OpenVR] Could not get analog action: 3. The bundled
+OpenVR header defines 3 as VRInputError_InvalidHandle. New PhysicalMove and
+PhysicalLook handles register successfully; digital physical actions use the
+original fixed-hand bindings. Ghost and Warthog seat detection both succeed.
+The log cannot distinguish stale manifest installation from SteamVR binding
+state; no claim is made about which local installation detail caused it.
+
+R1.31 GetVector2Input returned zero on a failed new action, without fallback.
+The vehicle adapter therefore received no stick movement. Fix registration and
+read paths with source-restricted original Move/Look aliases in both action sets.
+Private routing tokens cannot be confused with normal on-foot Move/Look handles
+and are never passed to OpenVR. No raw controller-axis index is guessed.
+A valid centered primary wins; unavailable/invalid/nonfinite actions may fall
+back. No opposite-controller fallback, vector addition or cached stale input.
+When every candidate is unavailable, return zero and log the route once.
+Log the selected action manifest path/result for subsequent diagnosis.
+
+Additional user request: no optional free AR/sniper charging. Gate action grabs
+and support-hand transfer on needsRack, retaining Magnum free cycling. A required
+AR/sniper charge ends its latch on completion. Empty/tactical reloads, both
+hands, shotgun required pumps and Needler/native reload behavior are preserved.
+
+Validation: production OpenVR adapters with absent/inactive/read-invalid new
+bindings, original right/left presets, both action sets, centered inputs,
+source loss, nonfinite data, action-state failure and bounded diagnostics.
+Production manual-reload and vehicle adapters are also exercised against doubles.
+Windows/MSVC and in-headset steering verification remain for the user.
+No new native addresses, hooks, game assets or vehicle camera changes.

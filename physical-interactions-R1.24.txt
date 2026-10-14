@@ -1,0 +1,58 @@
+R1.24 - settle seat entry, closer/higher holsters, stronger grenade launches
+14 October 2026
+
+Baseline: verified R1.23 source ZIP, Library version27
+SHA256 e80a3cc761a5a0670afd12c8c4d041f6d18bce013b72c7361cb9b20d2db5b3ea
+Source commit recorded in that ZIP: b56b09d5bd75007af9639040d215f9ef392679c6
+The complete ZIP and every source-manifest hash were checked before importing.
+No older workspace source was used as this revision's baseline.
+
+Evidence / diagnosis
+- Supplied video 20261014-0314-41.1639368.mp4: turret view remains behind Chief;
+  driver view stays outside the vehicle beside the front wheel/cabin.
+- inject(20261014-031600).log identifies R1.23, enables the native head-mask
+  guard and records a successful matching seated-body mask. Seat0 driver and
+  seat2 gunner activate; exit restores the native path.
+- R1.23 BeginView stores inverse(vehicle basis)*head position on the FIRST
+  valid seat frame and never updates it. This can pin the eye to an entry-
+  animation head position. The observed outside positions fit this failure.
+  Native entry timing is inferred from footage/source, not instrumented here.
+- Throw log confirms native release and tracked-velocity application. It does
+  not contain measured speed, so no claim is made that the old cap was reached.
+
+Changes
+1. SeatAnchor works in vehicle-local coordinates. During settling it follows
+   the sampled head with a70ms filter. Lock requires >=0.75s since start,
+   >=0.30s of per-frame motion<=1.2cm, and target residual<2cm. Once locked,
+   small idle motion is ignored. Displacement>12cm reopens settling regardless
+   of elapsed time, preventing a long/paused entry from permanently freezing.
+   Vehicle/seat/unit changes and recenter reset calibration. Existing 25ms
+   chassis smoothing, eye lift, direct HMD tracking and render restoration stay.
+   A locked transition logs seat index and head residual in metres.
+2. Chest offsets in metres, forward/left/up relative to HMD yaw:
+   frag (0.06,-0.10,-0.24), plasma(0.06,+0.10,-0.24).
+   Previous lateral offsets were +/-0.15 and height -0.32. Grab radius stays
+   0.12, return0.17. Selection now minimizes distance across available grenade
+   zones, rather than checking frag first. Existing nearer weapon/supply
+   priority and occupied-hand restrictions are preserved.
+3. GrenadeVelocity doubles tracked speed before the saved strength multiplier;
+   maximum hand contribution is24m/s. Existing saved1.3 becomes effective2.6
+   instead of changing a default that existing config files would override.
+   Native velocity remains world units/tick: clamp(world/sec)/30+player/tick.
+   Direction, zero-velocity drops, inventory/fuse and native release untouched.
+   Log records measured hand speed and capped requested launch speed, excluding
+   inherited player motion. It does not claim a measured range in metres.
+
+Tests / limits
+- Actual production adapter tests simulate immediate and delayed climb-in for
+  all three supported seats, including changing chassis yaw, settling, idle
+  jitter, unsmoothed physical HMD lean, exit and frustum/camera restoration.
+- Actual grab adapter covers both hands/types at overlapping centre zones.
+- Velocity tests exercise actual metres/world/tick conversion, saved1.3, gentle
+  motion, hard throws/cap, inherited player motion and stationary drop.
+- Existing native-memory, hand pose, reload/audio, holster, recoil and input
+  suite runs with undefined-behaviour checks.
+- Native profile/ABI addresses and model-draw hook are unchanged. R1.23's
+  recorded EXE verification is retained; the EXE fixture was not rerun here.
+- No MSVC build, executable execution or headset/GPU test performed. Final
+  camera placement/comfort and throw range remain in-game validation items.

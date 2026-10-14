@@ -1,0 +1,49 @@
+R1.29 -- vehicle regression rollback and Shade/grenade alignment
+Input: 20261014-0615-42.4724570.mp4 and inject(20261014-061807).log.
+
+Evidence:
+- Startup identifies R1.28, with scoped native PVS guard=1.
+- First Shade entry logs the native bounded PVS/current-eye branch in use.
+- User reports low FPS and vehicle/enemy disappearance in Ghost, Warthog
+  driver/gunner and Shade. Footage shows disappearing nearby objects and a
+  side-on view of Chief/the Shade while turning with the stick.
+- No timing measurements or toggle A/B were available. The R1.28 experimental
+  override is the leading regression suspect, not a proven exclusive cause.
+
+Visibility action:
+- Delete RetailVisibility.inl and its include/installation call. Remove its
+  setting from registration/UI. An old saved true value is ignored by Config.
+- No calls to native structure visibility are intercepted. No PVS/debug byte
+  is written. Native head masking is separate and remains enabled.
+- Keep matched stereo eye frusta, ordinary clipping and R1.26 camera motion.
+- No replacement visibility bypass or new native entry/address is introduced.
+- The older missing-cliff report remains unresolved pending further evidence.
+
+Shade action:
+- R1.28 used SeatAnchor, which locks a head position in chassis coordinates
+  after settling or three seconds. A Shade's stationary pedestal is not a
+  suitable reference for a head which moves around it while aiming.
+- Read the live rendered head position and its bind-corrected forward axis
+  (head world matrix * inverse bind). Keep yaw only; no forced HMD pitch/roll.
+- Shade uses that head position directly, without a second interpolation layer
+  or frozen chassis-local anchor. Other seat stabilization paths are retained.
+- Add StylishShadeEyeLift=0.18 m (0..0.45) above the common eye-height offset.
+- Actual animated head motion is now visible in this seat; comfort/jitter still
+  needs a headset check. Native head-mesh hiding remains unchanged.
+
+Grenade action:
+- Separate chest preview anchors from grip/return centers. Raise the latter by
+  StylishGrenadeGripHeightOffset=0.06 m (0..0.15). No preview translation/scale
+  or depth changes. Works for both types and either physical hand.
+- Narrow capture radii and reload-action priority stay as in R1.28. Return
+  radius remains 0.17 m, centered at the raised capture point.
+
+Validation:
+- Portable production handler tests: head orbit and yaw across +/-pi, past the
+  old three-second timeout at 72/90/120 Hz, stereo agreement, independent HMD
+  lean, adjustable height, native head bind correction, and both-hand raised
+  chest capture/return without changing preview transforms.
+- Existing regressions run: manual reload/ammo/audio, holsters, recoil, player
+  recovery, inputs, tutorial history, world scale and native reader guards.
+- Packaging checks exclude the deleted detour and verify all source hashes.
+- No Windows/MSVC build, native game execution or measured FPS/GPU verification.

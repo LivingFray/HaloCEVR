@@ -1,0 +1,37 @@
+R1.4 FIRST-PERSON STATE REPAIR (retail Halo PC 01.00.10.0621 only)
+
+Evidence: supplied 12-Oct footage of pistol/AR switching, inject(5).log repeated
+[UpdateCache] invalid child-weapon ID warnings, and supplied halo.exe disassembly.
+This is a diagnosis based on code/evidence, not a reproduced headset run.
+
+Native inventory selection and first-person rendering are separate systems.
+Retail unit current slot = +0x2F2; inventory datums start +0x2F8. Renderer state
+is *0x6B2D98, stride 0x1EA0, +0 visible, +4 unit, +8 weapon. A selected-none
+transition can leave visibility live even when the FP weapon datum is already
+None. Skipping DrawViewModel only skips geometry, not its light/particle systems.
+
+0x493C60..0x493E46 is the native complete first-person rebuild. __cdecl(int local
+player index) confirmed from push ecx / call at 0x494139 / add esp,4. No register
+parameters. It clears +8, tears down active FP effects through 0x450D50 and
+0x455C80, resolves the actual unit current slot, validates viewmodel and animation
+assets at tag-data +0x468/+0x478, rebuilds bone remappings at +0x1D8E/+0x1E10,
+resets animations and interpolation count +0x8A, restores effects for a live gun
+when appropriate, then tail-jumps to 0x4942E0 for base animation setup.
+
+R1.4 invokes this only at the validated campaign input point when the two states
+differ, or a stowed-none state still has visible effects. It validates a live,
+local, on-foot campaign biped, the full FP allocation and matching unit datum,
+then verifies the routine fingerprint immediately before calling. No call at
+initialization or new visibility detour. Render-camera global 0x7C3108 is NOT
+used to choose the campaign player; outside rendering it may be -1. Campaign
+Read validates local player zero. Failed context validation makes no call.
+
+The render cache uses the current weapon's checked tag and +0x478 animation ID.
+It no longer commits currentAsset before resolving the weapon/model. It tracks
+both animation asset and weapon datum; failed cache rebuilds do not publish
+partial offsets or indices. The root parent -1 no longer indexes boneArray[-1].
+
+Portable tests exercise the real C++ guards against synthetic memory and model
+assets, including stowed-visible, repeated switches, absent globals, stale unit,
+wrong tag salt, signature mismatch and missing sockets/model. Native routine
+semantics/ABI were verified statically only; no Windows/headset runtime here.

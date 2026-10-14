@@ -1,0 +1,50 @@
+R1.25 EVIDENCE AND IMPLEMENTATION
+
+Input: inject(20261014-033632).log; 20261014-0335-02.3689804.mp4.
+The log loads R1.24. Driver anchor settles; turret repeatedly logs new settled
+anchors. Video shows a seated driver camera, shaking during driving. R1.24's
+SeatMotion adds velocity each render then pulls toward a stale simulation
+sample, reproducing a periodic speed ripple in a synthetic constant-speed
+ride. Replacing it with timestamped native-motion interpolation removes that
+feedback. Camera movement uses one-tick latency; real HMD pose is not filtered.
+Post-entry animation cannot recapture after three seconds. Native head-mask,
+seat readers, stick controls and render restoration are retained.
+
+Magazine marker: 18 cm opaque procedural patterned disk. DrawMeshTriangle uses
+the actual world depth projection. Magazine label now opts into that same
+projection and depth test; default labels remain overlays. No texture asset.
+
+AR schema primary source fetched 2026-10-14:
+https://github.com/SnowyMouse/invader/blob/master/src/tag/hek/definition/weapon.json
+Raw SHA256: 7bd921c3340aaba0718227db53cd81605e170c7a7dd6c83f8bb216db0c9e3b55
+Summing declared fields including inherited Item size verifies:
+Weapon size 0x508, trigger count +0x4fc, pointer +0x500.
+WeaponTrigger size 0x114; minimum error +0x78, error angle bounds +0x7c/+0x80.
+These three float radians are multiplied by .65 by default ONLY around the
+already-hooked local primary FireWeapon call. No new executable entry hook.
+Existing full salt/datum/tag/owner/campaign readers validate the object and
+exact path weapons\assault rifle\assault rifle. Wrong path/count, invalid
+floats, wrong owner or multiplayer decline tuning. Restore checks identity,
+address and current values. Nested calls temporarily restore the outer data,
+then restore the outer patch on return, preventing compounding/AI leakage.
+The optional raw EXE-based check was not rerun; portable synthetic memory tests
+validate field access and restoration, not native engine dispersion itself.
+Damage/velocity/range fields are deliberately untouched: longer effective
+range comes from hit probability, preserving the Magnum's precision role.
+
+Default config: StylishARSpreadScale=.65 (clamp .35..1, NaN default .65).
+1 disables this adjustment. Reticle uses the same scale for validated local AR.
+No save/map files are modified, no game assets are included.
+
+Windows compilation and in-headset camera/marker/accuracy tests remain needed.
+
+Late user addition: perceived world scale.
+The source fixed MetresToWorld=m/3.048 and WorldToMetres=w*3.048.
+OpenVR applies MetresToWorld to combined HMD and eye translation, including
+stereo eye separation; tracked controller velocity and other spatial code use
+the same conversion. New StylishWorldScale, bounded .75..1.25, multiplies the
+3.048 denominator and the inverse numerator. Thus .90 makes native world
+objects about 10% smaller while controller-metre interaction zones stay put.
+Null/invalid config uses 1. Runtime FOV unchanged. Production conversion and
+OpenVR frustum tests check stereo separation, head movement, reciprocal
+conversion, bounds and default restoration. Perceived comfort needs headset.

@@ -1,0 +1,71 @@
+R1.23 - grenade fit and stick-controlled first-person seats
+13 October 2026
+
+Evidence
+- Supplied R1.22 video and inject log: physical grenade grabs/returns, queued
+  throws and detached-projectile tracked velocity succeed. User reports offset
+  zones, huge models/backward fingers, low/shaky seat view and visible head.
+- R1.22 recalculated/mutated chest anchors during render, independently of the
+  input hit-test snapshot. Rendering now consumes the existing input anchors.
+- Chest forward offset is 0.06 m (was 0.16). Grab radius remains 0.12 m,
+  return radius 0.17 m. Draw scales: 0.32 chest (was 0.8), 0.5 held (was 1).
+  Root inverse-bind translation is removed before placement; a translated
+  asset root therefore cannot displace the anchor after scaling.
+- LeftPalmFrame/CloseGripHand were based on left-hand anatomy (also reflected
+  for left-handed reloads). Native right grenade fingers are a separate chain;
+  their index-to-pinky cross product and rotation hinges have the opposite
+  handedness. NativeHandSign uses the wrist name, distinct from pose reflection.
+
+Native body draw
+All addresses refer only to the supplied, read-only retail EXE:
+SHA256 b84131f2ee8cbf8d0dbda71d1d920059318bc55b36760dce32735026ced099a8
+Halo PC 1.0.10.0621, image base 0x400000.
+- Existing validated routine 0x4d6fc0: EAX=model tag, ECX=node Transform array;
+  eleven stack arguments, owner datum at argument 9 (entry ESP+0x24).
+- World submissions 0x50f044 / 0x50f0b8 push object EBX in argument 9, use
+  object+0x1f2 node-array offset for ECX and tag+0x34 model for EAX.
+- 0x4d7126 reads [EBP+0x28] into draw-info owner. 0x4d706f..70a7 combines
+  submitted nodes (stride0x34) with model inverse binds (stride0x9c,+0x68).
+  Combined nodes are in the routine's own stack storage. No recursive calls
+  to this entry were found in the routine. Original native draw remains intact.
+- New MinHook wrapper preserves EFLAGS and pushad registers. After pushfd+pushad
+  owner is [ESP+0x48], saved ECX is [ESP+24]. Only saved ECX is replaced before
+  tail-jumping into the original trampoline. Original arguments remain intact.
+- Install requires the exact existing RetailModelDraw fingerprint (rva0xd6fc0,
+  length0xd5,FNV1a0x7104452e). After our own detour installs, ModelDrawReady
+  recognizes that owned installation instead of rejecting its patched entry.
+- Fast callback filter: active BeginView..EndView owner == local seated biped.
+  Engine then validates local biped, vehicle, seat, render player0 and matching
+  biped model. Copies actual submission nodes to thread-local storage, checks
+  finite matrices, collapses scale AND rotation of head descendants in the
+  copy only. Other nodes and all original game memory remain unchanged.
+- No separate DrawVehicleBody call remains. Native body pose, materials and
+  animation are used. Missing model-draw guard disables vehicle mode without
+  disabling the independent grenade profile. First successful mask is logged.
+- Frame drawPlayer and camera positions are restored after render.
+
+Camera / input
+- Capture head position once in vehicle-local coordinates on entry/recenter.
+  Thereafter use car+0x5c position, +0x74 forward, +0x80 up. Head animation
+  cannot move the seat. car+0x68 per-tick velocity supplies 30 Hz feed-forward.
+- 0.18 m world-up lift, bounded configurable range0..0.40. Seat position and
+  shortest-path chassis/turret yaw get a 25 ms filter; teleports >2 world units
+  snap. OpenVR still adds current HMD/eye position/orientation directly once.
+- Warthog/Ghost: left-stick X sets desired heading within +/-0.95 radians of
+  chassis heading, changes bounded to2.5rad/s; neutral centers native steering.
+  Turret uses right-stick X/Y at1.8/1.2rad/s. No hand steering/fallback remains.
+- Warthog RT-LT throttle; Ghost keeps move Y and RT fire, disables X strafe;
+  turret RT fire. Invalid inputs/menu neutralize controls. Passenger unchanged.
+
+Verification
+- Portable suite compiles the actual production gesture/camera/native-reader
+  methods with doubles. Native right anatomy test uses proper wrist rotations
+  with mirrored bone placement, independently of existing reflected-left tests.
+- Synthetic model tests verify translated root placement, scales and no tag
+  mutation. Head mask tests verify owner/model/render-context rejection,
+  original-memory immutability and using submitted rather than live node poses.
+- Input tests verify designated stick, independent head/hands, raised seat,
+  head-animation isolation, HMD single-addition, menu and camera restoration.
+- Exact EXE and prior post-crouch runtime profile tests run read-only.
+- No Windows/MSVC build, GPU render or headset test performed here. Native ABI,
+  actual hand fit, camera comfort and vehicle steering feel need in-game checks.

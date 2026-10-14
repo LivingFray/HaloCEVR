@@ -1,0 +1,50 @@
+R1.31 - 14 October 2026
+Baseline: e08cd60e56be1499bb91e161110bf4bfac884f8f (R1.30 code),
+543adcb (R1.30 package metadata), confirmed running by the supplied log:
+[Stylish Restart R1.30] vehicle transitions, physical controls, free actions, Needler reload and player guide
+
+User reports R1.30 working, with remaining exit shake and Silent Cartographer
+Pelican instability. AJBats' draft explanation was supplied verbatim by the user:
+exit yaw/pitch correction feeds animated native reference back into itself;
+suspend correction temporarily and synchronize references when it settles.
+This implementation is independent, elapsed-time based, with no copied PR code.
+
+Camera path findings:
+- Game::UpdateCamera did not suppress correction after native parent detach.
+- PhysicalInteractionHandler's 0.35 s position blend could end during the exit.
+- Seat discovery was only reached from UpdateInputs; BeginView only refreshed
+  already-known vehicles. Scripted input locks could bypass Pelican detection.
+- Pelican VehicleCamera intentionally returned zero; render-only stick look must
+  refresh VR action state even when no gameplay callback runs.
+
+Changes:
+- VehicleExitGuard tracks actual parent edges at input and render boundaries,
+  advances once per frame, suppresses correction for one second and consumes
+  a one-time reference sync. Null/loading contexts and re-entry reset it.
+- Position EMA uses dt with 0.18 s time constant, at least one-second handoff,
+  convergence tolerance 1 cm, max two seconds, teleport skip at eight metres.
+- Render-time seat discovery independent of input. Pelican initial facing uses
+  bind-corrected seated body root; later view follows chassis heading, plus
+  independent right-stick yaw/pitch. No native flight/aim-memory writes.
+- All map intros share the native seat reader. No mission assets were inspected
+  or run here; specific scene coverage is a user-test requirement, not proven.
+
+Controls:
+PhysicalMove/PhysicalLook vector2 actions added to all four presets, fixed to
+left/right stick. They do not swap with firing-hand changes or the left preset.
+Missing/inactive/nonfinite analog values return zero, never another action's
+previous cached value. Ghost retains physical left Y short-press menu behavior.
+Scorpion identity is checked through local campaign biped, validated vehicle
+parent/tag, seat block and driver label. Its native camera path is untouched.
+A was mapped to default Grenade; LT now drives this native secondary-fire path.
+
+UI/render/reload:
+New OnFootLegs false key intentionally replaces old default-on body option.
+Every non-leg node collapses at the steady pelvis; live leg chains remain.
+SettingsPresentation strips display prefixes only; config keys are not renamed.
+Legacy settings are hidden only when overridden by enabled mechanics.
+Shotgun action pickup requires needsRack; every required shot/empty-reload pump
+and native spent-shell cue remains. Magnum/AR/sniper free cycling is retained.
+Guide expanded to ten pages and checked with actual bundled-font metrics.
+
+No new native addresses, detours, PVS overrides, external code or game assets.

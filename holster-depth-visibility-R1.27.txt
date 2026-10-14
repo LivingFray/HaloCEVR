@@ -1,0 +1,58 @@
+R1.27 evidence and limits - 14 October 2026
+
+Baseline: verified complete R1.26 archive, SHA256
+b57fbe3a4adf1b525be98c3fdc370916aeb3df876c6a8d056b1b93e56d631a9b.
+Source commit: ed8d97a74c004dd6ed6bae97a1515a612a3a7746.
+Input: 20261014-0429-02.0870718.mp4 and inject(20261014-043443).log.
+The video shows hand/marker occlusion errors and missing cliff/BSP sections
+while separate scenery objects remain. It does not establish that objects
+were actually despawned. The log confirms R1.26 and rendered-chassis mode,
+with native seated head masking and a small settled anchor error. No crash.
+
+Depth evidence (read-only retail 1.0.10.0621 halo.exe; never distributed):
+SHA256 b84131f2ee8cbf8d0dbda71d1d920059318bc55b36760dce32735026ced099a8.
+Native rasterizer_set_frustum_z at 0x518f40 updates the rasterizer frustum
+(0x7c127c) and shader constants. The override at 0x50c9a0 sets projection
+_13/_23=0, _33=-(f+n)/(f-n), _43=-2*f*n/(f-n). The first-person model paths
+read near/far from 0x69c664/0x69c668: 0.01171875 and 1024, confirmed in the
+binary. Examples: 0x519fac, 0x527110, 0x5337b5, 0x533f45. The prior custom
+mesh pass used the unmodified world projection; resetting viewport MinZ/MaxZ
+alone cannot correct incompatible projected depths. RenderProjection.h now
+uses the native first-person override for the procedural body marker/pieces.
+Native grenade previews, including grey empty previews, reuse the native
+model path and its depth behavior. GreyMarkerDraw changes color/blend/fog,
+not depth state. Actual GPU occlusion remains to be tested in the headset.
+
+Visibility evidence:
+0x50ba80 builds separate frusta from Renderer+4 and Renderer+0x58.
+0x50bfb0 render_scene copies the first to camera 0x7c3114 / frustum 0x7c3168;
+the second goes to rasterizer window parameters (camera 0x7c1228 / frustum
+0x7c127c). 0x5537c0 performs BSP/portal visibility. Native 0x50cc40 uses the
+camera's +0x44 clip plane when zNear at +0x3c is zero. R1.26 repositioned both
+frusta but retained their inherited clip fields. There is no runtime trace
+proving those fields caused the recorded holes. R1.27 therefore logs original
+near/far values on entry and applies a conservative cockpit visibility fix:
+- after current HMD/eye pose, use a regular positive near plane (1/256 world
+  unit); retain a valid native far plane; reset the explicit clip plane;
+- copy that eye to the culling frustum and add 20 degrees to the culling FOV,
+  bounded at 150 degrees and never narrower than the headset FOV;
+- leave raster FOV, eye position/facing/up, vehicle interpolation, yaw, physics
+  and portal/PVS machinery unchanged. No global no-culling patch or new hook;
+- extract overlays from the raster frustum, not the widened culling frustum;
+- do nothing on foot, unsupported seats, or an unsuccessful camera override.
+The margin may submit somewhat more geometry while seated. It is not a
+measured performance result or a guarantee that the specific BSP issue is fixed.
+
+Regression checks:
+- actual adapter with engine/VR doubles for either hand, native/grey grenade
+  previews, closest-zone selection after plasma move, and empty inventory;
+- actual manual reload draw paths plus independent outline geometry checks;
+- numeric occlusion ordering vs independently evaluated native depth formula;
+- actual ExtractMatrices using distinct culling/raster FOVs for both eyes;
+- actual cockpit preparation over 3 seats, near planes, FOVs, yaw/pitch/eyes;
+- unchanged render-phase motion tests at 72/90/120 Hz;
+- actual HUD capture filters preserve health while suppressing driver center;
+- existing reload/recoil/recovery/input/native-reader/world-scale/AR tests.
+Windows/MSVC DLL compilation, headset comfort and real GPU occlusion/visibility
+are not validated by these fixtures. User must repeat the supplied route.
+No game EXE, maps, models, sound data or footage is packaged.

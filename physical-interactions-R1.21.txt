@@ -1,0 +1,61 @@
+R1.21 native interaction notes (read-only investigation)
+
+Input: user's Halo PC retail 01.00.10.0621 executable, SHA256
+b84131f2ee8cbf8d0dbda71d1d920059318bc55b36760dce32735026ced099a8.
+Disassembled locally with objdump; never executed or modified. No new direct
+calls with unverified register ABIs were introduced.
+
+GRENADES
+- unit+0x28d: native grenade animation state. Start at 0x56e080 sets 1;
+  0x56e280 creates/attaches the projectile and sets 2; 0x56e440 releases
+  only in state 2, clears +0x294 and sets 3. Existing hook at 0x56e440 is reused.
+- unit+0x294: attached grenade datum. Capture BEFORE original release; after
+  release it is None. Validate full salt/index, projectile type 5 and parent.
+- unit+0x31c / +0x31d: signed current/desired grenade type.
+  +0x31e / +0x31f: frag/plasma counts. 0x56e314 decrements selected count.
+  The add-on never writes counts, spawn/fuse state or projectile tag fields.
+- 0x471ae0 loads local control base from [0x6b145c], EBP=base+0x10.
+  0x471cd0 reads [EBP+0x22] (base+0x32) desired grenade type. A valid old
+  command survives even if the unit bytes changed. SelectGrenade validates
+  control+0x10 ownership and writes command +0x32 with both unit type bytes,
+  rolling back the command if the latter write fails. Weapon +0x30 is untouched.
+- globals pointer [0x746fa0], grenade block count +0x128/pointer +0x12c,
+  stride 0x44. Projectile reference datum +0x40. Verified creation routine
+  reads this reference at 0x56e359. Projectile data +0x34 refers to gbxmodel.
+  Only native model materials/geometry are used for held/holster previews.
+- Existing verified object_set_position / validate_drop_position wrappers
+  relocate the released projectile near the player and reject obstructed
+  placement. 0x4bef80 adds velocity at object+0x68/+6c/+70 and clears its
+  stationary flag; original throw already calls it. The post-hook replaces
+  the linear velocity with controllerWorldPerSecond * strength / 30 plus
+  unit velocity per tick. Native angular velocity and fuse remain untouched.
+
+VEHICLES
+- biped+0x11c: parent vehicle datum, validated as object type 1.
+  biped+0x2f0: signed seat index, bounds-checked against the vehicle's unit tag.
+- unit tag seats count +0x2e4, pointer +0x2e8, stride 0x11c. Label +4[32].
+  Native unit camera 0x568f80 confirms the parent/seat block; camera marker
+  name is seat+0x84. Empty camera markers may return vehicle origin, so the
+  add-on uses the seated biped's actual head node instead.
+- object marker routine 0x4f6080 passes object + signed WORD(object+0x1f2)
+  as its live node-transform array. Transform stride 0x34, native gbxmodel
+  nodes 0x9c. Each read is bounded by the datum table's allocation size at
+  entry+6; negative/overflowing offsets and invalid model trees are rejected.
+- Biped tag +0x34 -> gbxmodel -> names identify head / l hand / r hand.
+  Their live matrices supply world-space camera and handle positions.
+  Missing head/unsupported label returns stock behavior; missing handles
+  retain seated view and unlatched stick steering.
+- Warthog driver/gunner and Ghost driver are recognized; passenger and other
+  vehicle classes are not overridden. Local live campaign player only.
+- No global vehicle tag flags, camera markers or seat records are patched.
+  Camera/frustum overrides exist only inside the render frame and are restored.
+
+RUNTIME GUARDS / VERIFICATION
+Added instruction fingerprints are in RetailProfile.h and
+research/retail-1.10-profile.json. New features are gated on exact matching;
+unsupported profile does not gain raw native-field access. Existing render,
+object movement and local-player salt/ownership checks are reused.
+
+Portable production-code tests use synthetic memory/VR/native-call doubles.
+They do not establish actual seated mesh fit, headset comfort, engine animation
+delay or a Windows DLL build. Those remain the user's next runtime checks.

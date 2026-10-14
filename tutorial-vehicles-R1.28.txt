@@ -1,0 +1,60 @@
+R1.28 evidence and implementation notes -- 14 October 2026
+
+Inputs: R1.27 source, user's 20261014-0532 footage and inject log. The log
+confirms R1.27; cockpit native/raster near=0.0625 and far=2250.12. This does not
+support stale clipping as a sufficient explanation for disappearing cliffs.
+The new clip shows Ghost visibility/aim and third-person Shade. No new Warthog
+route recording was supplied; the user reports the previous issue persists.
+
+Tutorial:
+- Upstream README documents the look-around/mouse workaround.
+- Existing RecordLook ran only through InputHandler::UpdateCamera, excluded
+  cutscenes and called the weapon-inventory reader (which rejects parenting).
+- Now sampled once after UpdatePoses, before recenter. Menus/loading/tracking
+  loss/recenter reset history; active physical vehicle seats exclude it.
+- LocalBiped validates campaign mode, live biped, datum generation and player
+  ownership; the native controlled-unit field must match. No inventory gate.
+- Native history pointer 0x6b145c: bits 0x80/up, 0x100/down, 0x200/left,
+  0x400/right. Verified mouse update 0x4727ef and script tests 0x47f390.
+- Head strokes >=3 degrees; stick threshold 0.4 held >=80ms. Head travel undoes
+  virtual yaw, so snap/recenter discontinuities do not create fake head input.
+  Native flag clears reset accumulation; no script completion is forced.
+
+Visibility:
+- Retail EXE SHA256 is recorded in retail-1.10-profile.json; inspected read-only.
+- render_structure_visibility 0x5537c0 is no-argument cdecl. MinHook entry only.
+- At 0x553834 the native byte 0x724a45 selects its conservative PVS path after
+  normal portal traversal. It copies BSP PVS data and uses the current culling
+  frustum for visible clusters, rather than portal-trimmed frusta.
+- BSP 0x746f9c: count+0x134, cluster pointer+0x138, PVS pointer+0x14c.
+  Current cluster int32 0x7c3348. Row stride=4*((count+31)/32).
+- Valid count 1..512; valid cluster/self visibility and readable row required.
+  Visible clusters limited to 128: native per-cluster frusta span
+  0x7c3390..0x7d0390, stride0x1a0. The native debug branch lacks this guard.
+- Enable only during left/right cockpit-eye native draw with live owner and
+  setting enabled. Restore the prior byte immediately. All other draws use
+  native behavior. Never dereference a negative cluster or oversize PVS row.
+- Verify entry RVA0x1537c0/39 bytes FNV1a9cf1b7a7 and branch RVA0x153834/80
+  bytes FNV1ae7733d33. These exclude later Chimera polygon-limit patch sites.
+- Matched current-eye culling/raster frusta replace R1.27's +20 degree margin.
+  Preserve positive ordinary near/far. No change to rendered-chassis motion.
+- Hypothesis: conservative PVS avoids portal trimming from relocated eyes.
+  The actual runtime cause is not established. Need route/FPS confirmation.
+
+Other changes:
+- Shade: verified vehicle tag name plus gunner/driver seat, or only seat0 of a
+  one-seat tag. Shares existing seated-biped render mask and turret controls.
+- Ghost +0.18m extra lift; reticle direction has a 60ms response, snaps on
+  large discontinuities. Direction comes from native aim, not head pointing.
+- Scope caches unzoomed on-foot render FOV and reduces excess zoom, not HMD FOV.
+- Sniper rotates held magazine around palm finger axis, preserving its pocket
+  position and native bind correction. Asset fit must be checked in headset.
+- Left grenade fore/aft half-reach 0.065m vs old sphere0.12m. Right0.09m;
+  side/up0.10m. Return radius remains0.17m. No chest-preview asset/size changes.
+- New reload grips precede new chest grabs; existing grenade release retains
+  priority. AR-only support zone expands 0.04m along/radially. Alien compact
+  support pose moves +0.07m forward; Magnum and its aiming policy are retained.
+
+Verification is portable production-code regression and static executable
+fingerprint/disassembly checking. No Windows build, game execution, VR comfort,
+GPU draw, performance measurement or native hook execution was possible here.

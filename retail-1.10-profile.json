@@ -1,0 +1,365 @@
+{
+  "format": 1,
+  "edition": "Halo PC retail (halor)",
+  "version": "01.00.10.0621",
+  "sha256": "b84131f2ee8cbf8d0dbda71d1d920059318bc55b36760dce32735026ced099a8",
+  "pe": {
+    "machine": 332,
+    "timestamp": 1400006738,
+    "image_base": 4194304,
+    "image_size": 4788224
+  },
+  "routines": [
+    {
+      "name": "unit_ready_desired_weapon",
+      "rva": 1496800,
+      "length": 679,
+      "sha256": "28b1f477d7dafe52b9b757c29ec6eab0ce65319a4f5632af8b7083d5b40a091e",
+      "prefix_hex": "83 ec 0c 8b 15 b0 03 86 00 8b 4a 34 53 55 56 8b",
+      "abi": "__cdecl(unit datum, bool force); void",
+      "fnv1a": 3371674475
+    },
+    {
+      "name": "unit_drop_current_weapon",
+      "rva": 1498816,
+      "length": 260,
+      "sha256": "91e6211d075aac9fd53b5addd6018a107246aedad9becc8b7b0d4bcda1367dfb",
+      "prefix_hex": "51 8b 0d b0 03 86 00 8b 51 34 53 55 8b 6c 24 10",
+      "abi": "__cdecl(unit datum, bool force); success in AL",
+      "fnv1a": 2534333791
+    },
+    {
+      "name": "unit_inventory_get_weapon",
+      "rva": 1481072,
+      "length": 44,
+      "sha256": "e564f1cf95b072db9e27bfa7041cc7bb566436eddc25fe2787c5cdd6a5efe27f",
+      "prefix_hex": "83 ca ff 66 83 f9 ff 74 20 8b 15 b0 03 86 00 8b",
+      "abi": "unit datum in EAX; signed slot in CX; datum in EAX",
+      "fnv1a": 3485550066
+    },
+    {
+      "name": "unit_drop_item",
+      "rva": 1502464,
+      "length": 596,
+      "sha256": "92c5020743c06ef3f735c592c66971e362d2eaa79c2062b9190aa98c1fb7d60e",
+      "prefix_hex": "83 ec 34 a1 b0 03 86 00 8b 48 34 8b 44 24 38 53",
+      "abi": "__cdecl(unit datum, item datum); do not call as an inventory removal shortcut",
+      "fnv1a": 325308344
+    },
+    {
+      "name": "reload_start_entry",
+      "rva": 800176,
+      "length": 32,
+      "sha256": "e1c2dab5d5f2f6fdae6ebb7b26144b6fccd9b66bdc5d897d34bed61342146f9c",
+      "prefix_hex": "83 ec 0c 8b 54 24 10 53 55 0f bf 6c 24 1c 56 8b",
+      "abi": "__cdecl(weapon datum, short magazine, bool force)"
+    },
+    {
+      "name": "reload_end_entry",
+      "rva": 801024,
+      "length": 32,
+      "sha256": "060f6b2e918411113aeb5c65bf584ec63230928aa14aba7096e2fe4ac20da19d",
+      "prefix_hex": "8b 44 24 04 8b 15 b0 03 86 00 8b 52 34 53 8b 1d",
+      "abi": "magazine in CX; weapon datum at stack +4; caller cleanup"
+    },
+    {
+      "name": "throw_grenade_entry",
+      "rva": 1500224,
+      "length": 32,
+      "sha256": "4fa90817be47e6ff35e54e9cb357d12a9ba7050a82187f12df4374706d0ffc9a",
+      "prefix_hex": "8b 44 24 04 8b 0d b0 03 86 00 8b 51 34 8b 0d 14",
+      "abi": "__cdecl(unit datum, bool); cache projectile datum BEFORE original"
+    },
+    {
+      "name": "object_set_position",
+      "rva": 1003968,
+      "length": 248,
+      "sha256": "6a466a3042ba2d3bc41ecd465e73a520f460f7c95952dc4baa1ec9e1645d9991",
+      "prefix_hex": "8b 0d b0 03 86 00 8b 51 34 83 ec 0c 53 8b 5c 24",
+      "abi": "EDI=new position pointer; stack object, forward pointer, up pointer; caller cleanup",
+      "fnv1a": 2815544743
+    },
+    {
+      "name": "object_validate_drop_position",
+      "rva": 1014640,
+      "length": 195,
+      "sha256": "0d9895b482bcc484984be2ec7dd96c8338a7419a88edb064d0422803ff0dba21",
+      "prefix_hex": "83 ec 64 53 8b 1d b0 03 86 00 55 8b 6c 24 70 56",
+      "abi": "ECX=previous valid position; stack object, ignore datum; AL=success; caller cleanup",
+      "fnv1a": 501656960
+    },
+    {
+      "name": "game_engine_assignment",
+      "rva": 377625,
+      "length": 17,
+      "sha256": "17531030e1c8da0ad475167bd74ad248ac3fef30c081d386f8dd07a5df3825b1",
+      "prefix_hex": "8b 4b 30 8b 14 8d 08 83 68 00 5f 89 15 20 1d 6f",
+      "abi": "Reads game-engine table at 0x688308 and stores selected entry at 0x6f1d20",
+      "fnv1a": 191405139
+    },
+    {
+      "name": "script_look_history_tests",
+      "rva": 521104,
+      "length": 240,
+      "sha256": "b3f671bc1385e52d4aec0db040cd0f00c68e732fd4298714a5b80f593f34de6e",
+      "prefix_hex": "51 a1 5c 14 6b 00 8b 08 c1 e9 07 80 e1 01 c7 04",
+      "abi": "Verified script reads: up/down/left/right and all use player-control globals flags at +0",
+      "fnv1a": 2846891500
+    },
+    {
+      "name": "native_look_history_update",
+      "rva": 468975,
+      "length": 100,
+      "sha256": "c2b2d26bb467aa938f511b427c0cb45cf5961e99d2fe9c26488e7e4e434634f1",
+      "prefix_hex": "d9 42 10 d8 1d c0 2a 67 00 df e0 f6 c4 41 75 09",
+      "abi": "Packet +0x10 pitch sets 0x80/0x100; +0xC yaw sets 0x200/0x400 in player-control flags",
+      "fnv1a": 3374468856
+    },
+    {
+      "name": "unit_add_weapon",
+      "rva": 1496064,
+      "length": 519,
+      "sha256": "d7fbc08fb444b931d652898c96046a3a92953b985c3f66e85197a97a3b027590",
+      "fnv1a": 2426866663,
+      "abi": "EAX=weapon datum; ECX=unit datum; stack int pickup mode; caller cleanup 4; AL=success; mode 1 takes free slot, mode 2 drops inventory (never used)"
+    },
+    {
+      "name": "player_offer_interaction",
+      "rva": 495104,
+      "length": 262,
+      "sha256": "e1a5179d31ed71118e4c7a923b119b02ab6e6f8616ff72b768219b45d5984643",
+      "fnv1a": 2709599710,
+      "abi": "EAX=player datum; EBX=item datum; stack action type, seat -1; caller cleanup 8; preserves EBX"
+    },
+    {
+      "name": "unit_can_use_weapon",
+      "rva": 1497600,
+      "length": 113,
+      "sha256": "6fb8039cdde756382fd8835771d4af5223b9de48640ef8b5363c40f1ac1360ea",
+      "fnv1a": 2605818037,
+      "abi": "ESI=unit datum; EDI=weapon datum; AL=result; preserve caller ESI/EDI"
+    },
+    {
+      "name": "player_control_set_weapon_index",
+      "rva": 467200,
+      "length": 83,
+      "sha256": "52b00d15a38352f43100fb7ccde435141f8e8d95a0b2af9117262b6c5af11d4e",
+      "prefix_hex": "8b 0d b0 03 86 00 8b 51 34 25 ff ff 00 00 8d 04",
+      "abi": "unit in EAX, weapon slot on stack; reference only, checked writes use same validated field",
+      "fnv1a": 915472687
+    },
+    {
+      "name": "player_world_item_contact",
+      "rva": 493728,
+      "length": 926,
+      "sha256": "bfc3454008dfcb61f624c65dcb358f176e11e5f9452c5b05a65304867059b014",
+      "fnv1a": 731632430,
+      "abi": "__cdecl(player datum, item datum); void; verified call at 0x4784B7; validate full routine before MinHook detour"
+    },
+    {
+      "name": "first_person_set_visible",
+      "rva": 605776,
+      "length": 77,
+      "sha256": "04b416b69bb220465abafc481599b19143eaf729da80424fdd1a0112d8d80517",
+      "fnv1a": 1355256568
+    },
+    {
+      "name": "first_person_rebuild_weapon",
+      "rva": 605280,
+      "length": 487,
+      "sha256": "7bc9a181e11158d813857f9725ae92f8f884f85f6198dccb136bbe6c57eac9bd",
+      "fnv1a": 3898837757,
+      "abi": "__cdecl(int local_player_index), call at 0x494139, rebuilds from unit +0x2F2/0x2F8, tears down old effects, remaps weapon/hands and resets interpolation"
+    },
+    {
+      "name": "first_person_pose_entry",
+      "rva": 599088,
+      "length": 85,
+      "sha256": "e0d0447fff94a087290a8d31cd42113904a277f6586b8d07bed919ef07fbd12d",
+      "prefix_hex": "51 8b 0d 08 31 7c 00 66 83 f9 ff 74 6c 8b 15 98",
+      "abi": "__cdecl(); prefix ends before existing vehicle-visibility patch",
+      "fnv1a": 3089500140
+    },
+    {
+      "name": "weapon_hud_draw",
+      "rva": 728608,
+      "length": 453,
+      "sha256": "580bbb456f7365d72617dff611878173dba75abcbf551d740c5894468f68f8a8",
+      "prefix_hex": "83 ec 20 55 8b 6c 24 28 8b 45 34 56 8b 35 b0 03",
+      "abi": "__cdecl(player pointer); no unit HUD rendering",
+      "fnv1a": 2879244392
+    },
+    {
+      "name": "model_draw",
+      "rva": 880576,
+      "length": 213,
+      "sha256": "0d0c1d26af837b79328bfbe7192b1b5e6a727a73d991d359d9bb9cbce1eb9d63",
+      "prefix_hex": "55 8b ec 81 ec e0 0d 00 00 53 56 25 ff ff 00 00",
+      "abi": "model datum EAX; node matrices ECX; 11 caller-cleaned stack args; prefix before Chimera LOD patch",
+      "fnv1a": 1896105262
+    },
+    {
+      "name": "object_lighting",
+      "rva": 1108480,
+      "length": 74,
+      "sha256": "3938cd3c099290334e5ff6e8cf91d3a7530419bddab63c59358d5b02a7302cbc",
+      "prefix_hex": "8b 44 24 04 50 56 e8 45 07 00 00 83 c4 08 83 f8",
+      "abi": "object datum ESI; float distance at stack+4; returns pointer EAX",
+      "fnv1a": 2522139950
+    },
+    {
+      "name": "weapon_fire_magazines",
+      "rva": 802829,
+      "length": 153,
+      "sha256": "1badf5e46e75bee2ce15c64a032a3a1129ae84c6bafef769f1c8330c90ad795a",
+      "fnv1a": 2651096771
+    },
+    {
+      "name": "weapon_fire_success",
+      "rva": 803624,
+      "length": 80,
+      "sha256": "b13596460afda685abb898ef833d57ed1d84f04ea1c31eb9aab81ca54392082f",
+      "fnv1a": 1309979888
+    },
+    {
+      "name": "weapon_fire_energy",
+      "rva": 803908,
+      "length": 161,
+      "sha256": "5c65a8f6cc05bcb60b59cabb82a89406859ce75eac0b92e173a6dd207faab397",
+      "fnv1a": 576271545
+    },
+    {
+      "name": "manual_reload_ammo_layout",
+      "rva": 801059,
+      "length": 170,
+      "sha256": "449749a5d9f3c7def25fe4061cd92c70ab22ab94c3c2a0810f64048cebeac433",
+      "fnv1a": 718365651
+    },
+    {
+      "name": "native_first_person_sound",
+      "rva": 1326304,
+      "length": 156,
+      "sha256": "01fdf5158c46d0a225b6543d0576c6b54f2ca5a78485f11f44f413949076a450",
+      "fnv1a": 1207658044
+    },
+    {
+      "name": "native_sound_stop",
+      "rva": 1351392,
+      "length": 64,
+      "sha256": "961e69d7b049221f1409ee2da550c24df7809e709fea8f83970848214a4a9d14",
+      "fnv1a": 669025
+    },
+    {
+      "name": "weapon_effect_dispatch",
+      "rva": 804816,
+      "length": 198,
+      "sha256": "2a67cfa4bc9054933dcac3ebb69470b5a9c5958dd96c2d06e28b56d4e7bbb83f",
+      "fnv1a": 3771744759
+    },
+    {
+      "name": "RetailGrenadeAttach",
+      "rva": 1499776,
+      "length": 446,
+      "sha256": "df4baaeb61fb477e72b5671615dd1f26d763b86476a92d76b584ddfc96fd9c4c",
+      "prefix_hex": "81 ec 00 01 00 00 8b 15 a0 6f 74 00 53 8b 9c 24",
+      "abi": "Read-only layout fingerprint; no new direct call.",
+      "fnv1a": 2442093637,
+      "notes": "grenade attach: inventory count, global projectile reference, native state and attached datum"
+    },
+    {
+      "name": "RetailGrenadeRelease",
+      "rva": 1500275,
+      "length": 49,
+      "sha256": "9459ce9812e2a742d67628cea0964c388595379fe48a9d8c0e36612e5e20528a",
+      "prefix_hex": "80 bd 8d 02 00 00 02 56 57 0f 85 92 03 00 00 8b",
+      "abi": "Read-only layout fingerprint; no new direct call.",
+      "fnv1a": 3954224802,
+      "notes": "grenade release interior: excludes existing hooked entry"
+    },
+    {
+      "name": "RetailObjectNodes",
+      "rva": 1007744,
+      "length": 252,
+      "sha256": "8c41de08bacbacf7b2fe298a5c7ef50bbbcf624142c56733cfa4c38b057ea1cb",
+      "prefix_hex": "8b 44 24 04 53 55 8b 6c 24 14 25 ff ff 00 00 56",
+      "abi": "Read-only layout fingerprint; no new direct call.",
+      "fnv1a": 2315480412,
+      "notes": "object marker: dynamic node block at signed offset 0x1f2"
+    },
+    {
+      "name": "RetailSeatCamera",
+      "rva": 1478528,
+      "length": 516,
+      "sha256": "5cb835580a9d444747e59f99b80820914083fb1d462b2751c9a9f0a132332c2e",
+      "prefix_hex": "a1 b0 03 86 00 8b 50 34 83 ec 6c 53 8b c1 25 ff",
+      "abi": "Read-only layout fingerprint; no new direct call.",
+      "fnv1a": 3540317817,
+      "notes": "unit camera: parent vehicle, seat index and tag seat block",
+      "runtime_variants": [
+        {
+          "name": "HaloCEVR motion-crouch camera patch",
+          "offset": 112,
+          "bytes": "d905c02a6700",
+          "fnv1a": 3659042718
+        }
+      ]
+    },
+    {
+      "name": "RetailGrenadeCommand",
+      "rva": 465632,
+      "length": 704,
+      "sha256": "eaa003f7660d62e40d9a9302aa5410771a3570511d624944e2cc4904a8e15361",
+      "fnv1a": 493466615,
+      "abi": "Read-only: control base+0x10 owned unit and base+0x32 desired grenade type."
+    },
+    {
+      "name": "structure_visibility_entry",
+      "rva": 1390528,
+      "length": 39,
+      "sha256": "9a8c76a70c7c973f7a827894a0371ebcc12824590681128badbb06eebce5b808",
+      "fnv1a": 2633086887,
+      "abi": "cdecl(void); entry only"
+    },
+    {
+      "name": "structure_visibility_pvs_branch",
+      "rva": 1390644,
+      "length": 80,
+      "sha256": "5b799d2b44c12fe2cdc0ec68dea4a749db7950708dad90abb037028d2235703b",
+      "fnv1a": 3883089203,
+      "abi": "verified interior; not detoured"
+    }
+  ],
+  "globals_rva": {
+    "object_table_pointer": 4588464,
+    "player_table_pointer": 4695168,
+    "tag_array_pointer": 4701204,
+    "controls": 3220632,
+    "input_data": 2823260,
+    "local_player": 2803288,
+    "cutscene_data": 3086460,
+    "campaign_loading": 3249977
+  },
+  "unit_offsets": {
+    "player_datum": 536,
+    "grenade_state": 653,
+    "held_grenade_datum": 660,
+    "seat_index": 752,
+    "current_weapon_slot": 754,
+    "desired_weapon_slot": 756,
+    "weapon_datums": 760,
+    "weapon_ready_times": 776,
+    "equipment_datum": 792,
+    "grenade_type": 796,
+    "grenade_counts": 798
+  },
+  "weapon_magazine": {
+    "array_offset": 688,
+    "stride": 12,
+    "state": 0,
+    "remaining_ticks": 2,
+    "total_ticks": 4,
+    "reserve_rounds": 6,
+    "loaded_rounds": 8
+  },
+  "verification": "Static disassembly of the supplied executable, not an in-game validation or a profile for Custom Edition."
+}

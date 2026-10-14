@@ -1,0 +1,79 @@
+R1.30 - control routing, camera transitions, depth, body, reload and help
+14 October 2026
+
+Baseline: R1.29 source a5706b815b46d814519f664e97f97f4862d9ffe3.
+User log inject(20261014-072523).log confirms R1.29, retail 1.0.10.0621,
+native visibility path, installed seated-head mask, and WorldScale 0.8.
+No new footage/native execution was available for these added requests.
+
+CAUSES / IMPLEMENTATION
+Ghost vehicle input used movement Y as throttle and its camera path flattened
+pitch. New RT-LT throttle and dominant-stick yaw/pitch use the existing native
+camera input; physical A/X fire. Turret sensitivity also applies to Ghost.
+Warthog gunner now uses the same live rendered head alignment as Shade, rather
+than a frozen chassis-local point that cannot follow a rotating gunner.
+
+Menu routing had bypassed the original hold-to-recenter timer. Recenter now has
+its own physical-left-Y action and five-second hold state, independent of the
+X+RT chord. Short Y is a release event so a long hold cannot start left-handed
+reload. Physical B is pinned right for interaction in both handedness modes.
+Physical actions/fallback paths are updated in all four SteamVR profiles.
+Ghost reserves X+RT for its new controls and uses short Y for the menu.
+
+Flashlight previously required both controllers to be tracked and output one
+render-frame pulse. It now needs only the acting controller plus HMD, allows a
+fresh squeeze while remaining at the temple, and holds native input for 120 ms.
+Belt and EMPTY label calls previously bypassed depth; they now respect the same
+first-person projection/depth as the magazine label.
+
+On-foot body is an additional native-model render copy: root yaw + bind torso,
+live thigh descendants rebased from the animated pelvis to the steady pelvis.
+Head/arm descendants collapse in the copy. No object/tag/skeleton writes. Gates
+include supported profile, live local on-foot biped, tracked physical visuals,
+render player 0 and verified existing model/lighting functions. Toggle provided.
+
+Exit: B edge retains last seat anchor and yaw against the dismount head animation
+for up to two seconds; detach blends position for 0.35 seconds. Detach between
+input and render also starts the handoff. >3 m teleports skip it. Live head lean
+continues; camera/frusta are restored after rendering. Pelican seats now reuse
+the stable chassis anchor; input camera deltas are suppressed during cinematics
+and OpenVR omits the second cinematic-yaw transform while a seat view is active.
+On-foot angle deltas are wrapped at +/-pi. These identify code-level hazards;
+actual camera comfort/coverage of every campaign transition remains unverified.
+
+Free action eligibility extends from pistol to AR/sniper and shotgun. Magazine
+handles remain latched until grip releases; repeated full strokes work. A loaded
+supported shotgun enters a free pump after 18 mm backward travel, preserving
+normal aiming/firing while simply supporting it. Existing complete stroke and
+spent-shell state apply. No free action calls CommitReloadAmmo or removes a live
+round. Empty charging does not create a chambered round.
+
+Native fire at 0x4c3f10 was checked in the supplied halo.exe. At 0x4c4039..4050 it
+compares magazine rounds at +8 with trigger rounds-per-shot. Failure leaves the
+success flag false. At 0x4c429d..42ba it selects effect category 2 (misfire), while
+successful shots use the firing category. BlocksNativeFire now admits empty
+attempts but still blocks loaded/unready manual guns. BeforeShot requires a
+positive pre-shot round count so dry ticking cannot create a shotgun shell.
+No copied or synthesized empty-click asset is introduced.
+
+Needler has an explicit reload kind but no manual reload state/pose. B/short Y
+permits exactly the synchronous checked call to the existing 0x4c35b0 cdecl
+(weapon, short magazine, bool force) entry, with magazine 0 and force false.
+The existing start/end hooks reject automatic starts; native states 1/3 already
+in progress may finish. Permit never survives the call, preventing a later auto
+reload window. Reader guards require current, owned Needler, reserve >0, space
+in magazine, and idle/end state. No new native address or detour is introduced.
+
+Nine native UI Guide pages are compiled into the DLL. Word wrapping uses the
+bundled font's actual width and the normal medium font; page navigation follows
+existing UI conventions. Four equal-width tabs fit the original 640-pixel panel.
+
+VALIDATION
+See SOURCE-PROVENANCE.json for exact portable test results. New fixtures cover
+production camera input/transition methods, physical B/Y actions, independent
+flashlight tracking/pulse, head-relative turret placement at 72/90/120 Hz,
+render-copy body transforms and gates, manual reload changes for either hand,
+Needler explicit-request lifetime, dry-fire state, and Guide wrapping/navigation
+using baked metrics from Extras/Fonts/normal.ttf. Existing tests are retained.
+No Windows/MSVC, headset, native engine execution, actual sound or GPU testing.
+The prior missing-cliff issue remains unresolved; no visibility override added.

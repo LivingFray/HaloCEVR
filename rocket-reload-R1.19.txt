@@ -1,0 +1,28 @@
+R1.19 native rocket preview reference notes - 13 October 2026
+
+Primary schema sources inspected:
+https://github.com/SnowyMouse/invader/blob/master/src/tag/hek/definition/weapon.json
+https://github.com/SnowyMouse/invader/blob/master/src/tag/hek/definition/object.json
+
+Weapon schema SHA256: 7bd921c3340aaba0718227db53cd81605e170c7a7dd6c83f8bb216db0c9e3b55
+Object schema SHA256: f99b3e59d119bc9e976f107b800cfb1804ac5a27d1f461e6f6c2cb461683488d
+
+Computed by summing declared field widths/padding (tag dependency 16 bytes):
+Weapon size 0x508; triggers block count at 0x4fc, address at 0x500.
+WeaponTrigger size 0x114; projectile dependency at 0x94, datum at 0xa0.
+Object.model dependency at 0x28, datum at 0x34 (already used by body markers).
+The primary trigger's projectile must have class proj; its model must have
+class mod2, matching the existing PC native-model reader. Full salted datum
+identity is validated for every reference; no tag path or datum is hardcoded.
+
+The current supplied log identifies the launcher first-person nodes as gun,
+body, foregrip, tubes and push_bar. It has no separately mapped rocket node.
+We therefore render the actual projectile model as a held/falling preview,
+greying the same mesh for spent rounds. This does not assert a native spent
+casing asset exists. No projectile objects or effects are instantiated.
+
+The existing native model submission and lighting wrappers/fingerprints are
+reused, from the same native first-person draw pass as the accepted holster
+models. Read-only tag fields are schema-checked and exercised in synthetic
+memory tests; no new retail executable fingerprint verification or headset
+validation was performed for this checkpoint.

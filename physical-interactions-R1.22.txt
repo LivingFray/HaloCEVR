@@ -1,0 +1,53 @@
+R1.22: runtime startup repair and native seated-body reuse
+
+Evidence: user inject(20261013-082356).log confirms R1.21 marker and
+[PhysicalInteractions] retail grenade/seat layout unavailable; native fallback.
+The video 20261013-0822-59.5537879.mp4 shows third-person Warthog driving,
+consistent with the camera override never activating.
+
+ROOT CAUSE
+Game::Init calls PatchGame, which calls Hooks::EnableAllHooks and
+P_DisableCrouchCamera, before InputHandler::InitializePhysicalWeapons invokes
+RetailWeaponEngine::Initialize. Default CrouchHeight=0.15 enables this patch.
+Original 0x568ff0: d9 86 0c 05 00 00 (fld [esi+0x50c]).
+HaloCEVR replacement: d9 05 c0 2a 67 00 (fld [0x672ac0], the existing zero).
+This lies inside RetailSeatCamera [0x568f80,0x569184).
+Original whole-routine FNV1a: d304f679; exact VR-patched FNV1a: da188f9e.
+R1.21 only accepted the original and used one shared gate for both features.
+R1.22 validates either whole routine exactly; no byte ranges are ignored.
+Grenades require base/attach/release/command; vehicles base/nodes/seat-camera.
+All components are logged, even if an earlier comparison fails.
+
+REGRESSION
+python tests/runtime_profile.py <verified retail Halo.exe>
+This verifies the supplied image, maps its bytes into a temporary data buffer,
+compiles the actual production P_DisableCrouchCamera, MatchFingerprint and
+CheckInteractionCode, then tests before/after patching. It never executes the
+EXE or writes back to it. Each single-byte camera mutation is rejected for
+vehicles but does not disable grenades; grenade mismatches leave vehicle
+activation independent. Original seated/no-crouch mode is also accepted.
+The patch now uses memcpy to copy instruction operands; output bytes are identical
+without misaligned integer dereferences under portable undefined-behavior checks.
+
+SEATED BODY
+Reuse the R1.21 validated live biped node reader and existing native draw wrapper.
+A new draw takes only the current local campaign occupant, revalidates its
+seat/vehicle, copies all live transforms, and collapses head descendants in the
+copy. Native arms, wheel animation and torso are unaltered. The ordinary
+player world draw stays hidden; there are no extra controller gloves in the
+vehicle pass. No live bones, tag region permutations, animations or collision
+state are written. First-person camera still uses the live head node and
+single-addition HMD entry calibration. Eye fit needs a headset test.
+
+STEERING
+Use controller positions expressed in the current seat-view yaw, not world
+space or fixed chassis yaw for the turret. Rotate the hand-to-hand line for
+a Warthog wheel; push/pull the line for turret/Ghost bars; average hand height
+controls turret pitch. No grip buttons or native hand-node acquisition radii.
+A broad forward seated posture requires separated, uncrossed hands, captures
+neutral on acquisition, and resets on lowered/behind-body hands or tracking loss.
+Right-stick steering remains available outside that posture.
+
+No new raw native field offsets or native calls introduced. This changes the
+existing source branch, not a standalone plugin. Gameplay and Windows compiler
+validation remain outstanding; portable tests use engine/VR/memory doubles.

@@ -1,0 +1,56 @@
+R1.26 evidence and changes — 14 October 2026
+
+Input: inject(20261014-040331).log, R1.25 source commit
+ d98f301809c116137ba6195d3c6ab863c7bae6ae.
+The log records tracked release 0.287302 m/s, launch 0.746986 m/s, then the
+combined biped rejection and later successful recovery. No crash or DLL reload
+is shown. The exact rejected field was not logged: death from the near-foot
+explosion is plausible, not proven. Do not claim a confirmed cause of that event.
+
+Player context:
+- Failed reads formerly reset WeaponSession, deactivate reloads, and return false
+  into the stock input path. Preserve/suspend an initialized campaign session
+  instead, with native actions cleared until a fresh valid inventory is read.
+- Separate dead/missing/ownership/parented/vitality errors. Unsupported modes,
+  profile failures and >2 inventory weapons retain explicit fallback.
+- Body damage flags at 0x106 bit 2 are the native death indicator; health ratio
+  >0 is not used as a substitute. NaN/infinite vitality still fails closed.
+- Both hand sessions and checkpoint replacement/release rearming are covered.
+
+Camera:
+- Chimera applies render interpolation to object node matrices and restores them
+  after rendering. It leaves ObjectDatum.position un-interpolated. The old
+  camera used an interpolated head against a simulation vehicle basis plus its
+  own frame-timestamp buffer. The two timelines can disagree with the cockpit.
+- Read/validate the vehicle model's existing live node block (same validated
+  node offset/allocation reader as bipeds). Convert root matrix by inverse bind
+  to get the rendered chassis basis. Read the seated biped root for turret yaw.
+- Use this basis for BOTH head-local entry capture and final seat position.
+  Never add another interpolation delay when the rendered basis is available.
+  HMD look/lean remains direct; no motion values are written into native objects.
+- Three-second entry settling and custom-map simulation fallback are retained.
+- Real engine/GPU phase alignment and comfort still require headset testing.
+
+Depth:
+- Flat disk/translucent chest polygons replaced with closed opaque pucks.
+- Native grenade preview remains only while that grenade type is available.
+- Shared world mesh projection, explicit viewport MinZ=0/MaxZ=1, depth test/write;
+  centered magazine label uses matching depth, lifted to its actual top surface.
+- No external textures/models, colliders, forced hand displacement or moved zones.
+- GPU occlusion is not established by the portable draw-state tests alone.
+
+Read-only executable verification:
+ halo.exe SHA256 b84131f2ee8cbf8d0dbda71d1d920059318bc55b36760dce32735026ced099a8
+ Native test byte [unit+0x106],4 occurs e.g. at 0x41c547, 0x41e473, 0x43549a.
+ DrawViewModel 0x4924b0 submits models through existing 0x4d6fc0; caller 0x50e988.
+ No new native hook/function address is introduced in R1.26; EXE not packaged.
+
+Primary source cross-checks (read 14 October 2026):
+ https://github.com/SnowyMouse/chimera/blob/7a18e55ac6e88fc4b767f55dab5f82dc4c6daa3f/src/chimera/halo_data/object.hpp
+ https://github.com/SnowyMouse/chimera/blob/7a18e55ac6e88fc4b767f55dab5f82dc4c6daa3f/src/chimera/fix/interpolate/object.cpp
+ https://github.com/SnowyMouse/chimera/blob/7a18e55ac6e88fc4b767f55dab5f82dc4c6daa3f/src/chimera/fix/interpolate/interpolate.cpp
+ These corroborate data layout/render timing; no Chimera source was copied.
+
+Validation: tests/run.py production-handler fixtures with native/VR/D3D doubles,
+UBSan; complete source manifest/ZIP/Visual Studio XML checks. Windows/MSVC and
+actual headset/GPU testing were not performed in this environment.
