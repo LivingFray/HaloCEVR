@@ -1,5 +1,6 @@
 #include "InputHandler.h"
 #include "Game.h"
+#include "DiagnosticLogger.h"
 #include "Helpers/Controls.h"
 #include "Helpers/Camera.h"
 #include "Helpers/Menus.h"
@@ -358,6 +359,32 @@ void InputHandler::UpdateCamera(float& yaw, float& pitch)
 	float pitchHMD = atan2(lookHMD.z, sqrt(lookHMD.x * lookHMD.x + lookHMD.y * lookHMD.y));
 	float pitchGame = atan2(lookGame.z, sqrt(lookGame.x * lookGame.x + lookGame.y * lookGame.y));
 	pitch = (pitchHMD - pitchGame);
+
+	// Diagnostic logging: camera delta calculation (prime suspect for shake)
+	if (DiagnosticLogger::Get().IsActive())
+	{
+		Camera& cam = Helpers::GetCamera();
+		Vector3 hmdPos = vr->GetHMDTransform(true) * Vector3(0.0f, 0.0f, 0.0f);
+		char extra[128];
+		std::snprintf(extra, sizeof(extra), "yawHMD=%.4f_yawGame=%.4f_pitchHMD=%.4f_pitchGame=%.4f_dYaw=%.4f_dPitch=%.4f",
+			yawHMD, yawGame, pitchHMD, pitchGame, yaw, pitch);
+		DiagnosticLogger::Get().LogRow(
+			"CamDelta",
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			cam.position.x, cam.position.y, cam.position.z,
+			cam.lookDir.x, cam.lookDir.y, cam.lookDir.z,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			hmdPos.x, hmdPos.y, hmdPos.z,
+			0.0f, 0.0f, 0.0f,
+			Game::instance.IsInVehicle(),
+			false,
+			vr->GetYawOffset(),
+			Game::instance.lastDeltaTime,
+			extra
+		);
+	}
 }
 
 void InputHandler::UpdateCameraForVehicles(float& yaw, float& pitch)

@@ -8,6 +8,7 @@
 #include "Helpers/Menus.h"
 #include "Helpers/Objects.h"
 #include "Helpers/Maths.h"
+#include "DiagnosticLogger.h"
 
 #ifdef EMULATE_VR
 #include "VR/VREmulator.h"
@@ -212,6 +213,81 @@ void Game::PreDrawFrame(struct Renderer* renderer, float deltaTime)
 		}
 		bInVehicle = bNewShowViewModel;
 		bHasWeapon = Player->weapon.id != 0xffff;
+
+		// Diagnostic logging: vehicle state detection
+		{
+			static bool lastLoggedVehicle = false;
+			DiagnosticLogger::Get().BeginFrame(bInVehicle);
+
+			if (DiagnosticLogger::Get().IsActive())
+			{
+				Camera& cam = Helpers::GetCamera();
+				Vector3 hmdPos = vr->GetHMDTransform(true) * Vector3(0.0f, 0.0f, 0.0f);
+				Vector3 locOffset = vr->GetLocationOffset();
+				const char* annotation = "";
+				if (lastLoggedVehicle && !bInVehicle) annotation = ">>> VEHICLE_EXIT <<<";
+				else if (!lastLoggedVehicle && bInVehicle) annotation = ">>> VEHICLE_ENTER <<<";
+
+				DiagnosticLogger::Get().LogRow(
+					"PreDraw",
+					Player->position.x, Player->position.y, Player->position.z,
+					Player->velocity.x, Player->velocity.y, Player->velocity.z,
+					cam.position.x, cam.position.y, cam.position.z,
+					cam.lookDir.x, cam.lookDir.y, cam.lookDir.z,
+					frustum1.position.x, frustum1.position.y, frustum1.position.z,
+					frustum1.facingDirection.x, frustum1.facingDirection.y, frustum1.facingDirection.z,
+					hmdPos.x, hmdPos.y, hmdPos.z,
+					locOffset.x, locOffset.y, locOffset.z,
+					bInVehicle,
+					bIgnoreNextRoomScaleMovement,
+					vr->GetYawOffset(),
+					lastDeltaTime,
+					annotation
+				);
+			}
+			lastLoggedVehicle = bInVehicle;
+		}
+
+		// Vehicle exit position smoothing and weapon hiding: at vehicle exit the
+		// camera position jumps from the third-person vehicle camera to first-person.
+		// Smooth this with an EMA and hide the weapon model until the transition
+		// completes. Uses a time-based duration rather than convergence detection
+		// because on the trigger frame smoothedCamPos == target (same camera read
+		// twice), so convergence is instant. The actual position change arrives on
+		// subsequent frames as the game/Chimera interpolates the camera.
+		{
+			static Vector3 smoothedCamPos;
+			static float smoothingTimer = 0.0f;
+			static bool bLastVehicleForSmoothing = false;
+
+			if (bLastVehicleForSmoothing && !bInVehicle)
+			{
+				smoothedCamPos = Helpers::GetCamera().position;
+				smoothingTimer = 1.0f; // 1 second — matches delta suppression duration
+			}
+			bLastVehicleForSmoothing = bInVehicle;
+
+			if (smoothingTimer > 0.0f && !bInVehicle)
+			{
+				smoothingTimer -= deltaTime;
+
+				Camera& cam = Helpers::GetCamera();
+				Vector3 target = cam.position;
+
+				// Frame-rate-independent EMA: alpha = 1 - e^(-rate * dt)
+				// rate=3.7 gives ~833ms to 95% convergence at any fps
+				const float smoothRate = 3.7f;
+				float alpha = 1.0f - std::exp(-smoothRate * deltaTime);
+				smoothedCamPos = smoothedCamPos + (target - smoothedCamPos) * alpha;
+
+				// Override camera and frustum positions for rendering
+				cam.position = smoothedCamPos;
+				frustum1.position = smoothedCamPos;
+				renderer->frustum.position = smoothedCamPos;
+			}
+
+			bSmoothingVehicleExit = (smoothingTimer > 0.0f);
+		}
 	}
 
 	if (c_ShowRoomCentre->Value())
@@ -790,6 +866,26 @@ void Game::UpdateInputs()
 
 	bWasPressed = bPressed;
 #endif
+
+#ifndef EMULATE_VR
+	{
+		static bool bWasDiagKeyPressed = false;
+		bool bDiagKeyPressed = GetAsyncKeyState(VK_F6) & 0x8000;
+		if (bDiagKeyPressed && !bWasDiagKeyPressed)
+		{
+			if (DiagnosticLogger::Get().IsActive())
+			{
+				DiagnosticLogger::Get().Stop();
+			}
+			else
+			{
+				DiagnosticLogger::Get().SetWindowSize(120);
+				DiagnosticLogger::Get().Start();
+			}
+		}
+		bWasDiagKeyPressed = bDiagKeyPressed;
+	}
+#endif
 }
 
 void Game::CalculateSmoothedInput()
@@ -833,11 +929,35 @@ void Game::UpdateRoomScaleMovement()
 #endif
 
 	// Directly adjust position, collisions are handled later in the tick
+	bool wasIgnored = bIgnoreNextRoomScaleMovement;
 	if (!bIgnoreNextRoomScaleMovement)
 	{
 		Player->position += desiredOffset;
 	}
 	bIgnoreNextRoomScaleMovement = false;
+
+	// Diagnostic logging: room scale position manipulation
+	if (DiagnosticLogger::Get().IsActive())
+	{
+		Camera& cam = Helpers::GetCamera();
+		Vector3 locOffset = vr->GetLocationOffset();
+		DiagnosticLogger::Get().LogRow(
+			"RoomScale",
+			Player->position.x, Player->position.y, Player->position.z,
+			Player->velocity.x, Player->velocity.y, Player->velocity.z,
+			cam.position.x, cam.position.y, cam.position.z,
+			cam.lookDir.x, cam.lookDir.y, cam.lookDir.z,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			headPos.x, headPos.y, headPos.z,
+			locOffset.x, locOffset.y, locOffset.z,
+			bInVehicle,
+			wasIgnored,
+			vr->GetYawOffset(),
+			lastDeltaTime,
+			wasIgnored ? "SKIP_ROOMSCALE" : "APPLY_ROOMSCALE"
+		);
+	}
 
 	{
 		// Rotate desiredOffset by yaw offset
@@ -914,6 +1034,48 @@ void Game::UpdateCamera(float& yaw, float& pitch)
 	return;
 #endif
 
+	// --- Vehicle exit shake suppression ---
+	// On vehicle exit, the delta calculation in InputHandler::UpdateCamera() computes
+	// yaw = atan2(lookHMD) - atan2(lookGame). Because lookGame still points in the
+	// vehicle's facing direction while lookHMD points where the player's head is, this
+	// produces a large delta that overshoots, creating a diverging feedback loop
+	// (confirmed by diagnostic CSV: yawGame oscillates with growing magnitude while
+	// yawHMD remains steady). Vehicle ENTER is smooth because vehicle mode uses
+	// joystick input (UpdateCameraForVehicles), not HMD delta correction.
+	// Fix: zero the delta during the exit transition so the game's native camera
+	// movement runs unimpeded. When the cooldown expires, sync the camera reference
+	// to the HMD direction so tracking resumes with near-zero delta.
+	static bool bWasInVehicleForCamera = false;
+	static float vehicleExitCooldownTimer = 0.0f;
+
+	if (bWasInVehicleForCamera && !bInVehicle)
+	{
+		vehicleExitCooldownTimer = 1.0f; // 1 second, fps-independent
+	}
+	bWasInVehicleForCamera = bInVehicle;
+
+	bool bSuppressDelta = false;
+	if (vehicleExitCooldownTimer > 0.0f)
+	{
+		vehicleExitCooldownTimer -= lastDeltaTime;
+		if (vehicleExitCooldownTimer > 0.0f)
+		{
+			bSuppressDelta = true;
+		}
+		else
+		{
+			// Cooldown just expired. Sync camera reference to HMD direction
+			// so InputHandler sees delta ≈ 0 on this first normal frame.
+			Vector3 lookHMD = vr->GetHMDTransform().getLeftAxis();
+			if (bDetectedChimera)
+			{
+				LastLookDir = lookHMD;
+			}
+			Helpers::GetCamera().lookDir = lookHMD;
+		}
+	}
+	// --- End vehicle exit shake suppression ---
+
 	if (bInVehicle && !bHasWeapon)
 	{
 		inputHandler.UpdateCameraForVehicles(yaw, pitch);
@@ -921,6 +1083,42 @@ void Game::UpdateCamera(float& yaw, float& pitch)
 	else
 	{
 		inputHandler.UpdateCamera(yaw, pitch);
+	}
+
+	// Zero deltas during vehicle exit transition to prevent the diverging
+	// feedback loop between HMD delta correction and the game camera.
+	if (bSuppressDelta)
+	{
+		yaw = 0.0f;
+		pitch = 0.0f;
+	}
+
+	// Diagnostic logging: camera path selection and resulting yaw/pitch
+	if (DiagnosticLogger::Get().IsActive())
+	{
+		UnitDynamicObject* Player = static_cast<UnitDynamicObject*>(Helpers::GetLocalPlayer());
+		Camera& cam = Helpers::GetCamera();
+		Vector3 hmdPos = vr->GetHMDTransform(true) * Vector3(0.0f, 0.0f, 0.0f);
+		Vector3 locOffset = vr->GetLocationOffset();
+		char extra[64];
+		std::snprintf(extra, sizeof(extra), "%s_yaw=%.4f_pitch=%.4f",
+			(bInVehicle && !bHasWeapon) ? "VEH_CAM" : "NORMAL_CAM", yaw, pitch);
+		DiagnosticLogger::Get().LogRow(
+			"Camera",
+			Player ? Player->position.x : 0, Player ? Player->position.y : 0, Player ? Player->position.z : 0,
+			Player ? Player->velocity.x : 0, Player ? Player->velocity.y : 0, Player ? Player->velocity.z : 0,
+			cam.position.x, cam.position.y, cam.position.z,
+			cam.lookDir.x, cam.lookDir.y, cam.lookDir.z,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			hmdPos.x, hmdPos.y, hmdPos.z,
+			locOffset.x, locOffset.y, locOffset.z,
+			bInVehicle,
+			bIgnoreNextRoomScaleMovement,
+			vr->GetYawOffset(),
+			lastDeltaTime,
+			extra
+		);
 	}
 }
 

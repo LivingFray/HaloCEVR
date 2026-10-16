@@ -5,6 +5,7 @@
 #include "OpenVR.h"
 #include "../Logger.h"
 #include "../Game.h"
+#include "../DiagnosticLogger.h"
 #include "../Profiler.h"
 #include "../Helpers/DX9.h"
 #include "../Helpers/Renderer.h"
@@ -534,6 +535,28 @@ void OpenVR::UpdateCameraFrustum(CameraFrustum* frustum, int eye)
 	Vector3 newPos = viewMatrix * Vector3(0.0f, 0.0f, 0.0f);
 
 	frustum->position = frustum->position + newPos;
+
+	// Diagnostic logging: frustum incremental position update
+	if (DiagnosticLogger::Get().IsActive())
+	{
+		Camera& cam = Helpers::GetCamera();
+		DiagnosticLogger::Get().LogRow(
+			eye == 0 ? "FrustumL" : "FrustumR",
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			cam.position.x, cam.position.y, cam.position.z,
+			cam.lookDir.x, cam.lookDir.y, cam.lookDir.z,
+			frustum->position.x, frustum->position.y, frustum->position.z,
+			frustum->facingDirection.x, frustum->facingDirection.y, frustum->facingDirection.z,
+			newPos.x, newPos.y, newPos.z,
+			positionOffset.x, positionOffset.y, positionOffset.z,
+			Game::instance.IsInVehicle(),
+			false,
+			yawOffset,
+			Game::instance.lastDeltaTime,
+			""
+		);
+	}
 }
 
 int OpenVR::GetViewWidth()

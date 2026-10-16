@@ -253,6 +253,7 @@
     <ClCompile Include="DirectXWrappers\IDirect3DDevice9ExWrapper.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="Maths\Matrices.cpp" />
+    <ClCompile Include="DiagnosticLogger.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="UI\UIFloatBox.cpp" />
     <ClCompile Include="UI\UIIntBox.cpp" />
@@ -296,6 +297,7 @@
     <ClInclude Include="DirectXWrappers\IDirect3D9ExWrapper.h" />
     <ClInclude Include="DirectXWrappers\IDirect3DDevice9ExWrapper.h" />
     <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="DiagnosticLogger.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Maths\Matrices.h" />
     <ClInclude Include="Profiler.h" />
