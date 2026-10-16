@@ -11,6 +11,17 @@
 #define ApplyBoolInput(x) controls.##x = vr->GetBoolInput(x) ? 127 : 0;
 #define ApplyImpulseBoolInput(x) controls.##x = vr->GetBoolInput(x, bHasChanged) && bHasChanged ? 127 : 0;
 
+bool InputHandler::ShouldBlockAutoReloadStart() const
+{
+	if (!Game::instance.c_DisableEmptyMagazineAutoReload->Value())
+	{
+		return false;
+	}
+
+	IVR* vr = Game::instance.GetVR();
+	return !vr->GetBoolInput(Reload);
+}
+
 void InputHandler::RegisterInputs()
 {
 	IVR* vr = Game::instance.GetVR();

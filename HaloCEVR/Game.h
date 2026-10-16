@@ -61,6 +61,7 @@ public:
 	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand); 
 	void ReloadStart(HaloID param1, short param2, bool param3);
 	void ReloadEnd(short param1, HaloID param2);
+	bool ShouldBlockAutoReloadStart() const;
 
 	void UpdateInputs();
 	void CalculateSmoothedInput();
@@ -237,6 +238,7 @@ public:
 	FloatProperty* c_LeftHandMeleeSwingSpeed = nullptr;
 	FloatProperty* c_RightHandMeleeSwingSpeed = nullptr;
 	FloatProperty* c_CrouchHeight = nullptr;
+	BoolProperty* c_DisableEmptyMagazineAutoReload = nullptr;
 	BoolProperty* c_ShowRoomCentre = nullptr;
 	BoolProperty* c_ToggleGrip = nullptr;
 	FloatProperty* c_TwoHandDistance = nullptr;

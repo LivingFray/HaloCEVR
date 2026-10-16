@@ -15,6 +15,8 @@ public:
 	bool GetCalculatedHandPositions(Matrix4& controllerTransform, Vector3& dominantHandPos, Vector3& offHand);
 	void CalculateSmoothedInput();
 
+	bool ShouldBlockAutoReloadStart() const;
+
 	Vector3 smoothedPosition = Vector3(0.0f, 0.0f, 0.0f);
 
 	// Track previous yaw offset to detect snap turns for weapon position smoothing
