@@ -4,6 +4,12 @@
 #include "Helpers/Camera.h"
 #include "Helpers/Menus.h"
 #include "Helpers/Maths.h"
+#include "Logger.h"
+
+#include <windows.h>
+#include <mmsystem.h>
+// Only used for the HUD toggle sound effect
+#pragma comment(lib, "winmm.lib")
 
 
 #define RegisterBoolInput(set, x) x = vr->RegisterBoolInput(set, #x);
@@ -127,6 +133,8 @@ void InputHandler::UpdateInputs(bool bInVehicle)
 			Helpers::GetControls().Flashlight = MotionControlFlashlight;
 		}
 	}
+
+	UpdateHUDToggle();
 
 	if (Game::instance.c_EnableWeaponHolsters->Value())
 	{
@@ -415,6 +423,93 @@ unsigned char InputHandler::UpdateFlashlight()
 	}
 
 	return 0;
+}
+
+void InputHandler::PlayHUDToggleSound()
+{
+	const std::string& soundFile = Game::instance.c_HUDToggleSound->Value();
+
+	if (soundFile.empty())
+	{
+		return;
+	}
+
+	const std::string soundPath = "VR/" + soundFile;
+
+	// SND_ASYNC returns immediately so we never stall the frame, SND_NODEFAULT stops
+	// Windows playing its default beep if the file is missing or not a valid PCM wav
+	if (!PlaySoundA(soundPath.c_str(), NULL, SND_FILENAME | SND_ASYNC | SND_NODEFAULT))
+	{
+		static bool bWarned = false;
+		if (!bWarned)
+		{
+			bWarned = true;
+			Logger::err << "[HUDToggle] Could not play " << soundPath
+				<< ". Check the file exists and is an uncompressed 16-bit PCM .wav" << std::endl;
+		}
+	}
+}
+
+void InputHandler::UpdateHUDToggle()
+{
+	const float toggleDistance = Game::instance.c_HUDToggleDistance->Value();
+
+	if (toggleDistance <= 0.0f)
+	{
+		bWasTappingHUD = false;
+		return;
+	}
+
+	IVR* vr = Game::instance.GetVR();
+
+	// Use the opposite hand to the flashlight so the two head gestures never share a
+	// hand. The flashlight uses the offhand when OffhandHandFlashlight is set (the hand
+	// not holding a weapon, i.e. left when right handed), otherwise the dominant hand.
+	bool bFlashlightUsesLeft;
+	if (Game::instance.c_OffhandHandFlashlight->Value())
+	{
+		// Offhand: left for right handed players, right for left handed players
+		bFlashlightUsesLeft = !Game::instance.bLeftHanded;
+	}
+	else
+	{
+		// Dominant hand: right for right handed players, left for left handed players
+		bFlashlightUsesLeft = Game::instance.bLeftHanded;
+	}
+
+	// The HUD toggle uses the inverse hand of the flashlight
+	bool bHUDUsesLeft = !bFlashlightUsesLeft;
+
+	// The offset's y axis points left, so flip it to sit beside whichever hand is used
+	Vector3 offset = Game::instance.c_HUDToggleOffset->Value();
+	if (bHUDUsesLeft)
+	{
+		offset.y = -offset.y;
+	}
+
+	const Vector3 togglePos = vr->GetHMDTransform() * offset;
+
+	ControllerRole hudHand = bHUDUsesLeft ? ControllerRole::Left : ControllerRole::Right;
+	Vector3 handPos = vr->GetRawControllerTransform(hudHand) * Vector3(0.0f, 0.0f, 0.0f);
+
+	// The hand must leave a larger zone before another toggle can register, otherwise
+	// tracking jitter on the boundary would toggle repeatedly
+	const float releaseDistance = toggleDistance * 1.5f;
+	const float distanceSqr = (togglePos - handPos).lengthSqr();
+
+	if (!bWasTappingHUD)
+	{
+		if (distanceSqr < toggleDistance * toggleDistance)
+		{
+			bWasTappingHUD = true;
+			Game::instance.bHideHUD = !Game::instance.bHideHUD;
+			PlayHUDToggleSound();
+		}
+	}
+	else if (distanceSqr > releaseDistance * releaseDistance)
+	{
+		bWasTappingHUD = false;
+	}
 }
 
 unsigned char InputHandler::UpdateHolsterSwitchWeapons()

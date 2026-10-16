@@ -95,6 +95,8 @@ public:
 	bool bNeedsRecentre = true;
 	bool bUseTwoHandAim = false;
 	bool bLeftHanded = false;
+	// Set by the HUD toggle gesture, when true the floating UI layer is not drawn
+	bool bHideHUD = false;
 	bool bUse3DOFAiming = false;
 
 	Config config;
@@ -221,6 +223,9 @@ public:
 	BoolProperty* c_OffhandHandFlashlight = nullptr;
 	FloatProperty* c_LeftHandFlashlightDistance = nullptr;
 	FloatProperty* c_RightHandFlashlightDistance = nullptr;
+	FloatProperty* c_HUDToggleDistance = nullptr;
+	Vector3Property* c_HUDToggleOffset = nullptr;
+	StringProperty* c_HUDToggleSound = nullptr;
 	BoolProperty* c_EnableWeaponHolsters = nullptr;
 	FloatProperty* c_LeftShoulderHolsterActivationDistance = nullptr;
 	Vector3Property* c_LeftShoulderHolsterOffset = nullptr;

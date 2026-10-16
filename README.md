@@ -19,6 +19,7 @@ A full VR conversion mod for the original 2003 PC edition of _Halo: Combat Evolv
 * Rebindable controls (with left handed preset available)
 * Motion controlled melee (uses head-aiming)
 * Motion controlled flashlight (tap head)
+* Motion controlled HUD toggle (tap head, disabled by default)
 * Motion controlled crouching
 * Shoulder weapon holsters (for switching weapons)
 * Swapping weapons between hands

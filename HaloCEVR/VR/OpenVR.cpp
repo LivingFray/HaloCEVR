@@ -489,12 +489,25 @@ void OpenVR::PostDrawFrame(Renderer* renderer, float deltaTime)
 
 	PositionOverlay();
 
-	vr::Texture_t uiTex{ (void*)vrRenderTexture[uiSurface], vr::TextureType_DirectX, vr::ColorSpace_Auto };
-	vr::EVROverlayError oError = vrOverlay->SetOverlayTexture(uiOverlay, &uiTex);
-
-	if (oError != vr::EVROverlayError::VROverlayError_None)
+	// The HUD toggle gesture hides the floating UI by hiding the overlay rather than
+	// skipping the HUD draw, so the game's HUD logic (including the shield recharge
+	// sound) still runs every frame. The menu shares this overlay, so it is never
+	// hidden while a menu is visible.
+	if (Game::instance.bHideHUD && !bMouseVisible)
 	{
-		Logger::log << "[OpenVR] Could not submit ui texture: " << oError << std::endl;
+		vrOverlay->HideOverlay(uiOverlay);
+	}
+	else
+	{
+		vrOverlay->ShowOverlay(uiOverlay);
+
+		vr::Texture_t uiTex{ (void*)vrRenderTexture[uiSurface], vr::TextureType_DirectX, vr::ColorSpace_Auto };
+		vr::EVROverlayError oError = vrOverlay->SetOverlayTexture(uiOverlay, &uiTex);
+
+		if (oError != vr::EVROverlayError::VROverlayError_None)
+		{
+			Logger::log << "[OpenVR] Could not submit ui texture: " << oError << std::endl;
+		}
 	}
 
 	VR_PROFILE_START(OpenVR_PostPresentHandoff);

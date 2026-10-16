@@ -25,6 +25,8 @@ protected:
 
 
 	unsigned char UpdateFlashlight();
+	void UpdateHUDToggle();
+	void PlayHUDToggleSound();
 	unsigned char UpdateHolsterSwitchWeapons();
 	unsigned char UpdateMelee();
 	unsigned char UpdateCrouch();
@@ -42,6 +44,7 @@ protected:
 
 	bool bWasGripping = false;
 	bool bWasSwappingHands = false;
+	bool bWasTappingHUD = false;
 	
 	InputBindingID Jump = 0;
 	InputBindingID SwitchGrenades = 0;
